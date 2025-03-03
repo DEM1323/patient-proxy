@@ -1,13 +1,34 @@
-# Patient Proxy
+# AI-Powered Clinical Communication Training Tool
 
-A secure platform that enables patients to authorize trusted individuals to access their healthcare information and make decisions on their behalf.
+A training platform that enables healthcare students to practice clinical communication skills through simulated patient interactions powered by large language models.
+
+## Project Overview
+
+This project is part of an independent study (IT 478) at UMass Boston, supervised by Rosemary Samia. It aims to create an interactive training tool that helps healthcare students develop effective clinical communication skills through AI-simulated patient scenarios.
+
+### Team Members
+
+- David Martinez - Technical Development
+- Michael Agbesi - UX/UI Design
 
 ## Features
 
-- **Google Single Sign-On**: Secure authentication using Google OAuth
-- **Role-Based Access**: Different permissions for patients, proxies, and healthcare providers
-- **Secure Data Handling**: Built with privacy and security in mind
-- **Modern Tech Stack**: Next.js, TypeScript, Tailwind CSS, and Supabase
+- **Google Single Sign-On**: Secure authentication for students and instructors
+- **Customizable Patient Scenarios**: Instructors can create varied clinical scenarios
+- **AI-Powered Patient Simulation**: Realistic patient interactions using LLMs
+- **Real-time Chat Interface**: Intuitive communication environment
+- **Feedback Mechanism**: Automated insights on communication strengths and areas for improvement
+- **Conversation Transcripts**: Downloadable records of practice sessions
+- **Responsive Design**: Accessible across devices
+- **WCAG Compliant**: Designed for accessibility
+
+## Technical Components
+
+- **Frontend**: React-based responsive interface with Next.js
+- **Authentication**: Supabase Auth with Google OAuth
+- **AI Integration**: API connections to LLMs (GPT/Claude)
+- **Database**: Supabase (PostgreSQL)
+- **Feedback System**: Automated analysis of communication patterns
 
 ## Getting Started
 
@@ -29,21 +50,27 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Authentication Flow
+## Project Objectives
 
-This project uses Supabase Authentication with Google OAuth. The authentication flow is:
+1. Conduct UX research with healthcare students and instructors
+2. Develop customizable patient scenario interfaces
+3. Create an interactive platform for simulated clinical conversations
+4. Implement feedback mechanisms for skill development
 
-1. User clicks "Sign in with Google" button
-2. User is redirected to Google for authentication
-3. After successful authentication, user is redirected back to the application
-4. User is then redirected to their dashboard
+## Learning Outcomes
 
-## Tech Stack
+- AI/LLM integration for healthcare simulation
+- Advanced web development with React-based frameworks
+- Healthcare communication standards knowledge
+- UX/UI design with accessibility considerations
+- Project management and stakeholder collaboration
 
-- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
-- **Authentication**: Supabase Auth, Google OAuth
-- **Database**: Supabase (PostgreSQL)
-- **Deployment**: Vercel (recommended)
+## Deliverables
+
+1. Functional prototype with chat interface and LLM integration
+2. Basic feedback generation system
+3. Technical documentation
+4. Final effectiveness report
 
 ## License
 
