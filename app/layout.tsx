@@ -14,8 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Patient Proxy",
-  description: "Patient Interaction Simulator",
+  title: "Patient Proxy | Secure Healthcare Proxy Management",
+  description:
+    "A secure platform for managing healthcare proxy information and patient profiles",
+  keywords: "healthcare, proxy, patient, management, medical, authorization",
 };
 
 export default function RootLayout({
@@ -24,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full overflow-hidden">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full`}
       >
         {children}
         <Toaster position="top-right" />

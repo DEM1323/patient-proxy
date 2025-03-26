@@ -4,13 +4,32 @@ import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
+
+      // For direct pass-through without authentication
+      // Simulate login delay for UI feedback
+      setTimeout(() => {
+        // Set login flag for client layout to recognize
+        localStorage.setItem("isLoggedIn", "true");
+        console.log("Login page: Setting isLoggedIn to true in localStorage");
+
+        setIsLoading(false);
+        toast.success("Login successful!");
+
+        // Force redirect with bypass parameter
+        window.location.href = "/patient-profiles?bypass=true";
+      }, 1000);
+
+      // Original authentication logic (commented out)
+      /*
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -20,6 +39,7 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
+      */
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Failed to connect to Google");
@@ -31,9 +51,11 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Patient Proxy</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            Clinical Communication Trainer
+          </h1>
           <p className="text-gray-600">
-            Sign in to manage your healthcare proxy settings
+            Sign in to access simulated patient interactions for training
           </p>
         </div>
 
