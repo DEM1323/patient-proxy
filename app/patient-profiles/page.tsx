@@ -11,6 +11,7 @@ import { ContentLayout } from "@/app/components/layouts/ContentLayout";
 
 export default function PatientProfilesPage() {
   const [profiles, setProfiles] = useState<PatientProfile[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -33,14 +34,17 @@ export default function PatientProfilesPage() {
       }
 
       setProfiles(profilesList);
-      setIsLoading(false);
 
-      // Check if there's a last created profile ID to navigate to
-      const lastCreatedProfileId = localStorage.getItem("lastCreatedProfileId");
-      if (lastCreatedProfileId) {
-        // Clear the stored ID so it doesn't affect future navigation
-        localStorage.removeItem("lastCreatedProfileId");
+      // Check if there's a specific page to navigate to
+      const savedPage = localStorage.getItem("currentProfilePage");
+      if (savedPage) {
+        const pageNumber = parseInt(savedPage, 10);
+        setCurrentPage(pageNumber);
+        // Clear the stored page number
+        localStorage.removeItem("currentProfilePage");
       }
+
+      setIsLoading(false);
     } catch (error) {
       console.error("Error loading profiles:", error);
       // Fallback to sample profile without saving
@@ -51,8 +55,11 @@ export default function PatientProfilesPage() {
 
   const handleEditProfile = () => {
     if (profiles.length > 0) {
-      // Store the current profile ID for the edit page to use
-      localStorage.setItem("profileToEdit", profiles[0].id);
+      // Store the current profile ID and page number for the edit page to use
+      const startIndex = (currentPage - 1) * 1; // Using 1 as profilesPerPage
+      const currentProfile = profiles[startIndex];
+      localStorage.setItem("profileToEdit", currentProfile.id);
+      localStorage.setItem("returnToProfilePage", currentPage.toString());
 
       // Navigate to the edit profiles page
       router.push("/manage-profiles/edit");
@@ -81,7 +88,7 @@ export default function PatientProfilesPage() {
           className="flex items-center"
         >
           <Edit className="mr-1 h-4 w-4" />
-          Edit Profile
+          Manage Profile
         </Button>
       )}
       <Button
@@ -100,7 +107,12 @@ export default function PatientProfilesPage() {
       actions={Actions}
       onSearch={(term) => console.log("Search:", term)}
     >
-      <ProfileList profiles={profiles} profilesPerPage={1} />
+      <ProfileList
+        profiles={profiles}
+        profilesPerPage={1}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+      />
     </ContentLayout>
   );
 }

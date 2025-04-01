@@ -212,16 +212,22 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Monitoring:
                 </strong>
               </div>
-              {profile.monitoringItems.map((item) => (
-                <div key={item.id} className="mt-1 sm:mt-2">
-                  <CheckboxItem label={item.title} checked={item.checked} />
-                  {item.details && (
-                    <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                      ({item.details})
-                    </div>
-                  )}
+              {profile.monitoringItems?.length > 0 ? (
+                profile.monitoringItems.map((item) => (
+                  <div key={item.id} className="mt-1 sm:mt-2">
+                    <CheckboxItem label={item.title} checked={item.checked} />
+                    {item.details && (
+                      <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                        ({item.details})
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                  No monitoring items
                 </div>
-              ))}
+              )}
             </td>
             <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
               <div className="mb-1">
@@ -229,20 +235,26 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Medication:
                 </strong>
               </div>
-              {profile.medicationItems.map((item) => (
-                <div key={item.id} className="mt-1 sm:mt-2">
-                  <CheckboxItem label={item.title} checked={item.checked} />
-                  {item.details &&
-                    item.details.split("\n").map((line, i) => (
-                      <div
-                        key={i}
-                        className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700"
-                      >
-                        ({line})
-                      </div>
-                    ))}
+              {profile.medicationItems?.length > 0 ? (
+                profile.medicationItems.map((item) => (
+                  <div key={item.id} className="mt-1 sm:mt-2">
+                    <CheckboxItem label={item.title} checked={item.checked} />
+                    {item.details &&
+                      item.details.split("\n").map((line, i) => (
+                        <div
+                          key={i}
+                          className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700"
+                        >
+                          ({line})
+                        </div>
+                      ))}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                  No medications
                 </div>
-              ))}
+              )}
             </td>
             <td
               className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-3/5 align-top"
@@ -253,16 +265,22 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Respiratory:
                 </strong>
               </div>
-              {profile.respiratoryItems.map((item) => (
-                <div key={item.id} className="mt-1 sm:mt-2">
-                  <CheckboxItem label={item.title} checked={item.checked} />
-                  {item.details && (
-                    <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                      ({item.details})
-                    </div>
-                  )}
+              {profile.respiratoryItems?.length > 0 ? (
+                profile.respiratoryItems.map((item) => (
+                  <div key={item.id} className="mt-1 sm:mt-2">
+                    <CheckboxItem label={item.title} checked={item.checked} />
+                    {item.details && (
+                      <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                        ({item.details})
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                  No respiratory items
                 </div>
-              ))}
+              )}
             </td>
           </tr>
 
@@ -274,16 +292,22 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Diagnostic studies:
                 </strong>
               </div>
-              {profile.diagnosticItems.map((item) => (
-                <div key={item.id} className="mt-1 sm:mt-2">
-                  <CheckboxItem label={item.title} checked={item.checked} />
-                  {item.details && (
-                    <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                      ({item.details})
-                    </div>
-                  )}
+              {profile.diagnosticItems?.length > 0 ? (
+                profile.diagnosticItems.map((item) => (
+                  <div key={item.id} className="mt-1 sm:mt-2">
+                    <CheckboxItem label={item.title} checked={item.checked} />
+                    {item.details && (
+                      <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                        ({item.details})
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                  No diagnostic studies
                 </div>
-              ))}
+              )}
             </td>
             <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
               <div className="mb-1">
@@ -291,37 +315,51 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Social history:
                 </strong>
               </div>
-              {profile.socialHistoryItems.map((item) => (
-                <div key={item.id} className="mt-1 sm:mt-2">
-                  <CheckboxItem label={item.title} checked={item.checked} />
-                  {item.details && (
-                    <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                      ({item.details})
-                    </div>
-                  )}
+              {profile.socialHistoryItems?.length > 0 ? (
+                profile.socialHistoryItems.map((item) => (
+                  <div key={item.id} className="mt-1 sm:mt-2">
+                    <CheckboxItem label={item.title} checked={item.checked} />
+                    {item.details && (
+                      <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                        ({item.details})
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                  No social history items
                 </div>
-              ))}
+              )}
               <div className="mt-2 sm:mt-3">
                 <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                   Race/Religion:
                 </strong>{" "}
-                {profile.raceReligion}
+                {profile.raceReligion || (
+                  <span className="text-gray-500">Not specified</span>
+                )}
               </div>
               <div className="mt-2 sm:mt-3">
                 <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                   Medication brought from home:
                 </strong>
               </div>
-              {(profile.medicationFromHomeItems || []).map((item) => (
-                <div key={item.id} className="mt-1 sm:mt-2">
-                  <CheckboxItem label={item.title} checked={item.checked} />
-                  {item.details && (
-                    <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                      ({item.details})
-                    </div>
-                  )}
+              {profile.medicationFromHomeItems?.length > 0 ? (
+                profile.medicationFromHomeItems.map((item) => (
+                  <div key={item.id} className="mt-1 sm:mt-2">
+                    <CheckboxItem label={item.title} checked={item.checked} />
+                    {item.details && (
+                      <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                        ({item.details})
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm mt-1">
+                  No medications from home
                 </div>
-              ))}
+              )}
             </td>
             <td
               className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-3/5 align-top"
@@ -332,22 +370,30 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Activity of daily living:
                 </strong>
               </div>
-              {profile.activityItems.map((item: ChecklistItem) => (
-                <div key={item.id} className="mt-1 sm:mt-2">
-                  <CheckboxItem label={item.title} checked={item.checked} />
-                  {item.details && (
-                    <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                      ({item.details})
-                    </div>
-                  )}
+              {profile.activityItems?.length > 0 ? (
+                profile.activityItems.map((item: ChecklistItem) => (
+                  <div key={item.id} className="mt-1 sm:mt-2">
+                    <CheckboxItem label={item.title} checked={item.checked} />
+                    {item.details && (
+                      <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                        ({item.details})
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                  No activity items
                 </div>
-              ))}
+              )}
 
               <div className="mt-2 sm:mt-3">
                 <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                   Discharge planning:
                 </strong>{" "}
-                {profile.dischargePlanning}
+                {profile.dischargePlanning || (
+                  <span className="text-gray-500">Not specified</span>
+                )}
               </div>
             </td>
           </tr>
@@ -363,21 +409,24 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Drains:
                 </strong>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {(profile.drainItems || []).map((item) => (
-                  <div key={item.id} className="mt-1 sm:mt-2">
-                    <CheckboxItem label={item.title} checked={item.checked} />
-                    {item.details && (
-                      <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                        ({item.details})
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {(!profile.drainItems || profile.drainItems.length === 0) && (
-                  <div className="text-gray-500">No drains</div>
-                )}
-              </div>
+              {profile.drainItems?.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {profile.drainItems.map((item) => (
+                    <div key={item.id} className="mt-1 sm:mt-2">
+                      <CheckboxItem label={item.title} checked={item.checked} />
+                      {item.details && (
+                        <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                          ({item.details})
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                  No drains
+                </div>
+              )}
             </td>
           </tr>
         </tbody>

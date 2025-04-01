@@ -27,9 +27,14 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   // Ensure medicationFromHomeItems exists in the initial profile
   const initialProfile = {
     ...initialData,
-    medicationFromHomeItems: initialData.medicationFromHomeItems || [
-      { id: 1, title: "", details: "", checked: false },
-    ],
+    medicationFromHomeItems: initialData.medicationFromHomeItems || [],
+    monitoringItems: initialData.monitoringItems || [],
+    medicationItems: initialData.medicationItems || [],
+    respiratoryItems: initialData.respiratoryItems || [],
+    diagnosticItems: initialData.diagnosticItems || [],
+    socialHistoryItems: initialData.socialHistoryItems || [],
+    activityItems: initialData.activityItems || [],
+    drainItems: initialData.drainItems || [],
   };
 
   // State for the patient profile
@@ -47,7 +52,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     if (!profile[section]) {
       setProfile((prev) => ({
         ...prev,
-        [section]: [{ id: 1, title: "", details: "", checked: false }],
+        [section]: [],
       }));
       return;
     }
@@ -574,7 +579,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                           type="button"
                           onClick={() => removeItem("monitoringItems", item.id)}
                           className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                          disabled={profile.monitoringItems.length <= 1}
                           title="Remove item"
                         >
                           <Trash2 className="h-4 w-4 text-white" />
@@ -650,7 +654,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                           type="button"
                           onClick={() => removeItem("medicationItems", item.id)}
                           className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                          disabled={profile.medicationItems.length <= 1}
                           title="Remove item"
                         >
                           <Trash2 className="h-4 w-4 text-white" />
@@ -731,7 +734,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                             removeItem("respiratoryItems", item.id)
                           }
                           className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                          disabled={profile.respiratoryItems.length <= 1}
                           title="Remove item"
                         >
                           <Trash2 className="h-4 w-4 text-white" />
@@ -811,7 +813,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                           type="button"
                           onClick={() => removeItem("diagnosticItems", item.id)}
                           className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                          disabled={profile.diagnosticItems.length <= 1}
                           title="Remove item"
                         >
                           <Trash2 className="h-4 w-4 text-white" />
@@ -889,7 +890,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                             removeItem("socialHistoryItems", item.id)
                           }
                           className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                          disabled={profile.socialHistoryItems.length <= 1}
                           title="Remove item"
                         >
                           <Trash2 className="h-4 w-4 text-white" />
@@ -980,9 +980,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                               removeItem("medicationFromHomeItems", item.id)
                             }
                             className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                            disabled={
-                              profile.medicationFromHomeItems.length <= 1
-                            }
                             title="Remove item"
                           >
                             <Trash2 className="h-4 w-4 text-white" />
@@ -1062,7 +1059,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                           type="button"
                           onClick={() => removeItem("activityItems", item.id)}
                           className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                          disabled={profile.activityItems.length <= 1}
                           title="Remove item"
                         >
                           <Trash2 className="h-4 w-4 text-white" />
@@ -1159,7 +1155,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                             type="button"
                             onClick={() => removeItem("drainItems", item.id)}
                             className="ml-1 h-5 w-5 sm:h-6 sm:w-6 p-0.5 bg-red-500 hover:bg-red-600 rounded-full"
-                            disabled={profile.drainItems.length <= 1}
                             title="Remove item"
                           >
                             <Trash2 className="h-4 w-4 text-white" />

@@ -49,7 +49,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       <div className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
         <nav className="space-y-1">
           <SidebarLink
-            href="/?bypass=true"
+            href="/patient-profiles?bypass=true"
             label={collapsed ? "" : "Patient Profiles"}
             icon="📋"
             collapsed={collapsed}
@@ -61,8 +61,8 @@ export const Navigation: React.FC<NavigationProps> = ({
             collapsed={collapsed}
           />
           <SidebarLink
-            href="/patient-simulations?bypass=true"
-            label={collapsed ? "" : "Patient Simulations"}
+            href="/patient-interactions?bypass=true"
+            label={collapsed ? "" : "Patient Interactions"}
             icon="🏥"
             collapsed={collapsed}
           />

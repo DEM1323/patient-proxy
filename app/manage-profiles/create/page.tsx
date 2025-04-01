@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PatientForm } from "@/app/components/organisms/PatientForm";
 import type { PatientProfile } from "@/app/types/patient";
-import { saveProfile } from "@/app/lib/storage";
+import { saveProfile, getProfiles } from "@/app/lib/storage";
 import { toast } from "@/app/hooks/use-toast";
 import { Toaster } from "@/app/components/ui/toaster";
 import { Button } from "@/app/components/ui/button";
@@ -18,17 +18,23 @@ export default function CreateProfile() {
       // Save the profile
       const savedProfile = saveProfile(profile);
 
-      // Store the ID of the newly created profile for the main page to use
-      localStorage.setItem("lastCreatedProfileId", savedProfile.id);
+      // Get all profiles to calculate the page number
+      const profilesObj = getProfiles();
+      const profilesList = Object.values(profilesObj);
+      const profileIndex = profilesList.findIndex(
+        (p) => p.id === savedProfile.id
+      );
+      const pageNumber = Math.floor(profileIndex / 1) + 1; // Using 1 as profilesPerPage
 
       toast({
         title: "Profile created",
         description: "The patient profile has been successfully created.",
       });
 
-      // Navigate to the main profiles page
+      // Navigate to the patient profiles page with the correct page number
       setTimeout(() => {
-        router.push("/");
+        localStorage.setItem("currentProfilePage", pageNumber.toString());
+        router.push("/patient-profiles");
       }, 1500);
     } catch (error) {
       console.error("Error saving profile:", error);
