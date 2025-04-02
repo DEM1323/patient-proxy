@@ -79,7 +79,11 @@ export default function PatientChat() {
 
   if (!patient) {
     return (
-      <ContentLayout title="Patient Chat" showSearch={false}>
+      <ContentLayout
+        title="Patient Chat"
+        showSearch={false}
+        backgroundColor="bg-[#F8F9FA]"
+      >
         <div className="flex items-center justify-center h-full">
           <p className="text-gray-600">Patient not found</p>
         </div>
@@ -88,10 +92,14 @@ export default function PatientChat() {
   }
 
   return (
-    <ContentLayout title={Title} showSearch={false}>
+    <ContentLayout
+      title={Title}
+      showSearch={false}
+      backgroundColor="bg-[#F8F9FA]"
+    >
       <div className="flex flex-col h-full">
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto space-y-4">
+        <div className="flex-1 overflow-y-auto space-y-4 p-6">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -100,13 +108,13 @@ export default function PatientChat() {
               }`}
             >
               <div
-                className={`max-w-[70%] rounded-lg p-3 ${
+                className={`max-w-[70%] rounded-[10px] p-4 ${
                   message.sender === "user"
                     ? "bg-[#015a8b] text-white"
-                    : "bg-gray-200 text-gray-900"
+                    : "bg-[#E9ECEF] text-gray-900"
                 }`}
               >
-                <p className="text-sm">{message.text}</p>
+                <p className="text-sm leading-relaxed">{message.text}</p>
               </div>
             </div>
           ))}
@@ -116,21 +124,20 @@ export default function PatientChat() {
         {/* Input Area */}
         <form
           onSubmit={handleSendMessage}
-          className="mt-4 border-t border-gray-200 pt-4"
+          className="mt-4 border-t border-gray-100 pt-4 px-6"
         >
           <div className="flex gap-2 items-center">
             <div className="flex-1 relative">
-              <Input
-                type="text"
+              <textarea
                 placeholder="Say anything..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="w-full text-base p-4 pr-12 min-h-[120px] align-top"
-                style={{ alignItems: "flex-start", paddingTop: "1rem" }}
+                className="w-full text-sm px-4 py-4 h-[120px] pr-12 align-top bg-white border-[1px] border-[#E5E5E5] overflow-y-auto resize-none rounded-[1rem] focus:outline-none"
+                style={{ alignItems: "flex-start" }}
               />
               <button
                 type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2"
+                className="absolute right-4 bottom-4"
                 onClick={() => {
                   // Speech to text functionality will be added later
                   console.log("Audio input clicked");
@@ -139,7 +146,7 @@ export default function PatientChat() {
                 <img
                   src="/audio-input.svg"
                   alt="Audio Input"
-                  className="w-[38px] h-[38px]"
+                  className="w-[32px] h-[32px]"
                 />
               </button>
             </div>
@@ -154,7 +161,7 @@ export default function PatientChat() {
         </form>
 
         {/* Warning Banner */}
-        <div className="mt-4 text-center">
+        <div className="mt-2 text-center pb-4 bg-[#F8F9FA]">
           <p className="text-sm text-gray-500">
             Chatbot simulations and patient interactions are not saved and will
             clear once you exit the chat.
