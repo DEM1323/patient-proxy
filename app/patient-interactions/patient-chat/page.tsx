@@ -90,14 +90,6 @@ export default function PatientChat() {
   return (
     <ContentLayout title={Title} showSearch={false}>
       <div className="flex flex-col h-full">
-        {/* Warning Banner */}
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-          <p className="text-sm text-yellow-700">
-            Chatbot simulations and patient interactions are not saved and will
-            clear once you exit the chat.
-          </p>
-        </div>
-
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto space-y-4">
           {messages.map((message) => (
@@ -126,23 +118,48 @@ export default function PatientChat() {
           onSubmit={handleSendMessage}
           className="mt-4 border-t border-gray-200 pt-4"
         >
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Say anything..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1"
-            />
+          <div className="flex gap-2 items-center">
+            <div className="flex-1 relative">
+              <Input
+                type="text"
+                placeholder="Say anything..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="w-full text-base p-4 pr-12 min-h-[120px] align-top"
+                style={{ alignItems: "flex-start", paddingTop: "1rem" }}
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={() => {
+                  // Speech to text functionality will be added later
+                  console.log("Audio input clicked");
+                }}
+              >
+                <img
+                  src="/audio-input.svg"
+                  alt="Audio Input"
+                  className="w-[38px] h-[38px]"
+                />
+              </button>
+            </div>
             <Button
               type="submit"
-              className="bg-[#015a8b] hover:bg-[#216f99]"
+              className="bg-[#015a8b] hover:bg-[#216f99] h-[38px] w-[38px] p-0 flex-shrink-0"
               disabled={!newMessage.trim()}
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             </Button>
           </div>
         </form>
+
+        {/* Warning Banner */}
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-500">
+            Chatbot simulations and patient interactions are not saved and will
+            clear once you exit the chat.
+          </p>
+        </div>
       </div>
     </ContentLayout>
   );
