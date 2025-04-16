@@ -13,7 +13,7 @@ export default function NotFoundPage() {
           The page you're looking for doesn't exist or has been moved.
         </p>
         <Link
-          href="/"
+          href="/patient-profiles"
           className="inline-flex items-center bg-[#015a8b] text-white px-6 py-3 rounded-lg hover:bg-[#014a71] transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

@@ -22,7 +22,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     <div
       className={`${
         collapsed ? "w-16" : "w-64"
-      } transition-width duration-300 flex flex-col bg-[#015a8b]/50 flex-shrink-0`}
+      } transition-width duration-300 flex flex-col h-full bg-[#015a8b]/50 flex-shrink-0`}
     >
       <div className="p-4 bg-[#015a8b] border-b border-white flex justify-between items-start">
         {!collapsed && (
@@ -46,28 +46,28 @@ export const Navigation: React.FC<NavigationProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
+      <div className="flex-grow py-4 overflow-y-auto overflow-x-hidden">
         <nav className="space-y-1">
           <SidebarLink
-            href="/patient-profiles?bypass=true"
+            href="/patient-profiles"
             label={collapsed ? "" : "Patient Profiles"}
             icon="📋"
             collapsed={collapsed}
           />
           <SidebarLink
-            href="/manage-profiles?bypass=true"
+            href="/manage-profiles"
             label={collapsed ? "" : "Manage Profiles"}
             icon="✨"
             collapsed={collapsed}
           />
           <SidebarLink
-            href="/patient-interactions?bypass=true"
+            href="/patient-interactions"
             label={collapsed ? "" : "Patient Interactions"}
             icon="🏥"
             collapsed={collapsed}
           />
           <SidebarLink
-            href="/report-bug?bypass=true"
+            href="/report-bug"
             label={collapsed ? "" : "Report a Bug"}
             icon="ℹ️"
             collapsed={collapsed}
@@ -75,12 +75,18 @@ export const Navigation: React.FC<NavigationProps> = ({
         </nav>
       </div>
 
-      <div className="mt-auto py-4 border-t border-white">
+      <div className="mt-auto border-t border-white">
         <Link
           href="#"
-          className="flex items-center px-3 py-2 mx-2 text-white hover:bg-[#216f99]/80"
+          className={`flex items-center w-full px-4 py-4 text-white hover:bg-[#216f99]/80 ${
+            collapsed ? "justify-center" : ""
+          }`}
         >
-          <Settings className="w-4 h-4 sm:w-5 sm:h-5 mr-3 flex-shrink-0" />
+          <Settings
+            className={`w-4 h-4 sm:w-5 sm:h-5 ${
+              collapsed ? "" : "mr-3"
+            } flex-shrink-0`}
+          />
           {!collapsed && (
             <span className="text-xs sm:text-sm truncate whitespace-nowrap">
               Settings
@@ -89,9 +95,15 @@ export const Navigation: React.FC<NavigationProps> = ({
         </Link>
         <button
           onClick={onLogout}
-          className="flex items-center px-3 py-2 mx-2 text-white hover:bg-[#216f99]/80 w-full text-left"
+          className={`flex items-center w-full px-4 py-4 text-white hover:bg-[#216f99]/80 text-left ${
+            collapsed ? "justify-center" : ""
+          }`}
         >
-          <LogOut className="w-4 h-4 sm:w-5 sm:h-5 mr-3 flex-shrink-0" />
+          <LogOut
+            className={`w-4 h-4 sm:w-5 sm:h-5 ${
+              collapsed ? "" : "mr-3"
+            } flex-shrink-0`}
+          />
           {!collapsed && (
             <span className="text-xs sm:text-sm truncate whitespace-nowrap">
               Logout

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PatientForm } from "@/app/components/organisms/PatientForm";
@@ -10,45 +10,86 @@ import { toast } from "@/app/hooks/use-toast";
 import { Toaster } from "@/app/components/ui/toaster";
 import { Button } from "@/app/components/ui/button";
 import { ContentLayout } from "@/app/components/layouts/ContentLayout";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function EditProfilePage({ params }: PageProps) {
+export default function EditProfilePage({ params: paramsPromise }: PageProps) {
   const router = useRouter();
-  const { id: profileId } = use(params);
+  const params = use(paramsPromise);
+  const profileId = params.id;
+  const { navigationState, setNavigationState } = useAuth();
+  const [profile, setProfile] = useState<PatientProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState<number | null>(null);
 
   useEffect(() => {
-    // Calculate and store the current page number when component mounts
-    const profiles = Object.values(getProfiles());
-    const profileIndex = profiles.findIndex((p) => p.id === profileId);
-    if (profileIndex !== -1) {
-      const pageNumber = Math.floor(profileIndex / 1) + 1; // Using 1 as profilesPerPage
-      localStorage.setItem("currentEditPage", pageNumber.toString());
-    }
+    // Fetch the profile data when component mounts
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const profileData = await getProfile(profileId);
+
+        if (profileData) {
+          setProfile(profileData);
+
+          // Calculate and store the current page number
+          const profilesObj = await getProfiles();
+          const profiles = Object.values(profilesObj);
+          const profileIndex = profiles.findIndex((p) => p.id === profileId);
+
+          if (profileIndex !== -1) {
+            const pageNumber = Math.floor(profileIndex / 1) + 1; // Using 1 as profilesPerPage
+            setCurrentPage(pageNumber);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "Error loading profile",
+          description: "There was an error loading the profile data.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
   }, [profileId]);
 
-  const handleSubmit = (profile: PatientProfile) => {
+  const handleSubmit = async (updatedProfile: PatientProfile) => {
     try {
+      // Ensure we're updating the existing profile by maintaining the ID
+      const profileToSave = {
+        ...updatedProfile,
+        id: profileId, // Make sure we keep the same ID
+      };
+
       // Save the profile
-      saveProfile(profile);
+      const savedProfile = await saveProfile(profileToSave);
+
+      if (!savedProfile) {
+        throw new Error("Failed to save profile");
+      }
 
       toast({
         title: "Profile updated",
         description: "The patient profile has been successfully updated.",
       });
 
-      // Get the page to return to
-      const returnPage = localStorage.getItem("returnToProfilePage");
+      // Store current page in navigation state
+      if (currentPage) {
+        setNavigationState({
+          returnToProfilePage: currentPage,
+        });
+      }
 
-      // Navigate back to the profiles page
+      // Navigate back to the profiles list after a short delay
       setTimeout(() => {
-        if (returnPage) {
-          localStorage.setItem("currentProfilePage", returnPage);
-          localStorage.removeItem("returnToProfilePage");
-        }
-        router.push("/patient-profiles");
+        router.push("/manage-profiles/edit");
       }, 1500);
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -61,11 +102,11 @@ export default function EditProfilePage({ params }: PageProps) {
   };
 
   const handleBack = () => {
-    // Get the stored page number
-    const currentPage = localStorage.getItem("currentEditPage");
+    // If we have a stored page number, use it for navigation
     if (currentPage) {
-      localStorage.setItem("profileToEdit", profileId);
-      localStorage.removeItem("currentEditPage");
+      setNavigationState({
+        returnToProfilePage: currentPage,
+      });
     }
     router.push("/manage-profiles/edit");
   };
@@ -87,8 +128,15 @@ export default function EditProfilePage({ params }: PageProps) {
     </div>
   );
 
-  // Get the profile data
-  const profile = getProfile(profileId);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <p className="text-xl text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
@@ -106,7 +154,10 @@ export default function EditProfilePage({ params }: PageProps) {
   return (
     <>
       <div className="h-screen flex flex-col">
-        <ContentLayout title={Title}>
+        <ContentLayout
+          title={Title}
+          onSearch={(term) => console.log("Search:", term)}
+        >
           <PatientForm initialData={profile} onSubmit={handleSubmit} />
         </ContentLayout>
       </div>

@@ -6,32 +6,23 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
 
-  // For testing purposes: We're still refreshing the session
-  // but we're not enforcing authentication
+  // Refresh session if expired - required for Server Components
   await supabase.auth.getSession();
-
-  // Original authentication logic (commented out)
-  /*
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // Check if the request is for a protected route and the user is not authenticated
-  const isProtectedRoute = 
-    req.nextUrl.pathname.startsWith("/manage-profiles");
-  
-  // If accessing a protected route without a session, redirect to login
-  if (isProtectedRoute && !session) {
-    const redirectUrl = new URL("/login", req.url);
-    return NextResponse.redirect(redirectUrl);
-  }
-  */
 
   return res;
 }
 
-// Still running middleware on auth-related routes for session refresh
-// but not enforcing protected routes
+// Run middleware on auth-related routes and protected routes
 export const config = {
-  matcher: ["/auth/callback"],
+  matcher: [
+    "/auth/callback",
+    "/patient-profiles/:path*",
+    "/patient-interactions/:path*",
+    "/manage-profiles/:path*",
+    "/api/chat-test",
+    "/api/init-chat",
+    "/api/chat-session",
+    "/api/validate-id",
+    "/api/ensure-sample-profile",
+  ],
 };

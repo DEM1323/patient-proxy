@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Edit, Trash2, ArrowLeft } from "lucide-react";
-import { type PatientProfile, samplePatientProfile } from "@/app/types/patient";
-import { getProfiles, saveProfile, deleteProfile } from "@/app/lib/storage";
-import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 import {
   AlertDialog,
@@ -16,61 +13,86 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/app/components/ui/alert-dialog";
-import { ProfileList } from "@/app/components/organisms/ProfileList";
+
+import { useRouter } from "next/navigation";
+import { getProfiles, deleteProfile } from "@/app/lib/storage";
+import { samplePatientProfile } from "@/app/types/patient";
 import { ContentLayout } from "@/app/components/layouts/ContentLayout";
+import { ProfileList } from "@/app/components/organisms/ProfileList";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function EditProfiles() {
-  const [profiles, setProfiles] = useState<PatientProfile[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
   const profilesPerPage = 1;
   const router = useRouter();
+  const { navigationState, setNavigationState } = useAuth();
 
   useEffect(() => {
-    // Load profiles from storage when component mounts
-    const loadProfiles = () => {
+    // Load profiles from database when component mounts
+    const loadProfiles = async () => {
       try {
-        const profilesObj = getProfiles();
+        setIsLoading(true);
+        const profilesObj = await getProfiles();
         let profilesList = Object.values(profilesObj);
 
-        // If no profiles exist yet, add the sample profile to localStorage
-        if (profilesList.length === 0) {
-          // Save the sample profile to localStorage
-          const savedSampleProfile = saveProfile(samplePatientProfile);
-          profilesList = [savedSampleProfile];
-        }
-
+        // If no profiles exist yet, show a message instead of adding a sample
         setProfiles(profilesList);
 
-        // Check if there's a profile to edit
-        const profileToEditId = localStorage.getItem("profileToEdit");
-        if (profileToEditId) {
+        // Check if there's a profile to edit from navigation state
+        if (navigationState.profileToEdit) {
+          const profileToEditId = navigationState.profileToEdit;
+
           // Find the index of the profile in the list
           const profileIndex = profilesList.findIndex(
             (profile) => profile.id === profileToEditId
           );
+
           if (profileIndex !== -1) {
             // Calculate which page this profile would be on
             const pageNumber = Math.floor(profileIndex / profilesPerPage) + 1;
             setCurrentPage(pageNumber);
           }
 
-          // Clear the stored ID so it doesn't affect future navigation
-          localStorage.removeItem("profileToEdit");
+          // Clear the navigation state
+          setNavigationState({
+            ...navigationState,
+            profileToEdit: undefined,
+          });
+        }
+        // Or check if there's a page to return to
+        else if (navigationState.returnToProfilePage) {
+          setCurrentPage(navigationState.returnToProfilePage);
+
+          // Clear the navigation state
+          setNavigationState({
+            ...navigationState,
+            returnToProfilePage: undefined,
+          });
         }
       } catch (error) {
         console.error("Error loading profiles:", error);
-        // Fallback to sample profile without saving
-        setProfiles([samplePatientProfile]);
+        setProfiles([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadProfiles();
-  }, []);
+  }, [navigationState, setNavigationState]);
+
+  // Track page changes
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Store in navigation state
+    setNavigationState({
+      ...navigationState,
+      currentProfilePage: page,
+    });
+  };
 
   // Calculate pagination
   const totalPages = Math.ceil(profiles.length / profilesPerPage);
@@ -81,6 +103,12 @@ export default function EditProfiles() {
   );
 
   const handleEditProfile = (profileId: string) => {
+    // Save in navigation state before navigating
+    setNavigationState({
+      ...navigationState,
+      profileToEdit: profileId,
+    });
+
     // Navigate to edit form for this profile
     router.push(`/manage-profiles/edit/${profileId}`);
   };
@@ -90,19 +118,21 @@ export default function EditProfiles() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (profileToDelete) {
       try {
-        deleteProfile(profileToDelete);
+        const success = await deleteProfile(profileToDelete);
 
-        // Update the profiles list
-        setProfiles(
-          profiles.filter((profile) => profile.id !== profileToDelete)
-        );
+        if (success) {
+          // Update the profiles list
+          setProfiles(
+            profiles.filter((profile) => profile.id !== profileToDelete)
+          );
 
-        // Adjust current page if needed
-        if (currentProfiles.length === 1 && currentPage > 1) {
-          setCurrentPage(currentPage - 1);
+          // Adjust current page if needed
+          if (currentProfiles.length === 1 && currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+          }
         }
       } catch (error) {
         console.error("Error deleting profile:", error);
@@ -116,7 +146,14 @@ export default function EditProfiles() {
   const Title = (
     <div className="flex items-center">
       <Button
-        onClick={() => router.push("/manage-profiles")}
+        onClick={() => {
+          // Store current page in navigation state
+          setNavigationState({
+            ...navigationState,
+            returnToProfilePage: currentPage,
+          });
+          router.push("/manage-profiles");
+        }}
         variant="ghost"
         className="mr-2 p-1 h-8 w-8"
         aria-label="Back to Manage Profiles"
@@ -161,12 +198,16 @@ export default function EditProfiles() {
           <div className="text-center py-8 text-gray-500">
             Loading profiles...
           </div>
+        ) : profiles.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No patient profiles found. Please create a new profile.
+          </div>
         ) : (
           <ProfileList
             profiles={profiles}
             profilesPerPage={1}
             currentPage={currentPage}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         )}
       </ContentLayout>

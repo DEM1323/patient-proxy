@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Navigation } from "@/app/components/organisms/Navigation";
+import { supabase } from "@/app/lib/supabase";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -15,28 +17,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, signOut } = useAuth();
 
   // Detect if we should show the sidebar
   useEffect(() => {
-    const checkSidebarVisibility = () => {
+    const checkSidebarVisibility = async () => {
       console.log("MainLayout: Checking sidebar visibility...");
       console.log("MainLayout: Current pathname:", pathname);
+      console.log("MainLayout: isAuthenticated:", isAuthenticated);
 
-      // Check URL parameters for bypass option
-      const urlParams = new URLSearchParams(window.location.search);
-      const bypassAuth = urlParams.get("bypass") === "true";
-      console.log("MainLayout: URL bypass parameter:", bypassAuth);
-
-      // Check localStorage for login flag
-      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-      console.log("MainLayout: isLoggedIn from localStorage:", isLoggedIn);
-
-      // Determine if we're on the home page without authentication
-      const isHomePage = pathname === "/";
+      // Determine if we're on the login page
       const isLoginPage = pathname === "/login";
 
-      // Don't show sidebar on login page or home page without auth
-      const shouldShowSidebar = (bypassAuth || isLoggedIn) && !isLoginPage;
+      // Only show sidebar if authenticated and not on login page
+      const shouldShowSidebar = isAuthenticated && !isLoginPage;
       console.log("MainLayout: Should show sidebar:", shouldShowSidebar);
 
       setShowSidebar(shouldShowSidebar);
@@ -51,7 +45,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return () => {
       window.removeEventListener("popstate", checkSidebarVisibility);
     };
-  }, [pathname]);
+  }, [pathname, isAuthenticated]);
 
   // Check screen size on mount and when window resizes
   useEffect(() => {
@@ -72,15 +66,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     try {
       const loadingToast = toast.loading("Logging out...");
 
-      // For testing: simulate logout with delay
-      setTimeout(() => {
-        toast.dismiss(loadingToast);
-        toast.success("Logged out successfully");
-        // Remove login flag
-        localStorage.removeItem("isLoggedIn");
-        // Redirect to home/login page
-        window.location.href = "/";
-      }, 1000);
+      // Use the signOut function from AuthContext
+      await signOut();
+
+      toast.dismiss(loadingToast);
+      toast.success("Logged out successfully");
     } catch (error) {
       console.error("Logout error:", error);
       toast.error("Failed to logout");

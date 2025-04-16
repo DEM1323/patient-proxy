@@ -1,64 +1,65 @@
 import type { PatientProfile } from "@/app/types/patient";
+import {
+  getProfilesFromDB,
+  getProfileFromDB,
+  saveProfileToDB,
+  deleteProfileFromDB,
+} from "./db-storage";
+import { supabase } from "./supabase";
 
-// Key for storing profiles in localStorage
-const PROFILES_STORAGE_KEY = "patient-profiles";
+// Check if the user is authenticated
+async function isAuthenticated(): Promise<boolean> {
+  const { data } = await supabase.auth.getSession();
+  return !!data.session;
+}
 
-// Get all profiles from localStorage
-export function getProfiles(): Record<string, PatientProfile> {
-  if (typeof window === "undefined") {
-    return {};
+// Get all profiles from Supabase
+export async function getProfiles(): Promise<Record<string, PatientProfile>> {
+  if (await isAuthenticated()) {
+    return await getProfilesFromDB();
   }
 
-  try {
-    const profilesJson = localStorage.getItem(PROFILES_STORAGE_KEY);
-    return profilesJson ? JSON.parse(profilesJson) : {};
-  } catch (error) {
-    console.error("Error getting profiles from localStorage:", error);
-    return {};
-  }
+  // Return empty object if not authenticated
+  console.log("User not authenticated, returning empty profiles list");
+  return {};
 }
 
 // Get a single profile by ID
-export function getProfile(id: string): PatientProfile | null {
-  const profiles = getProfiles();
-  return profiles[id] || null;
-}
-
-// Save a profile to localStorage
-export function saveProfile(profile: PatientProfile): PatientProfile {
-  // Ensure the profile has an ID
-  if (!profile.id) {
-    profile.id = generateId();
-  }
-
-  try {
-    const profiles = getProfiles();
-    profiles[profile.id] = profile;
-    localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
-    return profile;
-  } catch (error) {
-    console.error("Error saving profile to localStorage:", error);
-    return profile;
-  }
-}
-
-// Delete a profile from localStorage
-export function deleteProfile(id: string): boolean {
-  try {
-    const profiles = getProfiles();
-    if (profiles[id]) {
-      delete profiles[id];
-      localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
-      return true;
+export async function getProfile(id: string): Promise<PatientProfile | null> {
+  if (await isAuthenticated()) {
+    console.log(`Looking up profile with ID: ${id} from database`);
+    const profile = await getProfileFromDB(id);
+    if (!profile) {
+      console.log(`Profile with ID ${id} not found in database`);
     }
-    return false;
-  } catch (error) {
-    console.error("Error deleting profile from localStorage:", error);
-    return false;
+    return profile;
   }
+
+  // Return null if not authenticated
+  console.log("User not authenticated, cannot get profile");
+  return null;
 }
 
-// Generate a unique ID for new profiles
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+// Save a profile to Supabase
+export async function saveProfile(
+  profile: PatientProfile
+): Promise<PatientProfile> {
+  if (await isAuthenticated()) {
+    const savedProfile = await saveProfileToDB(profile);
+    if (savedProfile) {
+      return savedProfile;
+    }
+  }
+
+  // If we couldn't save (not authenticated or error), return the original profile
+  return profile;
+}
+
+// Delete a profile from Supabase
+export async function deleteProfile(id: string): Promise<boolean> {
+  if (await isAuthenticated()) {
+    return await deleteProfileFromDB(id);
+  }
+
+  return false;
 }

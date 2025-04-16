@@ -1,14 +1,27 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  // Check for existing session
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        // Redirect to profiles if already authenticated
+        router.replace("/patient-profiles");
+      }
+    };
+
+    checkSession();
+  }, [router]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -17,7 +30,7 @@ export default function LoginPage() {
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: false,
+          skipBrowserRedirect: false, // This ensures immediate redirect
         },
       });
 
@@ -27,22 +40,6 @@ export default function LoginPage() {
       toast.error("Failed to connect to Google");
       setIsLoading(false);
     }
-  };
-
-  const handleBypassLogin = () => {
-    setIsLoading(true);
-    // Simulate login delay for UI feedback
-    setTimeout(() => {
-      // Set login flag for client layout to recognize
-      localStorage.setItem("isLoggedIn", "true");
-      console.log("Login page: Setting isLoggedIn to true in localStorage");
-
-      setIsLoading(false);
-      toast.success("Test login successful!");
-
-      // Force redirect with bypass parameter
-      window.location.href = "/patient-profiles?bypass=true";
-    }, 1000);
   };
 
   return (
@@ -66,25 +63,6 @@ export default function LoginPage() {
         >
           <img src="/google.svg" alt="Google" className="w-5 h-5" />
           {isLoading ? "Connecting..." : "Sign in with Google"}
-        </button>
-
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or</span>
-          </div>
-        </div>
-
-        <button
-          onClick={handleBypassLogin}
-          disabled={isLoading}
-          className={`w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 mb-4 ${
-            isLoading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-        >
-          Continue without login (Testing)
         </button>
 
         <div className="text-center mt-6">

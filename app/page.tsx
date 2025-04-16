@@ -8,17 +8,6 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleBypassLogin = () => {
-    // Set login flag for client layout to recognize
-    localStorage.setItem("isLoggedIn", "true");
-    console.log(
-      "Landing page: Setting isLoggedIn flag in localStorage for bypass login"
-    );
-
-    // Add bypass parameter to URL and force refresh to patient profiles
-    window.location.href = "/patient-profiles?bypass=true";
-  };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="max-w-3xl w-full bg-white rounded-lg shadow-md p-8 text-center">
@@ -38,12 +27,6 @@ export default function LandingPage() {
           >
             Sign In with Google
           </Link>
-          <button
-            onClick={handleBypassLogin}
-            className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors w-full sm:w-auto text-center"
-          >
-            Continue Without Login (Testing)
-          </button>
         </div>
 
         <div className="border-t border-gray-200 pt-6 mt-6">

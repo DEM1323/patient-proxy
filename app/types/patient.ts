@@ -8,16 +8,16 @@ export interface ChecklistItem {
 export interface PatientProfile {
   id: string;
   patientName: string;
-  age: number | null;
-  gender: string;
-  allergies: string;
+  age?: number | null;
+  gender?: string;
+  allergies?: string;
   unit: string;
   majorSupport: string;
   phone: string;
   immunizations: string;
   case: string;
-  diagnosis: string;
-  history: string;
+  diagnosis?: string;
+  history?: string;
   operationType: string;
   height: string;
   consultation: string;
@@ -25,12 +25,12 @@ export interface PatientProfile {
   weight: string;
   physician: string;
   advancedDirectives: string;
-  diet: string;
+  diet?: string;
   fallPrecautions: string;
   restraints: string;
   isolationPrecautions: string;
   monitoringItems: ChecklistItem[];
-  medicationItems: ChecklistItem[];
+  medicationItems?: any[];
   respiratoryItems: ChecklistItem[];
   diagnosticItems: ChecklistItem[];
   socialHistoryItems: ChecklistItem[];

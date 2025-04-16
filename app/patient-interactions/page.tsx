@@ -75,8 +75,8 @@ export default function PatientInteractions() {
           </Card>
         </div>
         <p className="text-md text-gray-600 pt-4 font-bold">
-          Chatbot simulations and patient interactions are not saved and will
-          clear once you exit the chat.
+          Chat sessions are temporarily stored for testing purposes and
+          automatically deleted after 2 hours.
         </p>
       </div>
     </ContentLayout>

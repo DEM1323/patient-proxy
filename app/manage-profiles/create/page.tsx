@@ -9,17 +9,23 @@ import { toast } from "@/app/hooks/use-toast";
 import { Toaster } from "@/app/components/ui/toaster";
 import { Button } from "@/app/components/ui/button";
 import { ContentLayout } from "@/app/components/layouts/ContentLayout";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function CreateProfile() {
   const router = useRouter();
+  const { navigationState, setNavigationState } = useAuth();
 
-  const handleSubmit = (profile: PatientProfile) => {
+  const handleSubmit = async (profile: PatientProfile) => {
     try {
       // Save the profile
-      const savedProfile = saveProfile(profile);
+      const savedProfile = await saveProfile(profile);
+
+      if (!savedProfile) {
+        throw new Error("Failed to save profile");
+      }
 
       // Get all profiles to calculate the page number
-      const profilesObj = getProfiles();
+      const profilesObj = await getProfiles();
       const profilesList = Object.values(profilesObj);
       const profileIndex = profilesList.findIndex(
         (p) => p.id === savedProfile.id
@@ -31,10 +37,15 @@ export default function CreateProfile() {
         description: "The patient profile has been successfully created.",
       });
 
-      // Navigate to the patient profiles page with the correct page number
+      // Store the page in navigation state
+      setNavigationState({
+        ...navigationState,
+        returnToProfilePage: pageNumber,
+      });
+
+      // Navigate to the profiles page with the correct page number
       setTimeout(() => {
-        localStorage.setItem("currentProfilePage", pageNumber.toString());
-        router.push("/patient-profiles");
+        router.push("/manage-profiles/edit");
       }, 1500);
     } catch (error) {
       console.error("Error saving profile:", error);

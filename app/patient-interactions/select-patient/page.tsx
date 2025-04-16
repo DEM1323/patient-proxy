@@ -61,13 +61,15 @@ export default function SelectPatient() {
     }
 
     // Load profiles
-    const loadProfiles = () => {
+    const loadProfiles = async () => {
       try {
-        const profilesObj = getProfiles();
+        setIsLoading(true);
+        const profilesObj = await getProfiles();
         const profilesList = Object.values(profilesObj);
         setProfiles(profilesList);
       } catch (error) {
         console.error("Error loading profiles:", error);
+        setProfiles([]);
       } finally {
         setIsLoading(false);
       }
@@ -120,6 +122,86 @@ export default function SelectPatient() {
           <p className="mt-4 text-gray-600">Loading patients...</p>
         </div>
       </div>
+    );
+  }
+
+  if (profiles.length === 0) {
+    return (
+      <ContentLayout
+        title={`Select Patient for ${
+          mode === "simulation" ? "Simulation" : "Chat"
+        }`}
+        showSearch={true}
+        onSearch={(term) => console.log("Search:", term)}
+      >
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="text-center p-8 max-w-md">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              No Patient Profiles Found
+            </h3>
+            <p className="text-gray-600 mb-6">
+              You need to create a patient profile before you can start a{" "}
+              {mode === "simulation" ? "simulation" : "chat"}.
+            </p>
+            <div className="flex flex-col space-y-3">
+              <Button
+                onClick={() => router.push("/manage-profiles/create")}
+                className="bg-[#015a8b] hover:bg-[#216f99] w-full"
+              >
+                Create a New Patient Profile
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    setIsLoading(true);
+                    // Create a sample profile automatically
+                    const response = await fetch("/api/ensure-sample-profile", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                    });
+
+                    if (!response.ok) {
+                      throw new Error("Failed to create sample profile");
+                    }
+
+                    const result = await response.json();
+
+                    if (result.created && result.profile) {
+                      // Use the newly created sample profile
+                      const sampleId = result.profile.id;
+                      // Navigate directly to chat or simulation with this profile
+                      const destination =
+                        mode === "simulation"
+                          ? `/patient-interactions/patient-simulation/${sampleId}`
+                          : `/patient-interactions/patient-chat?patientId=${sampleId}`;
+                      router.push(destination);
+                    } else {
+                      // Profiles were found (sample already existed), reload the page
+                      window.location.reload();
+                    }
+                  } catch (error) {
+                    console.error("Error creating sample profile:", error);
+                    setIsLoading(false);
+                  }
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                Use a Sample Patient Profile
+              </Button>
+              <Button
+                onClick={() => router.push("/patient-interactions")}
+                variant="ghost"
+                className="w-full"
+              >
+                Go Back
+              </Button>
+            </div>
+          </div>
+        </div>
+      </ContentLayout>
     );
   }
 
@@ -194,7 +276,9 @@ export default function SelectPatient() {
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Patient Name:
                           </strong>{" "}
-                          {selectedProfile.patientName}
+                          {selectedProfile.patientName || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                       </td>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
@@ -202,7 +286,9 @@ export default function SelectPatient() {
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Age:
                           </strong>{" "}
-                          {selectedProfile.age}
+                          {selectedProfile.age || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                       </td>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
@@ -210,7 +296,9 @@ export default function SelectPatient() {
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Gender:
                           </strong>{" "}
-                          {selectedProfile.gender}
+                          {selectedProfile.gender || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                       </td>
                       <td
@@ -221,31 +309,43 @@ export default function SelectPatient() {
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Allergies:
                           </strong>{" "}
-                          {selectedProfile.allergies}
+                          {selectedProfile.allergies || (
+                            <span className="text-gray-400">
+                              No known allergies
+                            </span>
+                          )}
                         </div>
                         <div className="mt-1 sm:mt-2">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Unit:
                           </strong>{" "}
-                          {selectedProfile.unit}
+                          {selectedProfile.unit || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-1 sm:mt-2">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Major support:
                           </strong>{" "}
-                          {selectedProfile.majorSupport}
+                          {selectedProfile.majorSupport || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-1 sm:mt-2">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Phone:
                           </strong>{" "}
-                          {selectedProfile.phone}
+                          {selectedProfile.phone || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-1 sm:mt-2">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Immunizations:
                           </strong>{" "}
-                          {selectedProfile.immunizations}
+                          {selectedProfile.immunizations || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -260,43 +360,55 @@ export default function SelectPatient() {
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Case:
                           </strong>{" "}
-                          {selectedProfile.case}
+                          {selectedProfile.case || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Diagnosis:
                           </strong>{" "}
-                          {selectedProfile.diagnosis}
+                          {selectedProfile.diagnosis || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             History:
                           </strong>{" "}
-                          {selectedProfile.history}
+                          {selectedProfile.history || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Type of operation:
                           </strong>{" "}
-                          {selectedProfile.operationType}
+                          {selectedProfile.operationType || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Height:
                           </strong>{" "}
-                          {selectedProfile.height}
+                          {selectedProfile.height || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Consultation:
                           </strong>{" "}
-                          {selectedProfile.consultation}
+                          {selectedProfile.consultation || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Consent obtained:
                           </strong>{" "}
-                          {selectedProfile.consentObtained ? "✓ Yes" : "☐ Yes"}{" "}
+                          {selectedProfile.consentObtained ? "✓ Yes" : "☐ Yes"}
                           {!selectedProfile.consentObtained ? "✓ No" : "☐ No"}
                         </div>
                       </td>
@@ -308,43 +420,57 @@ export default function SelectPatient() {
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Weight:
                           </strong>{" "}
-                          {selectedProfile.weight}
+                          {selectedProfile.weight || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Physician:
                           </strong>{" "}
-                          {selectedProfile.physician}
+                          {selectedProfile.physician || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Advanced directives:
                           </strong>{" "}
-                          {selectedProfile.advancedDirectives}
+                          {selectedProfile.advancedDirectives || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Diet:
                           </strong>{" "}
-                          {selectedProfile.diet}
+                          {selectedProfile.diet || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Fall precautions:
                           </strong>{" "}
-                          {selectedProfile.fallPrecautions}
+                          {selectedProfile.fallPrecautions || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Restraints:
                           </strong>{" "}
-                          {selectedProfile.restraints}
+                          {selectedProfile.restraints || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
                           <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
                             Isolation precautions:
                           </strong>{" "}
-                          {selectedProfile.isolationPrecautions}
+                          {selectedProfile.isolationPrecautions || (
+                            <span className="text-gray-400">Not specified</span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -372,7 +498,7 @@ export default function SelectPatient() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
                             No monitoring items
                           </div>
                         )}
@@ -383,25 +509,31 @@ export default function SelectPatient() {
                             Medication:
                           </strong>
                         </div>
-                        {selectedProfile.medicationItems?.length > 0 ? (
-                          selectedProfile.medicationItems.map((item) => (
-                            <div key={item.id} className="mt-1 sm:mt-2">
-                              <CheckboxItem
-                                label={item.title}
-                                checked={item.checked}
-                              />
-                              {item.details && (
-                                <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                  ({item.details})
-                                </div>
-                              )}
+                        <div className="mb-1">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                            Medications:
+                          </strong>
+                          {selectedProfile.medicationItems &&
+                          selectedProfile.medicationItems.length > 0 ? (
+                            selectedProfile.medicationItems.map((item) => (
+                              <div key={item.id} className="mt-1 sm:mt-2">
+                                <CheckboxItem
+                                  label={item.title}
+                                  checked={item.checked}
+                                />
+                                {item.details && (
+                                  <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
+                                    ({item.details})
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                              No medications
                             </div>
-                          ))
-                        ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
-                            No medications
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </td>
                       <td
                         className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-3/5 align-top"
@@ -427,7 +559,7 @@ export default function SelectPatient() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
                             No respiratory items
                           </div>
                         )}
@@ -457,7 +589,7 @@ export default function SelectPatient() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
                             No diagnostic studies
                           </div>
                         )}
@@ -483,7 +615,7 @@ export default function SelectPatient() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
                             No social history items
                           </div>
                         )}
@@ -492,7 +624,7 @@ export default function SelectPatient() {
                             Race/Religion:
                           </strong>{" "}
                           {selectedProfile.raceReligion || (
-                            <span className="text-gray-500">Not specified</span>
+                            <span className="text-gray-400">Not specified</span>
                           )}
                         </div>
                         <div className="mt-2 sm:mt-3">
@@ -517,7 +649,7 @@ export default function SelectPatient() {
                             )
                           )
                         ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm mt-1">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm mt-1">
                             No medications from home
                           </div>
                         )}
@@ -546,7 +678,7 @@ export default function SelectPatient() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
                             No activity items
                           </div>
                         )}
@@ -556,7 +688,7 @@ export default function SelectPatient() {
                             Discharge planning:
                           </strong>{" "}
                           {selectedProfile.dischargePlanning || (
-                            <span className="text-gray-500">Not specified</span>
+                            <span className="text-gray-400">Not specified</span>
                           )}
                         </div>
                       </td>
@@ -590,7 +722,7 @@ export default function SelectPatient() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-gray-500 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
                             No drains
                           </div>
                         )}

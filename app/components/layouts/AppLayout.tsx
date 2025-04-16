@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Navigation } from "@/app/components/organisms/Navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function AppLayout({
   children,
@@ -13,32 +14,15 @@ export default function AppLayout({
 }>) {
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading, signOut } = useAuth();
 
   // Check authentication
   useEffect(() => {
-    const checkAuth = () => {
-      // Check URL parameters for bypass option
-      const urlParams = new URLSearchParams(window.location.search);
-      const bypassAuth = urlParams.get("bypass") === "true";
-
-      // Check localStorage for login flag
-      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-
-      // If not authenticated and not bypassing, redirect to landing page
-      if (!bypassAuth && !isLoggedIn) {
-        console.log(
-          "AppLayout: Not authenticated, redirecting to landing page"
-        );
-        router.push("/");
-        return;
-      }
-
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, [router]);
+    // If not authenticated, redirect to landing page
+    if (!isLoading && !isAuthenticated) {
+      router.push("/");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   // Check screen size on mount and when window resizes
   useEffect(() => {
@@ -59,15 +43,10 @@ export default function AppLayout({
     try {
       const loadingToast = toast.loading("Logging out...");
 
-      // For testing: simulate logout with delay
-      setTimeout(() => {
-        toast.dismiss(loadingToast);
-        toast.success("Logged out successfully");
-        // Remove login flag
-        localStorage.removeItem("isLoggedIn");
-        // Redirect to landing page
-        window.location.href = "/";
-      }, 1000);
+      // Use the signOut function from AuthContext
+      await signOut();
+
+      toast.dismiss(loadingToast);
     } catch (error) {
       console.error("Logout error:", error);
       toast.error("Failed to logout");
