@@ -249,15 +249,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     </Label>
                     <Input
                       className="h-6 sm:h-8 text-[8px] xs:text-[9px] sm:text-xs md:text-sm mt-0.5 bg-white"
-                      type="number"
                       placeholder="Age"
                       value={profile.age || ""}
                       onChange={(e) =>
                         updateField(
                           "age",
-                          e.target.value
-                            ? Number.parseInt(e.target.value)
-                            : null
+                          e.target.value ? Number.parseInt(e.target.value) : ""
                         )
                       }
                     />
