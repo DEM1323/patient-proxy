@@ -211,8 +211,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Monitoring:
                 </strong>
               </div>
-              {profile.monitoringItems?.length > 0 ? (
-                profile.monitoringItems.map((item) => (
+              {(profile.monitoringItems || []).length > 0 ? (
+                (profile.monitoringItems || []).map((item) => (
                   <div key={item.id} className="mt-1 sm:mt-2">
                     <CheckboxItem label={item.title} checked={item.checked} />
                     {item.details && (
@@ -234,8 +234,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Medication:
                 </strong>
               </div>
-              {profile.medicationItems?.length > 0 ? (
-                profile.medicationItems.map((item) => (
+              {(profile.medicationItems || []).length > 0 ? (
+                (profile.medicationItems || []).map((item) => (
                   <div key={item.id} className="mt-1 sm:mt-2">
                     <CheckboxItem label={item.title} checked={item.checked} />
                     {item.details &&
@@ -264,8 +264,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Respiratory:
                 </strong>
               </div>
-              {profile.respiratoryItems?.length > 0 ? (
-                profile.respiratoryItems.map((item) => (
+              {(profile.respiratoryItems || []).length > 0 ? (
+                (profile.respiratoryItems || []).map((item) => (
                   <div key={item.id} className="mt-1 sm:mt-2">
                     <CheckboxItem label={item.title} checked={item.checked} />
                     {item.details && (
@@ -291,8 +291,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Diagnostic studies:
                 </strong>
               </div>
-              {profile.diagnosticItems?.length > 0 ? (
-                profile.diagnosticItems.map((item) => (
+              {(profile.diagnosticItems || []).length > 0 ? (
+                (profile.diagnosticItems || []).map((item) => (
                   <div key={item.id} className="mt-1 sm:mt-2">
                     <CheckboxItem label={item.title} checked={item.checked} />
                     {item.details && (
@@ -314,8 +314,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Social history:
                 </strong>
               </div>
-              {profile.socialHistoryItems?.length > 0 ? (
-                profile.socialHistoryItems.map((item) => (
+              {(profile.socialHistoryItems || []).length > 0 ? (
+                (profile.socialHistoryItems || []).map((item) => (
                   <div key={item.id} className="mt-1 sm:mt-2">
                     <CheckboxItem label={item.title} checked={item.checked} />
                     {item.details && (
@@ -343,8 +343,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Medication brought from home:
                 </strong>
               </div>
-              {profile.medicationFromHomeItems?.length > 0 ? (
-                profile.medicationFromHomeItems.map((item) => (
+              {(profile.medicationFromHomeItems || []).length > 0 ? (
+                (profile.medicationFromHomeItems || []).map((item) => (
                   <div key={item.id} className="mt-1 sm:mt-2">
                     <CheckboxItem label={item.title} checked={item.checked} />
                     {item.details && (
@@ -369,8 +369,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Activity of daily living:
                 </strong>
               </div>
-              {profile.activityItems?.length > 0 ? (
-                profile.activityItems.map((item: ChecklistItem) => (
+              {(profile.activityItems || []).length > 0 ? (
+                (profile.activityItems || []).map((item) => (
                   <div key={item.id} className="mt-1 sm:mt-2">
                     <CheckboxItem label={item.title} checked={item.checked} />
                     {item.details && (
@@ -408,9 +408,9 @@ export const PatientCard: React.FC<PatientCardProps> = ({
                   Drains:
                 </strong>
               </div>
-              {profile.drainItems?.length > 0 ? (
+              {(profile.drainItems || []).length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {profile.drainItems.map((item) => (
+                  {(profile.drainItems || []).map((item) => (
                     <div key={item.id} className="mt-1 sm:mt-2">
                       <CheckboxItem label={item.title} checked={item.checked} />
                       {item.details && (
