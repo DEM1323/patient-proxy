@@ -472,7 +472,7 @@ export default function PatientChat() {
   };
 
   const Title = patient && (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2">
       <Button
         variant="ghost"
         size="icon"
@@ -484,29 +484,24 @@ export default function PatientChat() {
         <ArrowLeft className="h-5 w-5" />
       </Button>
       <div>
-        <h1 className="text-xl font-bold flex items-center">
-          {patient.patientName}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 ml-1"
-            onClick={() => setShowPatientInfo(true)}
-            title="View patient information"
-          >
-            <Info className="h-4 w-4 text-blue-500" />
-          </Button>
-        </h1>
-        <p className="text-sm text-gray-500">
-          {patient.age ? `${patient.age} years` : ""}
-          {patient.age && patient.gender ? " • " : ""}
-          {patient.gender || ""}
-          {patient.diagnosis ? (
-            <span className="ml-2 text-blue-600">• {patient.diagnosis}</span>
-          ) : (
-            ""
-          )}
-        </p>
+        <div className="text-sm font-bold">
+          Patient: <span className="font-normal">{patient.patientName}</span>
+        </div>
+        <div className="text-sm text-gray-600">
+          Age: {patient.age} | Gender: {patient.gender}
+        </div>
       </div>
+      {patient.diagnosis && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 ml-1"
+          onClick={() => setShowPatientInfo(true)}
+          title="View patient information"
+        >
+          <Info className="h-4 w-4 text-blue-500" />
+        </Button>
+      )}
     </div>
   );
 

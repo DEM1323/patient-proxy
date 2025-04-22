@@ -48,6 +48,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [navigationState, setNavigationState] = useState<NavigationState>({});
 
+  // Function to synchronize server-side cookies with client-side auth state
+  const syncSupabaseCookies = async (
+    event: string,
+    session: Session | null
+  ) => {
+    try {
+      await fetch("/api/auth/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ event, session }),
+      });
+      console.log("Auth cookies synchronized with server");
+    } catch (error) {
+      console.error("Failed to synchronize auth cookies:", error);
+    }
+  };
+
   useEffect(() => {
     // Check for existing session
     const getSession = async () => {
@@ -60,6 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(data.session);
       setUser(data.session?.user || null);
+
+      // Sync cookies on initial session check if session exists
+      if (data.session) {
+        await syncSupabaseCookies("SIGNED_IN", data.session);
+      }
+
       setIsLoading(false);
     };
 
@@ -71,6 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Auth state change:", event);
         setSession(newSession);
         setUser(newSession?.user || null);
+
+        // Sync cookies on auth state changes
+        await syncSupabaseCookies(event, newSession);
+
         setIsLoading(false);
 
         // Reset navigation state on sign out
