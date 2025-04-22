@@ -44,14 +44,25 @@ export async function getProfile(id: string): Promise<PatientProfile | null> {
 export async function saveProfile(
   profile: PatientProfile
 ): Promise<PatientProfile> {
+  console.log(`[STORAGE] Saving profile with ID: ${profile.id}`);
+
   if (await isAuthenticated()) {
     const savedProfile = await saveProfileToDB(profile);
     if (savedProfile) {
+      console.log(
+        `[STORAGE] Successfully saved profile with ID: ${savedProfile.id}`
+      );
       return savedProfile;
     }
+    console.log(
+      `[STORAGE] Failed to save profile, saveProfileToDB returned null`
+    );
+  } else {
+    console.log(`[STORAGE] Not authenticated, cannot save profile`);
   }
 
   // If we couldn't save (not authenticated or error), return the original profile
+  console.log(`[STORAGE] Returning original profile with ID: ${profile.id}`);
   return profile;
 }
 

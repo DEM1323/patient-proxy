@@ -68,12 +68,20 @@ export default function EditProfilePage({ params: paramsPromise }: PageProps) {
         id: profileId, // Make sure we keep the same ID
       };
 
+      console.log(`[EDIT] Starting profile update for ID: ${profileId}`);
+      console.log(`[EDIT] Original profile ID: ${profile?.id}`);
+      console.log(`[EDIT] Updated profile ID: ${updatedProfile.id}`);
+      console.log(`[EDIT] Final save ID: ${profileToSave.id}`);
+
       // Save the profile
       const savedProfile = await saveProfile(profileToSave);
 
       if (!savedProfile) {
         throw new Error("Failed to save profile");
       }
+
+      // Verify the ID is still correct
+      console.log(`[EDIT] Saved profile ID: ${savedProfile.id}`);
 
       toast({
         title: "Profile updated",

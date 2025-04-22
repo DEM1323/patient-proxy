@@ -134,9 +134,16 @@ export async function saveProfileToDB(
   }
 
   try {
+    console.log(
+      `[DB-STORAGE] Attempting to save profile with ID: ${profile.id}`
+    );
+
     // Ensure the profile has an ID, if not generate one
     if (!profile.id) {
       profile.id = generateId();
+      console.log(
+        `[DB-STORAGE] No ID provided, generated new ID: ${profile.id}`
+      );
     }
 
     // Check if this is a sample profile
@@ -144,24 +151,61 @@ export async function saveProfileToDB(
       profile.id === "sample-1" || profile.id.startsWith("sample-");
 
     // If this is a sample profile, make sure it's unique to this user
-    if (isSample) {
-      // Create a unique sample ID for this user
-      profile.id = `sample-${userId.substring(0, 8)}-${Date.now().toString(
-        36
-      )}`;
+    // BUT only do this for NEW profiles, not EXISTING ones that are being edited
+    if (isSample && !profile.id.includes(userId)) {
+      const originalId = profile.id;
+
+      // Check if this profile already exists
+      const { data: sampleExists } = await supabase
+        .from("patient_profiles")
+        .select("id")
+        .eq("id", profile.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      // Only change the ID if it's a new sample profile, not an edit of an existing one
+      if (!sampleExists) {
+        // Create a unique sample ID for this user
+        profile.id = `sample-${userId.substring(0, 8)}-${Date.now().toString(
+          36
+        )}`;
+        console.log(
+          `[DB-STORAGE] New sample profile ID changed from ${originalId} to ${profile.id}`
+        );
+      } else {
+        console.log(
+          `[DB-STORAGE] Keeping existing sample profile ID: ${profile.id}`
+        );
+      }
     }
 
     // Check if the profile already exists
-    const { data: existingProfile } = await supabase
-      .from("patient_profiles")
-      .select("id")
-      .eq("id", profile.id)
-      .eq("user_id", userId)
-      .maybeSingle();
+    const { data: existingProfile, error: existingProfileError } =
+      await supabase
+        .from("patient_profiles")
+        .select("id")
+        .eq("id", profile.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (existingProfileError) {
+      console.error(
+        `[DB-STORAGE] Error checking if profile exists: ${existingProfileError.message}`
+      );
+    }
+
+    console.log(
+      `[DB-STORAGE] Profile exists check: `,
+      existingProfile ? "Found existing profile" : "No existing profile found"
+    );
 
     let result;
 
     if (existingProfile) {
+      console.log(
+        `[DB-STORAGE] Updating existing profile with ID: ${profile.id}`
+      );
+
       // Update existing profile
       result = await supabase
         .from("patient_profiles")
@@ -174,6 +218,8 @@ export async function saveProfileToDB(
         .eq("user_id", userId)
         .select();
     } else {
+      console.log(`[DB-STORAGE] Creating new profile with ID: ${profile.id}`);
+
       // Insert new profile
       result = await supabase
         .from("patient_profiles")
@@ -187,13 +233,22 @@ export async function saveProfileToDB(
     }
 
     if (result.error) {
-      console.error("Error saving profile to Supabase:", result.error);
+      console.error(
+        `[DB-STORAGE] Error saving profile to Supabase: ${result.error.message}`
+      );
       return null;
     }
 
+    console.log(
+      `[DB-STORAGE] Successfully saved profile with ID: ${profile.id}`
+    );
     return profile;
   } catch (error) {
-    console.error("Error saving profile to Supabase:", error);
+    console.error(
+      `[DB-STORAGE] Error saving profile to Supabase: ${
+        (error as Error).message
+      }`
+    );
     return null;
   }
 }

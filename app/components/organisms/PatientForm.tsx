@@ -25,8 +25,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   initialData = emptyPatientProfile,
 }) => {
   // Ensure medicationFromHomeItems exists in the initial profile
+  console.log("[FORM] Initializing with ID:", initialData.id);
   const initialProfile = {
     ...initialData,
+    id: initialData.id || "", // Explicitly preserve the ID
     medicationFromHomeItems: initialData.medicationFromHomeItems || [],
     monitoringItems: initialData.monitoringItems || [],
     medicationItems: initialData.medicationItems || [],
@@ -35,11 +37,13 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     socialHistoryItems: initialData.socialHistoryItems || [],
     activityItems: initialData.activityItems || [],
     drainItems: initialData.drainItems || [],
-  };
+  } as PatientProfile;
 
   // State for the patient profile
   const [profile, setProfile] = useState<PatientProfile>(initialProfile);
   const isEditMode = !!initialData.id;
+
+  console.log("PatientForm using profile ID:", initialData.id, profile.id);
 
   // Generic function to update a simple field
   const updateField = (field: keyof PatientProfile, value: any) => {
@@ -103,11 +107,37 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(profile);
+    console.log("[FORM] Form submission, initial ID:", initialData.id);
+    console.log("[FORM] Current profile ID:", profile.id);
+
+    // Always prioritize the original ID from initialData
+    const finalId = initialData.id || profile.id;
+    console.log("[FORM] Final ID for submission:", finalId);
+
+    // Create a proper profile with ID preserved
+    const submittedProfile = {
+      ...profile,
+      id: finalId, // Explicitly use the original ID
+    } as PatientProfile;
+
+    onSubmit(submittedProfile);
   };
 
   const handleButtonClick = () => {
-    onSubmit(profile);
+    console.log("[FORM] Button click, initial ID:", initialData.id);
+    console.log("[FORM] Current profile ID:", profile.id);
+
+    // Always prioritize the original ID from initialData
+    const finalId = initialData.id || profile.id;
+    console.log("[FORM] Final ID for submission:", finalId);
+
+    // Create a proper profile with ID preserved
+    const submittedProfile = {
+      ...profile,
+      id: finalId, // Explicitly use the original ID
+    } as PatientProfile;
+
+    onSubmit(submittedProfile);
   };
 
   // Render a checklist section
@@ -603,7 +633,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     </Button>
                   </div>
 
-                  {profile.medicationItems.map((item) => (
+                  {(profile.medicationItems || []).map((item) => (
                     <div
                       key={item.id}
                       className="mt-1 sm:mt-2 border-b border-[#97a8b5]/30 pb-1 sm:pb-2 last:border-0 last:pb-0"
