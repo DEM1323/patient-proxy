@@ -8,7 +8,6 @@ import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { Textarea } from "@/app/components/ui/textarea";
-import { FormField } from "@/app/components/molecules/FormField";
 import {
   type PatientProfile,
   type ChecklistItem,
@@ -46,7 +45,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   console.log("PatientForm using profile ID:", initialData.id, profile.id);
 
   // Generic function to update a simple field
-  const updateField = (field: keyof PatientProfile, value: any) => {
+  const updateField = (
+    field: keyof PatientProfile,
+    value: string | boolean | number
+  ) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -92,7 +94,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     section: keyof PatientProfile,
     id: number,
     field: keyof ChecklistItem,
-    value: any
+    value: string | boolean | number
   ) => {
     const items = profile[section] as ChecklistItem[];
 

@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -61,7 +62,13 @@ export default function LoginPage() {
             isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
           }`}
         >
-          <img src="/google.svg" alt="Google" className="w-5 h-5" />
+          <Image
+            src="/google.svg"
+            alt="Google"
+            width={20}
+            height={20}
+            className="w-5 h-5"
+          />
           {isLoading ? "Connecting..." : "Sign in with Google"}
         </button>
 

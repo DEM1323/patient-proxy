@@ -16,7 +16,7 @@ export async function GET() {
       .eq("id", profileId);
 
     // 2. Get all profiles to verify database state
-    const { data: allProfiles, error: allProfilesError } = await supabase
+    const { data: allProfiles } = await supabase
       .from("patient_profiles")
       .select("id, user_id, created_at, is_sample")
       .limit(10);

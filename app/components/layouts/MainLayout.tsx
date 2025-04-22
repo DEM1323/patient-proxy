@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 import { Navigation } from "@/app/components/organisms/Navigation";
-import { supabase } from "@/app/lib/supabase";
 import { useAuth } from "@/app/contexts/AuthContext";
 
 interface MainLayoutProps {
@@ -12,7 +11,6 @@ interface MainLayoutProps {
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const router = useRouter();
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showSidebar, setShowSidebar] = useState(false);

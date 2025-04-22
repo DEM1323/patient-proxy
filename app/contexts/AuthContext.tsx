@@ -8,7 +8,6 @@ import {
   ReactNode,
 } from "react";
 import { supabase } from "@/app/lib/supabase";
-import { useRouter } from "next/navigation";
 import { Session, User } from "@supabase/supabase-js";
 
 // Add interface for temporary session data that doesn't need localStorage
@@ -48,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [navigationState, setNavigationState] = useState<NavigationState>({});
-  const router = useRouter();
 
   useEffect(() => {
     // Check for existing session

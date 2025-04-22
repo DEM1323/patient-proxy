@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePatientResponse, type ChatMessage } from "@/app/lib/gemini";
 import { getChatSession, updateChatSession } from "@/app/lib/chat-sessions";
-import { getProfile } from "@/app/lib/storage";
 
 export async function POST(request: NextRequest) {
   try {

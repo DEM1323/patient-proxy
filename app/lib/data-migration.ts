@@ -1,7 +1,6 @@
 import { PatientProfile, samplePatientProfile } from "@/app/types/patient";
 import { saveProfileToDB, hasSampleProfile } from "./db-storage";
 import { supabase } from "./supabase";
-import toast from "react-hot-toast";
 
 // Re-export the hasSampleProfile function for use in other files
 export { hasSampleProfile };

@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
  * API endpoint to ensure a user has a sample profile
  * This is useful as a fallback if the sample profile wasn't created during signup
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   // Create a Supabase client for this route handler
   const supabase = createRouteHandlerClient({ cookies });
 

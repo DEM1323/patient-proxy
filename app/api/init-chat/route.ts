@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProfile } from "@/app/lib/storage";
 import { generatePatientResponse } from "@/app/lib/gemini";
 import { createChatSession } from "@/app/lib/chat-sessions";
-import { supabase, createAuthClient } from "@/app/lib/supabase";
+import { createAuthClient } from "@/app/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {

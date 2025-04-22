@@ -302,7 +302,7 @@ export async function hasSampleProfile(): Promise<boolean> {
   }
 
   try {
-    const { data, error, count } = await supabase
+    const { error, count } = await supabase
       .from("patient_profiles")
       .select("*", { count: "exact" })
       .eq("user_id", userId)

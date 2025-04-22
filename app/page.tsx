@@ -1,13 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="max-w-3xl w-full bg-white rounded-lg shadow-md p-8 text-center">

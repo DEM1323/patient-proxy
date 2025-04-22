@@ -1,6 +1,6 @@
-import { supabase } from "./supabase";
 import { type ChatMessage } from "./gemini";
 import { createClient } from "@supabase/supabase-js";
+import { type PatientProfile } from "@/app/types/patient";
 
 // Generate a short random session ID
 const generateSessionId = () => {
@@ -24,7 +24,7 @@ const getSupabaseWithAuth = (authToken: string) => {
 // Create a new chat session
 export const createChatSession = async (
   patientId: string,
-  patientProfile: any,
+  patientProfile: PatientProfile,
   greeting: string,
   authToken: string
 ) => {

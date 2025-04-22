@@ -30,7 +30,7 @@ export interface PatientProfile {
   restraints: string;
   isolationPrecautions: string;
   monitoringItems: ChecklistItem[];
-  medicationItems?: any[];
+  medicationItems?: ChecklistItem[];
   respiratoryItems: ChecklistItem[];
   diagnosticItems: ChecklistItem[];
   socialHistoryItems: ChecklistItem[];

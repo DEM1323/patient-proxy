@@ -16,13 +16,13 @@ import {
 
 import { useRouter } from "next/navigation";
 import { getProfiles, deleteProfile } from "@/app/lib/storage";
-import { samplePatientProfile } from "@/app/types/patient";
+import type { PatientProfile } from "@/app/types/patient";
 import { ContentLayout } from "@/app/components/layouts/ContentLayout";
 import { ProfileList } from "@/app/components/organisms/ProfileList";
 import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function EditProfiles() {
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<PatientProfile[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -95,7 +95,6 @@ export default function EditProfiles() {
   };
 
   // Calculate pagination
-  const totalPages = Math.ceil(profiles.length / profilesPerPage);
   const startIndex = (currentPage - 1) * profilesPerPage;
   const currentProfiles = profiles.slice(
     startIndex,

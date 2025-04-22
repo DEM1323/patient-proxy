@@ -30,12 +30,12 @@ export default function PatientInteractions() {
             <CardContent className="text-left flex-grow">
               <p className="text-sm text-gray-600">
                 A Simulation takes the experience one step further. In this
-                scenario, you'll interact with the patient in a specific,
-                detailed situation where you need to achieve certain goals. It's
-                like role-playing with clear objectives, designed to help you
-                hone your skills. During the simulation, you'll receive detailed
-                feedback on how well you perform based on the goals of the
-                interaction.
+                scenario, you&apos;ll interact with the patient in a specific,
+                detailed situation where you need to achieve certain goals.
+                It&apos;s like role-playing with clear objectives, designed to
+                help you hone your skills. During the simulation, you&apos;ll
+                receive detailed feedback on how well you perform based on the
+                goals of the interaction.
               </p>
             </CardContent>
             <CardFooter className="flex justify-center">
@@ -57,12 +57,12 @@ export default function PatientInteractions() {
             </CardHeader>
             <CardContent className="text-left flex-grow">
               <p className="text-sm text-gray-600">
-                When you engage in a Chat with a Patient, you'll interact as if
-                you're having a real conversation. The goal here is to respond
-                to basic queries or support needs, just like you would in a
-                real-world scenario. You'll be helping a patient by answering
-                their questions or guiding them through their medical or
-                health-related concerns.
+                When you engage in a Chat with a Patient, you&apos;ll interact
+                as if you&apos;re having a real conversation. The goal here is
+                to respond to basic queries or support needs, just like you
+                would in a real-world scenario. You&apos;ll be helping a patient
+                by answering their questions or guiding them through their
+                medical or health-related concerns.
               </p>
             </CardContent>
             <CardFooter className="flex justify-center">

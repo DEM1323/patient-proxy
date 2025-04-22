@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { Settings, LogOut, Menu } from "lucide-react";
-import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 import { SidebarLink } from "@/app/components/atoms/SidebarLink";
 
 interface NavigationProps {

@@ -6,7 +6,6 @@ import {
   type ChecklistItem,
 } from "@/app/types/patient";
 import { Check } from "lucide-react";
-import { Label } from "@/app/components/ui/label";
 
 // Helper component for checkbox items
 const CheckboxItem = ({

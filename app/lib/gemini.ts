@@ -3,6 +3,7 @@ import {
   HarmCategory,
   HarmBlockThreshold,
 } from "@google/generative-ai";
+import { PatientProfile, ChecklistItem } from "@/app/types/patient";
 
 // Initialize the Google Generative AI with API key
 const getGeminiAPI = () => {
@@ -22,7 +23,7 @@ export interface ChatMessage {
 }
 
 export const generatePatientResponse = async (
-  patientProfile: any,
+  patientProfile: PatientProfile,
   messageHistory: ChatMessage[],
   userMessage: string
 ): Promise<string> => {
@@ -45,12 +46,12 @@ export const generatePatientResponse = async (
     }.
     Your medical diagnosis is: ${patientProfile.diagnosis}.
     Your current medications include: ${patientProfile.medicationItems
-      .filter((item: any) => item.checked)
+      ?.filter((item: ChecklistItem) => item.checked)
       .map(
-        (item: any) =>
+        (item: ChecklistItem) =>
           `${item.title}${item.details ? ` (${item.details})` : ""}`
       )
-      .join(", ")}.
+      .join(", ") || "None"}.
     You have the following allergies: ${patientProfile.allergies || "None"}.
     Your medical history includes: ${
       patientProfile.history || "None relevant history"

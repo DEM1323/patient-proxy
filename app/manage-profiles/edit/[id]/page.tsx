@@ -20,7 +20,7 @@ export default function EditProfilePage({ params: paramsPromise }: PageProps) {
   const router = useRouter();
   const params = use(paramsPromise);
   const profileId = params.id;
-  const { navigationState, setNavigationState } = useAuth();
+  const { setNavigationState } = useAuth();
   const [profile, setProfile] = useState<PatientProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<number | null>(null);

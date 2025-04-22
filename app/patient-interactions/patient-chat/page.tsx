@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { ContentLayout } from "@/app/components/layouts/ContentLayout";
 import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
-import { getProfiles, getProfile } from "@/app/lib/storage";
 import { type PatientProfile } from "@/app/types/patient";
 import {
   Send,
@@ -24,10 +23,8 @@ import { toast } from "react-hot-toast";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/app/components/ui/dialog";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
 
@@ -121,6 +118,7 @@ export default function PatientChat() {
         }
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   // Reset expiry time when user is active
@@ -156,6 +154,7 @@ export default function PatientChat() {
         window.removeEventListener(event, resetOnActivity);
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, messages]); // Reset timer when messages change (user interaction)
 
   // Handle session expiry
@@ -244,6 +243,7 @@ export default function PatientChat() {
     };
 
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Test API endpoint on load (only in development mode)
@@ -1335,9 +1335,11 @@ export default function PatientChat() {
                   console.log("Audio input clicked");
                 }}
               >
-                <img
+                <Image
                   src="/audio-input.svg"
                   alt="Audio Input"
+                  width={32}
+                  height={32}
                   className="w-[32px] h-[32px]"
                 />
               </button>
