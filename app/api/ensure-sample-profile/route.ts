@@ -1,7 +1,7 @@
 import { ensureSampleProfile } from "@/app/lib/data-migration";
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 
 /**
  * API endpoint to ensure a user has a sample profile
@@ -9,7 +9,7 @@ import { cookies } from "next/headers";
  */
 export async function POST() {
   // Create a Supabase client for this route handler
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await createClient();
 
   try {
     // Check if the user is authenticated

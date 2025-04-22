@@ -1,15 +1,9 @@
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { updateSession } from "./utils/supabase/middleware";
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-
-  // Refresh session if expired - required for Server Components
-  await supabase.auth.getSession();
-
-  return res;
+  return await updateSession(req);
 }
 
 // Run middleware on auth-related routes and protected routes
