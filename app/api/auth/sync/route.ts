@@ -8,12 +8,14 @@ export async function POST(request: NextRequest) {
 
     // Get server-side Supabase client
     const supabase = createClient();
+    
+    // Get cookies instance and await it
+    const cookieStore = await cookies();
 
     // If session exists, set the access token for server-side Supabase client
     if (session) {
       // Setting the auth cookie for server-side requests
-      // @ts-ignore - Next.js types issue with cookies().set
-      cookies().set("sb-access-token", session.access_token, {
+      cookieStore.set("sb-access-token", session.access_token, {
         path: "/",
         maxAge: session.expires_in,
         httpOnly: true,
@@ -22,8 +24,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Set refresh token
-      // @ts-ignore - Next.js types issue with cookies().set
-      cookies().set("sb-refresh-token", session.refresh_token, {
+      cookieStore.set("sb-refresh-token", session.refresh_token, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7, // 7 days
         httpOnly: true,
@@ -34,15 +35,13 @@ export async function POST(request: NextRequest) {
       console.log(`Auth cookies set for user ${session.user.id}`);
     } else if (event === "SIGNED_OUT") {
       // Clear auth cookies on sign out
-      // @ts-ignore - Next.js types issue with cookies().set
-      cookies().set("sb-access-token", "", {
+      cookieStore.set("sb-access-token", "", {
         path: "/",
         maxAge: 0,
         httpOnly: true,
       });
 
-      // @ts-ignore - Next.js types issue with cookies().set
-      cookies().set("sb-refresh-token", "", {
+      cookieStore.set("sb-refresh-token", "", {
         path: "/",
         maxAge: 0,
         httpOnly: true,

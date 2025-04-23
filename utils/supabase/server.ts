@@ -7,17 +7,17 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
-          // @ts-ignore - cookies() implementation changed in Next.js
-          return cookies().get(name)?.value;
+        async get(name) {
+          const cookieStore = await cookies();
+          return cookieStore.get(name)?.value;
         },
-        set(name, value, options) {
-          // @ts-ignore - cookies() implementation changed in Next.js
-          cookies().set({ name, value, ...options });
+        async set(name, value, options) {
+          const cookieStore = await cookies();
+          cookieStore.set({ name, value, ...options });
         },
-        remove(name, options) {
-          // @ts-ignore - cookies() implementation changed in Next.js
-          cookies().set({ name, value: "", ...options });
+        async remove(name, options) {
+          const cookieStore = await cookies();
+          cookieStore.set({ name, value: "", ...options });
         },
       },
     }
