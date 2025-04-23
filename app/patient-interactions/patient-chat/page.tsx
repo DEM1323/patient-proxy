@@ -1315,9 +1315,16 @@ export default function PatientChat() {
           <div className="flex gap-2 items-center">
             <div className="flex-1 relative">
               <textarea
-                placeholder="Say anything..."
+                placeholder={`Say anything... \n\n\n(Press Enter to send, Shift+Enter for new line)`}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  // Submit on Enter press (but not with Shift key)
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  }
+                }}
                 className="w-full text-sm px-4 py-4 h-[120px] pr-12 align-top bg-white border-[1px] border-[#E5E5E5] overflow-y-auto resize-none rounded-[1rem] focus:outline-none"
                 style={{ alignItems: "flex-start" }}
                 disabled={isTyping || !!error}
