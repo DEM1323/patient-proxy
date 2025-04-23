@@ -24,8 +24,11 @@ export const ContentLayout: React.FC<ContentLayoutProps> = ({
     <div className="flex flex-col h-screen max-h-screen overflow-hidden">
       {/* Search Bar */}
       {showSearch && (
-        <div className="bg-white p-4 flex-shrink-0">
-          <SearchBar placeholder="Search..." onSearch={onSearch} />
+        <div className="bg-white p-4 flex-shrink-0 z-10">
+          <SearchBar
+            placeholder="Search patient profiles..."
+            onSearch={onSearch}
+          />
         </div>
       )}
 

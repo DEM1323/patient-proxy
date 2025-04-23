@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit, Plus, RefreshCw } from "lucide-react";
+import { Edit, Plus, RefreshCw, Search } from "lucide-react";
 import { type PatientProfile, samplePatientProfile } from "@/app/types/patient";
 import { getProfiles, saveProfile } from "@/app/lib/storage";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,10 @@ import {
 
 export default function PatientProfilesPage() {
   const [profiles, setProfiles] = useState<PatientProfile[]>([]);
+  const [filteredProfiles, setFilteredProfiles] = useState<PatientProfile[]>(
+    []
+  );
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -62,6 +66,31 @@ export default function PatientProfilesPage() {
     }
   }, [navigationState, setNavigationState]);
 
+  // Filter profiles when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredProfiles(profiles);
+      return;
+    }
+
+    const searchTermLower = searchTerm.toLowerCase();
+    const filtered = profiles.filter((profile) => {
+      return (
+        profile.patientName?.toLowerCase().includes(searchTermLower) ||
+        profile.diagnosis?.toLowerCase().includes(searchTermLower) ||
+        profile.history?.toLowerCase().includes(searchTermLower) ||
+        profile.case?.toLowerCase().includes(searchTermLower) ||
+        profile.gender?.toLowerCase().includes(searchTermLower) ||
+        profile.age?.toString().includes(searchTermLower)
+      );
+    });
+
+    setFilteredProfiles(filtered);
+
+    // Reset to first page when search results change
+    setCurrentPage(1);
+  }, [searchTerm, profiles]);
+
   // Load profiles function
   const loadProfiles = async () => {
     try {
@@ -101,11 +130,13 @@ export default function PatientProfilesPage() {
       }
 
       setProfiles(profilesList);
+      setFilteredProfiles(profilesList); // Initialize filtered profiles
       setIsLoading(false);
     } catch (error) {
       console.error("Error loading profiles:", error);
       // Fallback to sample profile without saving
       setProfiles([samplePatientProfile]);
+      setFilteredProfiles([samplePatientProfile]);
       setIsLoading(false);
     }
   };
@@ -171,6 +202,25 @@ export default function PatientProfilesPage() {
     });
   };
 
+  // Handle search
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+
+    // Reset to first page when performing a new search
+    setCurrentPage(1);
+
+    // Clear navigation state for profile page
+    setNavigationState({
+      ...navigationState,
+      currentProfilePage: undefined,
+    });
+
+    // Show toast if no results
+    if (term.trim() && filteredProfiles.length === 0) {
+      toast.error(`No profiles found matching "${term}"`);
+    }
+  };
+
   // If loading, show loading state
   if (isLoading) {
     return (
@@ -184,45 +234,64 @@ export default function PatientProfilesPage() {
   }
 
   // Content for the patient profiles page using ContentLayout
-  const Actions = (
-    <>
-      {profiles.length > 0 ? (
-        <Button
-          onClick={handleEditProfile}
-          variant="secondary"
-          className="flex items-center"
-        >
-          <Edit className="mr-1 h-4 w-4" />
-          Manage Profile
-        </Button>
-      ) : (
-        <Button
-          onClick={handleCreateSampleProfile}
-          variant="secondary"
-          className="flex items-center"
-        >
-          <RefreshCw className="mr-1 h-4 w-4" />
-          Create Sample Profile
-        </Button>
-      )}
-      <Button
-        onClick={() => router.push("/manage-profiles/create")}
-        className="flex items-center"
-      >
-        <Plus className="mr-1 h-4 w-4" />
-        New Profile
-      </Button>
-    </>
-  );
-
   return (
     <ContentLayout
-      title="Patient Profiles"
-      actions={Actions}
-      onSearch={(term) => console.log("Search:", term)}
+      title={
+        searchTerm ? (
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+              Patient Profiles
+            </h1>
+            <div className="text-sm font-normal text-gray-500 flex items-center mt-1">
+              <Search className="h-4 w-4 mr-1" />
+              Search results for: "{searchTerm}"
+              {filteredProfiles.length > 0 && (
+                <span className="ml-1">
+                  ({filteredProfiles.length}{" "}
+                  {filteredProfiles.length === 1 ? "result" : "results"})
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          "Patient Profiles"
+        )
+      }
+      actions={
+        <>
+          {profiles.length > 0 ? (
+            <Button
+              onClick={handleEditProfile}
+              variant="secondary"
+              className="flex items-center"
+            >
+              <Edit className="mr-1 h-4 w-4" />
+              Manage Profile
+            </Button>
+          ) : (
+            <Button
+              onClick={handleCreateSampleProfile}
+              variant="secondary"
+              className="flex items-center"
+            >
+              <RefreshCw className="mr-1 h-4 w-4" />
+              Create Sample Profile
+            </Button>
+          )}
+          <Button
+            onClick={() => router.push("/manage-profiles/create")}
+            className="flex items-center"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            New Profile
+          </Button>
+        </>
+      }
+      showSearch={true}
+      onSearch={handleSearch}
     >
       <ProfileList
-        profiles={profiles}
+        profiles={filteredProfiles}
         profilesPerPage={1}
         currentPage={currentPage}
         onPageChange={handlePageChange}
