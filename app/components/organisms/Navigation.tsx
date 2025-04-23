@@ -75,7 +75,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
       <div className="mt-auto border-t border-white">
         <Link
-          href="#"
+          href="/settings"
           className={`flex items-center w-full px-4 py-4 text-white hover:bg-[#216f99]/80 ${
             collapsed ? "justify-center" : ""
           }`}

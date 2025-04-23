@@ -12,7 +12,18 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const pathname = usePathname();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Check if we're in a browser environment
+    if (typeof window !== "undefined") {
+      // Get saved preference or default based on screen size
+      const savedState = localStorage.getItem("sidebarCollapsed");
+      if (savedState !== null) {
+        return savedState === "true";
+      }
+      return window.innerWidth < 768;
+    }
+    return true; // Default for SSR
+  });
   const [showSidebar, setShowSidebar] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated, signOut } = useAuth();
@@ -48,14 +59,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // Check screen size on mount and when window resizes
   useEffect(() => {
     const checkScreenSize = () => {
-      if (window.innerWidth < 768) {
-        setSidebarCollapsed(true);
-      } else {
-        setSidebarCollapsed(false);
-      }
+      const newCollapsedState = window.innerWidth < 768;
+      setSidebarCollapsed(newCollapsedState);
+      localStorage.setItem("sidebarCollapsed", String(newCollapsedState));
     };
 
-    checkScreenSize();
+    // Only add resize listener, don't force a state change on initial mount
     window.addEventListener("resize", checkScreenSize);
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
@@ -73,6 +82,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       console.error("Logout error:", error);
       toast.error("Failed to logout");
     }
+  };
+
+  const handleToggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem("sidebarCollapsed", String(newState));
   };
 
   // If still loading, show content without sidebar
@@ -96,7 +111,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* Navigation Sidebar */}
       <Navigation
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onToggle={handleToggleSidebar}
         onLogout={handleLogout}
       />
 

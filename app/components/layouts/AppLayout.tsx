@@ -13,7 +13,18 @@ export default function AppLayout({
   children: React.ReactNode;
 }>) {
   const router = useRouter();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Check if we're in a browser environment
+    if (typeof window !== "undefined") {
+      // Get saved preference or default based on screen size
+      const savedState = localStorage.getItem("sidebarCollapsed");
+      if (savedState !== null) {
+        return savedState === "true";
+      }
+      return window.innerWidth < 768;
+    }
+    return true; // Default for SSR
+  });
   const { isAuthenticated, isLoading, signOut } = useAuth();
 
   // Check authentication
@@ -27,14 +38,12 @@ export default function AppLayout({
   // Check screen size on mount and when window resizes
   useEffect(() => {
     const checkScreenSize = () => {
-      if (window.innerWidth < 768) {
-        setSidebarCollapsed(true);
-      } else {
-        setSidebarCollapsed(false);
-      }
+      const newCollapsedState = window.innerWidth < 768;
+      setSidebarCollapsed(newCollapsedState);
+      localStorage.setItem("sidebarCollapsed", String(newCollapsedState));
     };
 
-    checkScreenSize();
+    // Only add resize listener, don't force a state change on initial mount
     window.addEventListener("resize", checkScreenSize);
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
@@ -51,6 +60,12 @@ export default function AppLayout({
       console.error("Logout error:", error);
       toast.error("Failed to logout");
     }
+  };
+
+  const handleToggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem("sidebarCollapsed", String(newState));
   };
 
   // If still loading, show loading state
@@ -71,7 +86,7 @@ export default function AppLayout({
       {/* Navigation */}
       <Navigation
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onToggle={handleToggleSidebar}
         onLogout={handleLogout}
       />
 
