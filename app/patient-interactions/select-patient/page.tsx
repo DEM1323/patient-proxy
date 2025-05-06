@@ -81,7 +81,7 @@ export default function SelectPatient() {
   const handleSelectPatient = (profileId: string) => {
     const destination =
       mode === "simulation"
-        ? `/patient-simulation`
+        ? `/patient-interactions/patient-simulation`
         : `/patient-interactions/patient-chat?patientId=${profileId}`;
     router.push(destination);
   };
