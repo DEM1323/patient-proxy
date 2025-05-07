@@ -22,7 +22,37 @@ import {
 import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { getProfiles } from "@/app/lib/storage";
 import { type PatientProfile } from "@/app/types/patient";
-import { Info, Check, MessageCircle, PlayCircle } from "lucide-react";
+import { type SimulationScenario } from "@/app/types/simulation";
+import {
+  Info,
+  Check,
+  MessageCircle,
+  PlayCircle,
+  Target,
+  Clock,
+} from "lucide-react";
+
+// Define custom scrollbar styles
+const scrollbarStyles = `
+  .custom-scrollbar [data-radix-scroll-area-viewport] > div {
+    padding-right: 1rem; /* Add padding to prevent content from being under scrollbar */
+  }
+
+  .custom-scrollbar [data-radix-scroll-area-scrollbar] {
+    width: 8px !important;
+    right: 0 !important;
+    padding: 0 !important;
+  }
+
+  .custom-scrollbar [data-radix-scroll-area-thumb] {
+    background-color: rgba(1, 90, 139, 0.5) !important;
+    border-radius: 9999px !important;
+  }
+
+  .custom-scrollbar [data-radix-scroll-area-thumb]:hover {
+    background-color: rgba(1, 90, 139, 0.8) !important;
+  }
+`;
 
 const CheckboxItem = ({
   label,
@@ -48,10 +78,14 @@ export default function SelectPatient() {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") || "chat"; // Default to chat mode
   const [profiles, setProfiles] = useState<PatientProfile[]>([]);
+  const [simulations, setSimulations] = useState<SimulationScenario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<PatientProfile | null>(
     null
   );
+  const [selectedSimulation, setSelectedSimulation] =
+    useState<SimulationScenario | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   useEffect(() => {
     // Validate mode
@@ -60,22 +94,44 @@ export default function SelectPatient() {
       return;
     }
 
-    // Load profiles
-    const loadProfiles = async () => {
+    // Load appropriate data based on mode
+    const loadData = async () => {
       try {
         setIsLoading(true);
-        const profilesObj = await getProfiles();
-        const profilesList = Object.values(profilesObj);
-        setProfiles(profilesList);
+
+        if (mode === "simulation") {
+          // Load simulation scenarios
+          const response = await fetch("/api/simulation-scenarios");
+          if (!response.ok) {
+            throw new Error("Failed to fetch simulation scenarios");
+          }
+          const data = await response.json();
+          console.log("Loaded simulation list:", data.scenarios);
+          setSimulations(data.scenarios || []);
+        } else {
+          // Load patient profiles
+          const profilesObj = await getProfiles();
+          const profilesList = Object.values(profilesObj);
+          setProfiles(profilesList);
+        }
       } catch (error) {
-        console.error("Error loading profiles:", error);
-        setProfiles([]);
+        console.error(
+          `Error loading ${
+            mode === "simulation" ? "simulations" : "profiles"
+          }:`,
+          error
+        );
+        if (mode === "simulation") {
+          setSimulations([]);
+        } else {
+          setProfiles([]);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadProfiles();
+    loadData();
   }, [mode, router]);
 
   const handleSelectPatient = (profileId: string) => {
@@ -86,9 +142,50 @@ export default function SelectPatient() {
     router.push(destination);
   };
 
+  const handleSelectSimulation = (simulationId: string) => {
+    router.push(
+      `/patient-interactions/patient-simulation/scenario?scenarioId=${simulationId}`
+    );
+  };
+
   const handleInfoClick = (e: React.MouseEvent, profile: PatientProfile) => {
     e.stopPropagation(); // Prevent card click from triggering
     setSelectedProfile(profile);
+  };
+
+  const handleSimulationInfoClick = (
+    e: React.MouseEvent,
+    simulation: SimulationScenario
+  ) => {
+    e.stopPropagation(); // Prevent card click from triggering
+    setIsLoadingDetails(true);
+
+    // Fetch complete simulation details when viewing info
+    const fetchDetailedSimulation = async () => {
+      try {
+        const response = await fetch(
+          `/api/simulation-scenarios?id=${simulation.id}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch detailed simulation data");
+        }
+
+        const data = await response.json();
+        if (data.scenario) {
+          console.log("Detailed simulation data:", data.scenario);
+          setSelectedSimulation(data.scenario);
+        } else {
+          setSelectedSimulation(simulation);
+        }
+      } catch (error) {
+        console.error("Error fetching detailed simulation:", error);
+        setSelectedSimulation(simulation);
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    };
+
+    fetchDetailedSimulation();
   };
 
   const getActionButton = (profile: PatientProfile) => {
@@ -114,151 +211,250 @@ export default function SelectPatient() {
     );
   };
 
+  const getSimulationActionButton = (simulation: SimulationScenario) => {
+    return (
+      <Button
+        className="w-full bg-[#015a8b] hover:bg-[#216f99] flex items-center justify-center gap-2"
+        onClick={() => handleSelectSimulation(simulation.id)}
+      >
+        <PlayCircle className="h-4 w-4" />
+        Start Simulation
+      </Button>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#015a8b] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading patients...</p>
+          <p className="mt-4 text-gray-600">
+            Loading {mode === "simulation" ? "simulations" : "patients"}...
+          </p>
         </div>
       </div>
     );
   }
 
-  if (profiles.length === 0) {
+  // Empty state - show different message based on mode
+  if (
+    (mode === "simulation" && simulations.length === 0) ||
+    (mode === "chat" && profiles.length === 0)
+  ) {
     return (
-      <ContentLayout
-        title={`Select Patient for ${
-          mode === "simulation" ? "Simulation" : "Chat"
-        }`}
-        showSearch={true}
-        onSearch={(term) => console.log("Search:", term)}
-      >
-        <div className="flex flex-col items-center justify-center h-full">
-          <div className="text-center p-8 max-w-md">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
-              No Patient Profiles Found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              You need to create a patient profile before you can start a{" "}
-              {mode === "simulation" ? "simulation" : "chat"}.
-            </p>
-            <div className="flex flex-col space-y-3">
-              <Button
-                onClick={() => router.push("/manage-profiles/create")}
-                className="bg-[#015a8b] hover:bg-[#216f99] w-full"
-              >
-                Create a New Patient Profile
-              </Button>
-              <Button
-                onClick={async () => {
-                  try {
-                    setIsLoading(true);
-                    // Create a sample profile automatically
-                    const response = await fetch("/api/ensure-sample-profile", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                    });
-
-                    if (!response.ok) {
-                      throw new Error("Failed to create sample profile");
-                    }
-
-                    const result = await response.json();
-
-                    if (result.created && result.profile) {
-                      // Use the newly created sample profile
-                      const sampleId = result.profile.id;
-                      // Navigate directly to chat or simulation with this profile
-                      const destination =
-                        mode === "simulation"
-                          ? `/patient-simulation`
-                          : `/patient-interactions/patient-chat?patientId=${sampleId}`;
-                      router.push(destination);
-                    } else {
-                      // Profiles were found (sample already existed), reload the page
-                      window.location.reload();
-                    }
-                  } catch (error) {
-                    console.error("Error creating sample profile:", error);
-                    setIsLoading(false);
+      <>
+        <style jsx global>
+          {scrollbarStyles}
+        </style>
+        <ContentLayout
+          title={`Select ${
+            mode === "simulation" ? "Simulation" : "Patient"
+          } for ${mode === "simulation" ? "Practice" : "Chat"}`}
+          showSearch={true}
+          onSearch={(term) => console.log("Search:", term)}
+        >
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-center p-8 max-w-md">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">
+                {mode === "simulation"
+                  ? "No Simulation Scenarios Found"
+                  : "No Patient Profiles Found"}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {mode === "simulation"
+                  ? "You need to create a simulation scenario before you can start a simulation."
+                  : "You need to create a patient profile before you can start a chat."}
+              </p>
+              <div className="flex flex-col space-y-3">
+                <Button
+                  onClick={() =>
+                    router.push(
+                      mode === "simulation"
+                        ? "/manage-simulations/create"
+                        : "/manage-profiles/create"
+                    )
                   }
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                Use a Sample Patient Profile
-              </Button>
-              <Button
-                onClick={() => router.push("/patient-interactions")}
-                variant="ghost"
-                className="w-full"
-              >
-                Go Back
-              </Button>
+                  className="bg-[#015a8b] hover:bg-[#216f99] w-full"
+                >
+                  Create a New{" "}
+                  {mode === "simulation"
+                    ? "Simulation Scenario"
+                    : "Patient Profile"}
+                </Button>
+                <Button
+                  onClick={async () => {
+                    try {
+                      setIsLoading(true);
+                      if (mode === "simulation") {
+                        // Create a sample simulation or reload
+                        window.location.reload();
+                      } else {
+                        // Create a sample profile automatically
+                        const response = await fetch(
+                          "/api/ensure-sample-profile",
+                          {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                          }
+                        );
+
+                        if (!response.ok) {
+                          throw new Error("Failed to create sample profile");
+                        }
+
+                        const result = await response.json();
+
+                        if (result.created && result.profile) {
+                          // Use the newly created sample profile
+                          const sampleId = result.profile.id;
+                          // Navigate directly to chat with this profile
+                          router.push(
+                            `/patient-interactions/patient-chat?patientId=${sampleId}`
+                          );
+                        } else {
+                          // Profiles were found (sample already existed), reload the page
+                          window.location.reload();
+                        }
+                      }
+                    } catch (error) {
+                      console.error(
+                        `Error creating sample ${
+                          mode === "simulation" ? "simulation" : "profile"
+                        }:`,
+                        error
+                      );
+                      setIsLoading(false);
+                    }
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Use a Sample{" "}
+                  {mode === "simulation"
+                    ? "Simulation Scenario"
+                    : "Patient Profile"}
+                </Button>
+                <Button
+                  onClick={() => router.push("/patient-interactions")}
+                  variant="ghost"
+                  className="w-full"
+                >
+                  Go Back
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </ContentLayout>
+        </ContentLayout>
+      </>
     );
   }
 
   return (
     <>
+      <style jsx global>
+        {scrollbarStyles}
+      </style>
       <ContentLayout
-        title={`Select Patient for ${
-          mode === "simulation" ? "Simulation" : "Chat"
-        }`}
+        title={`Select ${
+          mode === "simulation" ? "Simulation" : "Patient"
+        } for ${mode === "simulation" ? "Practice" : "Chat"}`}
         showSearch={true}
         onSearch={(term) => console.log("Search:", term)}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-          {profiles.map((profile) => (
-            <Card
-              key={profile.id}
-              className="border-[#015a8b] hover:shadow-md transition-shadow cursor-pointer relative"
-              onClick={() => handleSelectPatient(profile.id)}
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-8 w-8 hover:bg-[#015a8b]/10"
-                onClick={(e) => handleInfoClick(e, profile)}
-              >
-                <Info className="h-5 w-5 text-[#015a8b]" />
-              </Button>
-              <CardHeader>
-                <CardTitle className="text-[#015a8b]">
-                  {profile.patientName}
-                  {profile.isGlobal && (
-                    <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                      Default Profile
-                    </span>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  Age: {profile.age} | Gender: {profile.gender}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 line-clamp-3">
-                  {profile.diagnosis ||
-                    profile.history ||
-                    "No medical history available"}
-                </p>
-              </CardContent>
-              <CardFooter>{getActionButton(profile)}</CardFooter>
-            </Card>
-          ))}
+          {mode === "simulation"
+            ? // Render simulations
+              simulations.map((simulation) => (
+                <Card
+                  key={simulation.id}
+                  className="border-[#015a8b] hover:shadow-md transition-shadow cursor-pointer relative"
+                  onClick={() => handleSelectSimulation(simulation.id)}
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 hover:bg-[#015a8b]/10"
+                    onClick={(e) => handleSimulationInfoClick(e, simulation)}
+                  >
+                    <Info className="h-5 w-5 text-[#015a8b]" />
+                  </Button>
+                  <CardHeader>
+                    <CardTitle className="text-[#015a8b]">
+                      {simulation.title}
+                    </CardTitle>
+                    <CardDescription className="flex flex-col gap-1">
+                      {simulation.is_global && (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full w-fit">
+                          Default Scenario
+                        </span>
+                      )}
+                      <div className="flex gap-2 items-center">
+                        <Clock className="h-4 w-4" />
+                        {simulation.estimated_time_minutes} min |
+                        <Target className="h-4 w-4 ml-2" />
+                        {simulation.target_group}
+                      </div>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 line-clamp-3">
+                      {simulation.brief_summary || "No description available"}
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    {getSimulationActionButton(simulation)}
+                  </CardFooter>
+                </Card>
+              ))
+            : // Render patient profiles
+              profiles.map((profile) => (
+                <Card
+                  key={profile.id}
+                  className="border-[#015a8b] hover:shadow-md transition-shadow cursor-pointer relative"
+                  onClick={() => handleSelectPatient(profile.id)}
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 hover:bg-[#015a8b]/10"
+                    onClick={(e) => handleInfoClick(e, profile)}
+                  >
+                    <Info className="h-5 w-5 text-[#015a8b]" />
+                  </Button>
+                  <CardHeader>
+                    <CardTitle className="text-[#015a8b]">
+                      {profile.patientName}
+                      {profile.isGlobal && (
+                        <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                          Default Profile
+                        </span>
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      Age: {profile.age} | Gender: {profile.gender}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 line-clamp-3">
+                      {profile.diagnosis ||
+                        profile.history ||
+                        "No medical history available"}
+                    </p>
+                  </CardContent>
+                  <CardFooter>{getActionButton(profile)}</CardFooter>
+                </Card>
+              ))}
         </div>
       </ContentLayout>
 
       {/* Patient Details Modal */}
       <Dialog
         open={!!selectedProfile}
-        onOpenChange={() => setSelectedProfile(null)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedProfile(null);
+        }}
       >
         <DialogContent className="max-w-[95vw] w-[1200px] max-h-[95vh] p-6 overflow-hidden">
           <DialogHeader className="pb-4">
@@ -271,7 +467,7 @@ export default function SelectPatient() {
               )}
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="h-full max-h-[calc(95vh-120px)]">
+          <ScrollArea className="h-full max-h-[calc(95vh-120px)] pb-8 custom-scrollbar">
             {selectedProfile && (
               <div className="h-full w-full max-w-full overflow-x-auto">
                 <table className="h-full w-full border-collapse text-[8px] xs:text-[9px] sm:text-xs md:text-sm min-w-[650px]">
@@ -741,6 +937,107 @@ export default function SelectPatient() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Simulation Details Modal */}
+      <Dialog
+        open={!!selectedSimulation}
+        onOpenChange={(open) => {
+          if (!open) setSelectedSimulation(null);
+        }}
+      >
+        <DialogContent className="max-w-[95vw] w-[1200px] max-h-[95vh] p-6 overflow-hidden">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-2xl text-[#015a8b]">
+              Simulation Scenario Details
+            </DialogTitle>
+            {selectedSimulation?.is_global && (
+              <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full w-fit">
+                Default Scenario
+              </span>
+            )}
+          </DialogHeader>
+          <ScrollArea className="h-full max-h-[calc(95vh-120px)] pb-8 custom-scrollbar">
+            {isLoadingDetails ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#015a8b] mx-auto"></div>
+                  <p className="mt-4 text-gray-600">
+                    Loading scenario details...
+                  </p>
+                </div>
+              </div>
+            ) : (
+              selectedSimulation && (
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <h3 className="text-lg font-semibold text-[#015a8b] mb-2">
+                      Overview
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p>
+                          <strong>Title:</strong> {selectedSimulation.title}
+                        </p>
+                        <p>
+                          <strong>Target Group:</strong>{" "}
+                          {selectedSimulation.target_group}
+                        </p>
+                        <p>
+                          <strong>Duration:</strong>{" "}
+                          {selectedSimulation.estimated_time_minutes} minutes
+                        </p>
+                        <p>
+                          <strong>Reflection Time:</strong>{" "}
+                          {selectedSimulation.guided_reflection_time_minutes ||
+                            0}{" "}
+                          minutes
+                        </p>
+                      </div>
+                      <div>
+                        <p>
+                          <strong>Summary:</strong>{" "}
+                          {selectedSimulation.brief_summary}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <h3 className="text-lg font-semibold text-[#015a8b] mb-2">
+                      Student Report
+                    </h3>
+                    <p className="whitespace-pre-line">
+                      {selectedSimulation.student_report ||
+                        "No student report available"}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      <h3 className="text-lg font-semibold text-[#015a8b] mb-2">
+                        Medical History (Prior)
+                      </h3>
+                      <p>
+                        {selectedSimulation.medical_history_prior ||
+                          "Not specified"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      <h3 className="text-lg font-semibold text-[#015a8b] mb-2">
+                        Medical History (Recent)
+                      </h3>
+                      <p>
+                        {selectedSimulation.medical_history_recent ||
+                          "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
             )}
           </ScrollArea>
         </DialogContent>

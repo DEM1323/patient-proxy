@@ -6,6 +6,8 @@ import Image from "next/image";
 import { ContentLayout } from "@/app/components/layouts/ContentLayout";
 import { Button } from "@/app/components/ui/button";
 import { type PatientProfile } from "@/app/types/patient";
+import { ChatInput } from "@/app/components/molecules/ChatInput";
+import { TabsInputArea } from "@/app/components/molecules/TabsInputArea";
 import {
   Send,
   ArrowLeft,
@@ -16,6 +18,10 @@ import {
   Info,
   X,
   Check,
+  Activity,
+  StethoscopeIcon,
+  Pill,
+  ClipboardList,
 } from "lucide-react";
 import { type ChatMessage } from "@/app/lib/gemini";
 import { supabase } from "@/app/lib/supabase";
@@ -81,6 +87,138 @@ export default function PatientChat() {
   const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
   const sessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showPatientInfo, setShowPatientInfo] = useState(false);
+
+  // Clinical actions that can be performed during the chat
+  const availableActions = [
+    {
+      id: "vitals",
+      name: "Check Vitals",
+      icon: <Activity className="h-4 w-4" />,
+      options: [
+        { id: "bp", name: "Blood Pressure" },
+        { id: "temp", name: "Temperature" },
+        { id: "hr", name: "Heart Rate" },
+        { id: "rr", name: "Respiratory Rate" },
+        { id: "spo2", name: "SpO2" },
+      ],
+    },
+    {
+      id: "assess",
+      name: "Physical Assessment",
+      icon: <StethoscopeIcon className="h-4 w-4" />,
+      options: [
+        { id: "auscultation", name: "Auscultation" },
+        { id: "palpation", name: "Palpation" },
+        { id: "inspection", name: "Inspection" },
+        { id: "neurological", name: "Neurological" },
+      ],
+    },
+    {
+      id: "medication",
+      name: "Administer Medication",
+      icon: <Pill className="h-4 w-4" />,
+    },
+    {
+      id: "documentation",
+      name: "Documentation",
+      icon: <ClipboardList className="h-4 w-4" />,
+    },
+  ];
+
+  // Handle performing a clinical action
+  const handleAction = (actionId: string, optionId?: string) => {
+    const action = availableActions.find((a) => a.id === actionId);
+    if (!action) return;
+
+    let actionName = action.name;
+    if (optionId) {
+      const option = action.options?.find((o) => o.id === optionId);
+      if (option) {
+        actionName = `${action.name}: ${option.name}`;
+      }
+    }
+
+    // Get result for the action
+    const result = getActionResult(actionId, optionId);
+
+    // Add clinical action to message list
+    const actionMessage: Message = {
+      id: Date.now().toString(),
+      text: `Performed: ${actionName}\nResult: ${result}`,
+      sender: "user",
+      timestamp: new Date(),
+    };
+
+    // Add patient's response to the action
+    const responseMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      text: getPatientActionResponse(actionId, optionId),
+      sender: "patient",
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, actionMessage, responseMessage]);
+  };
+
+  // Get result text for a performed action
+  const getActionResult = (actionId: string, optionId?: string): string => {
+    switch (actionId) {
+      case "vitals":
+        if (optionId === "bp") return "BP: 128/82 mmHg";
+        if (optionId === "temp") return "Temperature: 37.2°C (99.0°F)";
+        if (optionId === "hr") return "Heart Rate: 82 bpm";
+        if (optionId === "rr") return "Respiratory Rate: 16 breaths/min";
+        if (optionId === "spo2") return "SpO2: 98%";
+        return "Vitals checked - all within normal limits";
+
+      case "assess":
+        if (optionId === "auscultation")
+          return "Lungs clear bilaterally; Heart sounds normal, no murmurs";
+        if (optionId === "palpation")
+          return "Abdomen soft, non-tender; No organomegaly";
+        if (optionId === "inspection")
+          return "Skin normal color, warm and dry; No visible lesions";
+        if (optionId === "neurological")
+          return "Alert and oriented x3; Pupils equal and reactive";
+        return "Assessment completed - no abnormal findings";
+
+      case "medication":
+        return "Medication administered as ordered";
+
+      case "documentation":
+        return "Documentation completed in patient chart";
+
+      default:
+        return "Action completed";
+    }
+  };
+
+  // Get patient's response to clinical actions
+  const getPatientActionResponse = (
+    actionId: string,
+    optionId?: string
+  ): string => {
+    switch (actionId) {
+      case "vitals":
+        return "Thanks for checking my vitals.";
+
+      case "assess":
+        if (optionId === "auscultation")
+          return "I've been trying to take deep breaths like you showed me earlier.";
+        if (optionId === "palpation")
+          return "I don't have any pain when you press there.";
+        return "Let me know if you find anything concerning.";
+
+      case "medication":
+        return "Thank you. When should I expect the medication to start working?";
+
+      case "documentation":
+        return "Make sure you note that I've been following the care plan at home.";
+
+      default:
+        return "Is there anything else you need to check?";
+    }
+  };
 
   // Initialize session timeout mechanism
   useEffect(() => {
@@ -1320,69 +1458,35 @@ export default function PatientChat() {
         {/* Input Area */}
         <form
           onSubmit={handleSendMessage}
-          className="mt-4 border-t border-gray-100 pt-4 px-6"
+          className="mt-4 border-t border-[#015a8b] pt-4 px-6"
         >
-          <div className="flex gap-2 items-center">
-            <div className="flex-1 relative">
-              <textarea
-                placeholder={`Say anything... \n\n\n(Press Enter to send, Shift+Enter for new line)`}
+          <div className="flex items-center">
+            <div className="flex-1">
+              <TabsInputArea
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  // Submit on Enter press (but not with Shift key)
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(e);
-                  }
-                }}
-                className="w-full text-sm px-4 py-4 h-[120px] pr-12 align-top bg-white border-[1px] border-[#E5E5E5] overflow-y-auto resize-none rounded-[1rem] focus:outline-none"
-                style={{ alignItems: "flex-start" }}
-                disabled={isTyping || !!error}
+                onChange={setNewMessage}
+                onSend={handleSendMessage}
+                isProcessing={isTyping}
+                disabled={!!error}
+                placeholder={`Say anything...\n\n\n(Press Enter to send, Shift+Enter for new line)`}
+                helperText="Chat sessions are temporarily stored for testing purposes and automatically deleted after 2 hours."
+                availableActions={availableActions}
+                onActionSelect={handleAction}
+                defaultTab="chat"
               />
-              <button
-                type="button"
-                className="absolute right-4 bottom-4"
-                onClick={() => {
-                  // Speech to text functionality will be added later
-                  console.log("Audio input clicked");
-                }}
-              >
-                <Image
-                  src="/audio-input.svg"
-                  alt="Audio Input"
-                  width={32}
-                  height={32}
-                  className="w-[32px] h-[32px]"
-                />
-              </button>
             </div>
-            <Button
-              type="submit"
-              className="bg-[#015a8b] hover:bg-[#216f99] h-[38px] w-[38px] p-0 flex-shrink-0"
-              disabled={!newMessage.trim() || isTyping || !!error}
-            >
-              {isTyping ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-            </Button>
           </div>
         </form>
 
-        {/* Warning Banner */}
-        <div className="mt-2 text-center pb-4 bg-[#F8F9FA]">
-          <p className="text-sm text-gray-500">
-            Chat sessions are temporarily stored for testing purposes and
-            automatically deleted after 2 hours.
-            {sessionTimeRemaining && sessionTimeRemaining < 15 * 60 * 1000 && (
-              <span className="block text-amber-600 font-medium mt-1">
-                Your session will expire in{" "}
-                {formatTimeRemaining(sessionTimeRemaining)}
-              </span>
-            )}
-          </p>
-        </div>
+        {/* Add conditional session expiry warning if needed */}
+        {sessionTimeRemaining && sessionTimeRemaining < 15 * 60 * 1000 && (
+          <div className="mt-2 text-center pb-4 bg-[#F8F9FA]">
+            <span className="block text-amber-600 font-medium mt-1">
+              Your session will expire in{" "}
+              {formatTimeRemaining(sessionTimeRemaining)}
+            </span>
+          </div>
+        )}
       </div>
     </ContentLayout>
   );
