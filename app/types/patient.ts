@@ -40,6 +40,7 @@ export interface PatientProfile {
   medicationFromHome: string;
   medicationFromHomeItems: ChecklistItem[];
   dischargePlanning: string;
+  isGlobal?: boolean;
 }
 
 export const emptyPatientProfile: PatientProfile = {

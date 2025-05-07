@@ -176,13 +176,15 @@ export default function EditProfiles() {
           <Edit className="mr-1 h-4 w-4" />
           Edit Profile
         </Button>
-        <Button
-          onClick={() => handleDeleteProfile(currentProfiles[0].id)}
-          className="flex items-center bg-red-500 hover:bg-red-600 text-white"
-        >
-          <Trash2 className="mr-1 h-4 w-4" />
-          Delete Profile
-        </Button>
+        {!currentProfiles[0].isGlobal && (
+          <Button
+            onClick={() => handleDeleteProfile(currentProfiles[0].id)}
+            className="flex items-center bg-red-500 hover:bg-red-600 text-white"
+          >
+            <Trash2 className="mr-1 h-4 w-4" />
+            Delete Profile
+          </Button>
+        )}
       </>
     ) : null;
 

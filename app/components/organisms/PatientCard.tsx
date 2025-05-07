@@ -38,6 +38,20 @@ export const PatientCard: React.FC<PatientCardProps> = ({
     <div className="h-full w-full max-w-full overflow-x-auto">
       <table className="h-full w-full border-collapse text-[8px] xs:text-[9px] sm:text-xs md:text-sm min-w-[650px]">
         <tbody>
+          {/* Global Profile Badge - only shown for global profiles */}
+          {profile.isGlobal && (
+            <tr>
+              <td
+                className="border border-[#97a8b5] bg-[#015a8b]/10 p-1 text-center"
+                colSpan={5}
+              >
+                <div className="inline-flex items-center rounded-full bg-[#015a8b] px-2 py-0.5 text-[8px] xs:text-[9px] sm:text-[10px] md:text-xs font-medium text-white">
+                  Default Profile - Read Only
+                </div>
+              </td>
+            </tr>
+          )}
+
           {/* Patient Basic Info Row */}
           <tr>
             <td

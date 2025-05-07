@@ -15,14 +15,29 @@ export async function getProfilesFromDB(): Promise<
   }
 
   try {
+    // Get both user-specific profiles AND global profiles
     const { data, error } = await supabase
       .from("patient_profiles")
       .select("*")
-      .eq("user_id", userId);
+      .or(`user_id.eq.${userId},is_global.eq.true`);
 
     if (error) {
       console.error("Error fetching profiles from Supabase:", error);
       return {};
+    }
+
+    // Log details about fetched profiles
+    console.log(`[DB-STORAGE] Fetched ${data.length} total profiles`);
+    const globalCount = data.filter((p) => p.is_global).length;
+    console.log(
+      `[DB-STORAGE] ${globalCount} global profiles, ${
+        data.length - globalCount
+      } user profiles`
+    );
+
+    if (globalCount > 0) {
+      const globalIds = data.filter((p) => p.is_global).map((p) => p.id);
+      console.log(`[DB-STORAGE] Global profile IDs: ${globalIds.join(", ")}`);
     }
 
     // Convert array to Record object with id as key
@@ -32,6 +47,7 @@ export async function getProfilesFromDB(): Promise<
       const parsedProfile = {
         ...profile.profile_data,
         id: profile.id,
+        isGlobal: profile.is_global, // Mark as global based on is_global flag
       };
       profilesRecord[profile.id] = parsedProfile as PatientProfile;
     });
@@ -58,13 +74,13 @@ export async function getProfileFromDB(
 
   try {
     console.log(
-      `[DB-STORAGE] Looking for profile with ID: "${id}" for user: "${userId}"`
+      `[DB-STORAGE] Looking for profile with ID: "${id}" for user: "${userId}" or global profile`
     );
 
     // First, check if the profile exists without the user constraint
     const { data: anyUserData, error: anyUserError } = await supabase
       .from("patient_profiles")
-      .select("id, user_id")
+      .select("id, user_id, is_global")
       .eq("id", id);
 
     if (anyUserError) {
@@ -79,22 +95,22 @@ export async function getProfileFromDB(
         } profiles with this ID`
       );
       if (anyUserData && anyUserData.length > 0) {
-        // If profile exists but for a different user
-        if (anyUserData[0].user_id !== userId) {
+        // If profile exists but for a different user and is not global
+        if (anyUserData[0].user_id !== userId && !anyUserData[0].is_global) {
           console.log(
-            `[DB-STORAGE] Profile belongs to user ${anyUserData[0].user_id}, not current user ${userId}`
+            `[DB-STORAGE] Profile belongs to user ${anyUserData[0].user_id}, not current user ${userId} and is not global`
           );
         }
       }
     }
 
-    // Now try to get the profile with user constraint
+    // Now try to get the profile with user constraint or global flag
     const { data, error } = await supabase
       .from("patient_profiles")
       .select("*")
       .eq("id", id)
-      .eq("user_id", userId)
-      .single();
+      .or(`user_id.eq.${userId},is_global.eq.true`)
+      .maybeSingle();
 
     if (error) {
       console.error(
@@ -103,13 +119,21 @@ export async function getProfileFromDB(
       return null;
     }
 
+    if (!data) {
+      console.log(`[DB-STORAGE] No profile found with ID: "${id}"`);
+      return null;
+    }
+
     console.log(`[DB-STORAGE] Profile found with ID: "${id}"`);
 
-    // Parse the profile data
-    return {
+    // Parse the profile data and include the is_global flag
+    const parsedProfile = {
       ...data.profile_data,
       id: data.id,
+      isGlobal: data.is_global, // Include the is_global flag from the table
     } as PatientProfile;
+
+    return parsedProfile;
   } catch (error) {
     console.error(
       `[DB-STORAGE] Error getting profile from Supabase: ${
@@ -124,7 +148,9 @@ export async function getProfileFromDB(
  * Save a patient profile to Supabase
  */
 export async function saveProfileToDB(
-  profile: PatientProfile
+  profile: PatientProfile,
+  isGlobal: boolean = false,
+  allowEditGlobal: boolean = false
 ): Promise<PatientProfile | null> {
   const userId = await getUserId();
 
@@ -135,11 +161,49 @@ export async function saveProfileToDB(
 
   try {
     console.log(
-      `[DB-STORAGE] Attempting to save profile with ID: ${profile.id}`
+      `[DB-STORAGE] Attempting to save ${
+        isGlobal ? "global " : ""
+      }profile with ID: ${profile.id}`
     );
 
-    // Ensure the profile has an ID, if not generate one
-    if (!profile.id) {
+    // Check if trying to modify an existing global profile
+    if (!isGlobal && !allowEditGlobal) {
+      // Check if the profile is a global profile
+      const { data: globalCheck, error: globalCheckError } = await supabase
+        .from("patient_profiles")
+        .select("is_global")
+        .eq("id", profile.id)
+        .eq("is_global", true)
+        .maybeSingle();
+
+      if (globalCheckError) {
+        console.error(
+          `[DB-STORAGE] Error checking if profile is global: ${globalCheckError.message}`
+        );
+      }
+
+      // If this is a global profile and allowEditGlobal is false, prevent editing
+      if (globalCheck && globalCheck.is_global === true) {
+        console.error(
+          `[DB-STORAGE] Attempt to modify global profile ${profile.id} was rejected`
+        );
+        return null;
+      }
+    }
+
+    // For global profiles, ensure the ID follows the default-{patient_name} format
+    if (isGlobal) {
+      // Create a slug from patient name (lowercase, spaces to dashes)
+      const nameSlug = profile.patientName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+        .replace(/\s+/g, "-"); // Replace spaces with dashes
+
+      profile.id = `default-${nameSlug}`;
+      console.log(`[DB-STORAGE] Generated global profile ID: ${profile.id}`);
+    }
+    // For non-global profiles, ensure the profile has an ID, if not generate one
+    else if (!profile.id) {
       profile.id = generateId();
       console.log(
         `[DB-STORAGE] No ID provided, generated new ID: ${profile.id}`
@@ -152,7 +216,7 @@ export async function saveProfileToDB(
 
     // If this is a sample profile, make sure it's unique to this user
     // BUT only do this for NEW profiles, not EXISTING ones that are being edited
-    if (isSample && !profile.id.includes(userId)) {
+    if (isSample && !profile.id.includes(userId) && !isGlobal) {
       const originalId = profile.id;
 
       // Check if this profile already exists
@@ -179,14 +243,38 @@ export async function saveProfileToDB(
       }
     }
 
+    // For global profiles, ensure the isGlobal property is set
+    if (isGlobal) {
+      profile.isGlobal = true;
+    }
+
     // Check if the profile already exists
-    const { data: existingProfile, error: existingProfileError } =
-      await supabase
+    let existingProfile = null;
+    let existingProfileError = null;
+
+    if (isGlobal) {
+      // For global profiles, just check if it exists by ID
+      const result = await supabase
+        .from("patient_profiles")
+        .select("id")
+        .eq("id", profile.id)
+        .eq("is_global", true)
+        .maybeSingle();
+
+      existingProfile = result.data;
+      existingProfileError = result.error;
+    } else {
+      // For user profiles, check by ID and user_id
+      const result = await supabase
         .from("patient_profiles")
         .select("id")
         .eq("id", profile.id)
         .eq("user_id", userId)
         .maybeSingle();
+
+      existingProfile = result.data;
+      existingProfileError = result.error;
+    }
 
     if (existingProfileError) {
       console.error(
@@ -203,31 +291,53 @@ export async function saveProfileToDB(
 
     if (existingProfile) {
       console.log(
-        `[DB-STORAGE] Updating existing profile with ID: ${profile.id}`
+        `[DB-STORAGE] Updating existing ${
+          isGlobal ? "global " : ""
+        }profile with ID: ${profile.id}`
       );
 
       // Update existing profile
-      result = await supabase
-        .from("patient_profiles")
-        .update({
-          profile_data: profile,
-          updated_at: new Date().toISOString(),
-          is_sample: isSample,
-        })
-        .eq("id", profile.id)
-        .eq("user_id", userId)
-        .select();
+      if (isGlobal) {
+        result = await supabase
+          .from("patient_profiles")
+          .update({
+            profile_data: profile,
+            updated_at: new Date().toISOString(),
+            is_sample: isSample,
+            is_global: true,
+          })
+          .eq("id", profile.id)
+          .eq("is_global", true)
+          .select();
+      } else {
+        result = await supabase
+          .from("patient_profiles")
+          .update({
+            profile_data: profile,
+            updated_at: new Date().toISOString(),
+            is_sample: isSample,
+            is_global: false,
+          })
+          .eq("id", profile.id)
+          .eq("user_id", userId)
+          .select();
+      }
     } else {
-      console.log(`[DB-STORAGE] Creating new profile with ID: ${profile.id}`);
+      console.log(
+        `[DB-STORAGE] Creating new ${
+          isGlobal ? "global " : ""
+        }profile with ID: ${profile.id}`
+      );
 
       // Insert new profile
       result = await supabase
         .from("patient_profiles")
         .insert({
           id: profile.id,
-          user_id: userId,
+          user_id: userId, // We still store the creator's user_id even for global profiles
           profile_data: profile,
           is_sample: isSample,
+          is_global: isGlobal,
         })
         .select();
     }
@@ -240,7 +350,9 @@ export async function saveProfileToDB(
     }
 
     console.log(
-      `[DB-STORAGE] Successfully saved profile with ID: ${profile.id}`
+      `[DB-STORAGE] Successfully saved ${
+        isGlobal ? "global " : ""
+      }profile with ID: ${profile.id}`
     );
     return profile;
   } catch (error) {
@@ -317,5 +429,91 @@ export async function hasSampleProfile(): Promise<boolean> {
   } catch (error) {
     console.error("Error checking for sample profiles:", error);
     return false;
+  }
+}
+
+/**
+ * Get all global profiles from Supabase that are available to all users
+ */
+export async function getGlobalProfilesFromDB(): Promise<
+  Record<string, PatientProfile>
+> {
+  const userId = await getUserId();
+
+  if (!userId) {
+    console.error("User not authenticated");
+    return {};
+  }
+
+  try {
+    // Get only global profiles
+    const { data, error } = await supabase
+      .from("patient_profiles")
+      .select("*")
+      .eq("is_global", true);
+
+    if (error) {
+      console.error("Error fetching global profiles from Supabase:", error);
+      return {};
+    }
+
+    // Convert array to Record object with id as key
+    const profilesRecord: Record<string, PatientProfile> = {};
+    data.forEach((profile) => {
+      // Parse JSON fields
+      const parsedProfile = {
+        ...profile.profile_data,
+        id: profile.id,
+        isGlobal: true, // Always true for global profiles
+      };
+      profilesRecord[profile.id] = parsedProfile as PatientProfile;
+    });
+
+    console.log(`[DB-STORAGE] Fetched ${data.length} global profiles`);
+    return profilesRecord;
+  } catch (error) {
+    console.error("Error getting global profiles from Supabase:", error);
+    return {};
+  }
+}
+
+/**
+ * Debugging function to check if global profiles exist and are fetchable
+ */
+export async function debugGlobalProfiles(): Promise<any> {
+  try {
+    // Direct query for global profiles
+    const { data: globalProfiles, error: globalError } = await supabase
+      .from("patient_profiles")
+      .select("*")
+      .eq("is_global", true);
+
+    if (globalError) {
+      console.error("Error fetching global profiles:", globalError);
+      return { error: globalError.message };
+    }
+
+    console.log(`[DEBUG] Found ${globalProfiles.length} global profiles`);
+
+    if (globalProfiles.length > 0) {
+      console.log(`[DEBUG] First global profile ID: ${globalProfiles[0].id}`);
+      console.log(
+        `[DEBUG] First global profile user_id: ${globalProfiles[0].user_id}`
+      );
+    }
+
+    // Return a simplified version of the data for inspection
+    return {
+      count: globalProfiles.length,
+      profiles: globalProfiles.map((p) => ({
+        id: p.id,
+        user_id: p.user_id,
+        is_global: p.is_global,
+        patientName: p.profile_data?.patientName || "Unknown",
+      })),
+    };
+  } catch (error) {
+    console.error("Error in debugGlobalProfiles:", error);
+    return { error: (error as Error).message };
   }
 }

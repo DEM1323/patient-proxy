@@ -486,6 +486,11 @@ export default function PatientChat() {
       <div>
         <div className="text-sm font-bold">
           Patient: <span className="font-normal">{patient.patientName}</span>
+          {patient.isGlobal && (
+            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+              Default Profile
+            </span>
+          )}
         </div>
         <div className="text-sm text-gray-600">
           Age: {patient.age} | Gender: {patient.gender}
@@ -680,6 +685,11 @@ export default function PatientChat() {
             <DialogHeader className="pb-4">
               <DialogTitle className="text-2xl text-[#015a8b]">
                 Patient Profile Details
+                {patient.isGlobal && (
+                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                    Default Profile
+                  </span>
+                )}
               </DialogTitle>
             </DialogHeader>
             <ScrollArea className="h-full max-h-[calc(95vh-120px)]">

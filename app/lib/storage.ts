@@ -4,6 +4,8 @@ import {
   getProfileFromDB,
   saveProfileToDB,
   deleteProfileFromDB,
+  getGlobalProfilesFromDB,
+  debugGlobalProfiles,
 } from "./db-storage";
 import { supabase } from "./supabase";
 
@@ -13,7 +15,7 @@ async function isAuthenticated(): Promise<boolean> {
   return !!data.session;
 }
 
-// Get all profiles from Supabase
+// Get all profiles from Supabase (both user's profiles and global profiles)
 export async function getProfiles(): Promise<Record<string, PatientProfile>> {
   if (await isAuthenticated()) {
     return await getProfilesFromDB();
@@ -21,6 +23,19 @@ export async function getProfiles(): Promise<Record<string, PatientProfile>> {
 
   // Return empty object if not authenticated
   console.log("User not authenticated, returning empty profiles list");
+  return {};
+}
+
+// Get only global profiles from Supabase
+export async function getGlobalProfiles(): Promise<
+  Record<string, PatientProfile>
+> {
+  if (await isAuthenticated()) {
+    return await getGlobalProfilesFromDB();
+  }
+
+  // Return empty object if not authenticated
+  console.log("User not authenticated, returning empty global profiles list");
   return {};
 }
 
@@ -42,15 +57,27 @@ export async function getProfile(id: string): Promise<PatientProfile | null> {
 
 // Save a profile to Supabase
 export async function saveProfile(
-  profile: PatientProfile
+  profile: PatientProfile,
+  isGlobal: boolean = false,
+  allowEditGlobal: boolean = false
 ): Promise<PatientProfile> {
-  console.log(`[STORAGE] Saving profile with ID: ${profile.id}`);
+  console.log(
+    `[STORAGE] Saving ${isGlobal ? "global " : ""}profile with ID: ${
+      profile.id
+    }`
+  );
 
   if (await isAuthenticated()) {
-    const savedProfile = await saveProfileToDB(profile);
+    const savedProfile = await saveProfileToDB(
+      profile,
+      isGlobal,
+      allowEditGlobal
+    );
     if (savedProfile) {
       console.log(
-        `[STORAGE] Successfully saved profile with ID: ${savedProfile.id}`
+        `[STORAGE] Successfully saved ${
+          isGlobal ? "global " : ""
+        }profile with ID: ${savedProfile.id}`
       );
       return savedProfile;
     }
@@ -74,3 +101,6 @@ export async function deleteProfile(id: string): Promise<boolean> {
 
   return false;
 }
+
+// Export debug function
+export const debugProfiles = debugGlobalProfiles;

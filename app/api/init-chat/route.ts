@@ -58,12 +58,13 @@ export async function POST(request: NextRequest) {
     );
 
     // Get profile directly from Supabase using the auth token
+    // Check for both user-owned profiles AND global profiles
     const { data: profileData, error: profileError } = await supabaseAuth
       .from("patient_profiles")
       .select("*")
       .eq("id", patientId)
-      .eq("user_id", userData.user.id)
-      .single();
+      .or(`user_id.eq.${userData.user.id},is_global.eq.true`)
+      .maybeSingle();
 
     if (profileError || !profileData) {
       console.error(
@@ -72,13 +73,30 @@ export async function POST(request: NextRequest) {
         }`
       );
 
-      // Try to get profiles directly from Supabase to see if they exist
-      const { data: profiles } = await supabaseAuth
+      // Try to check if this profile exists at all
+      const { data: anyProfile } = await supabaseAuth
+        .from("patient_profiles")
+        .select("id, user_id, is_global")
+        .eq("id", patientId)
+        .maybeSingle();
+
+      // Get a list of all accessible profiles for this user
+      const { data: userProfiles } = await supabaseAuth
         .from("patient_profiles")
         .select("id")
         .eq("user_id", userData.user.id);
 
-      const availableIds = profiles?.map((p) => p.id) || [];
+      const { data: globalProfiles } = await supabaseAuth
+        .from("patient_profiles")
+        .select("id")
+        .eq("is_global", true);
+
+      // Combine user and global profile IDs
+      const userProfileIds = userProfiles?.map((p) => p.id) || [];
+      const globalProfileIds = globalProfiles?.map((p) => p.id) || [];
+      const availableIds = [
+        ...new Set([...userProfileIds, ...globalProfileIds]),
+      ];
 
       return NextResponse.json(
         {
@@ -86,6 +104,9 @@ export async function POST(request: NextRequest) {
           debugInfo: {
             requestedId: patientId,
             userId: userData.user.id,
+            profileExists: anyProfile ? true : false,
+            profileUserId: anyProfile?.user_id || null,
+            profileIsGlobal: anyProfile?.is_global || false,
             availableIds: availableIds,
           },
         },
@@ -102,6 +123,7 @@ export async function POST(request: NextRequest) {
     const patientProfile = {
       ...profileData.profile_data,
       id: profileData.id,
+      isGlobal: profileData.is_global, // Include the isGlobal flag
     };
 
     // Generate an initial greeting

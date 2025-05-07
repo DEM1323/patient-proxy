@@ -232,6 +232,11 @@ export default function SelectPatient() {
               <CardHeader>
                 <CardTitle className="text-[#015a8b]">
                   {profile.patientName}
+                  {profile.isGlobal && (
+                    <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                      Default Profile
+                    </span>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   Age: {profile.age} | Gender: {profile.gender}
@@ -259,6 +264,11 @@ export default function SelectPatient() {
           <DialogHeader className="pb-4">
             <DialogTitle className="text-2xl text-[#015a8b]">
               Patient Profile Details
+              {selectedProfile?.isGlobal && (
+                <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                  Default Profile
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-full max-h-[calc(95vh-120px)]">

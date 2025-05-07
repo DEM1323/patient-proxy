@@ -41,14 +41,21 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   // State for the patient profile
   const [profile, setProfile] = useState<PatientProfile>(initialProfile);
   const isEditMode = !!initialData.id;
+  const isGlobalProfile = !!initialData.isGlobal;
 
-  console.log("PatientForm using profile ID:", initialData.id, profile.id);
+  console.log(
+    "PatientForm using profile ID:",
+    initialData.id,
+    profile.id,
+    isGlobalProfile ? "(Global Profile - Read Only)" : ""
+  );
 
   // Generic function to update a simple field
   const updateField = (
     field: keyof PatientProfile,
     value: string | boolean | number
   ) => {
+    if (isGlobalProfile) return; // Prevent updates to global profiles
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -109,37 +116,29 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[FORM] Form submission, initial ID:", initialData.id);
-    console.log("[FORM] Current profile ID:", profile.id);
+    if (isGlobalProfile) {
+      console.log("Cannot submit changes to a global profile");
+      return;
+    }
 
-    // Always prioritize the original ID from initialData
-    const finalId = initialData.id || profile.id;
-    console.log("[FORM] Final ID for submission:", finalId);
-
-    // Create a proper profile with ID preserved
-    const submittedProfile = {
-      ...profile,
-      id: finalId, // Explicitly use the original ID
-    } as PatientProfile;
-
+    // Keep the ID if it exists
+    const submittedProfile = { ...profile };
+    if (initialData.id) {
+      submittedProfile.id = initialData.id;
+    }
     onSubmit(submittedProfile);
   };
 
+  // Function to handle button click (used for both form submit and to navigate away on global profiles)
   const handleButtonClick = () => {
-    console.log("[FORM] Button click, initial ID:", initialData.id);
-    console.log("[FORM] Current profile ID:", profile.id);
+    if (isGlobalProfile) {
+      // For global profiles, just navigate back
+      window.history.back();
+      return;
+    }
 
-    // Always prioritize the original ID from initialData
-    const finalId = initialData.id || profile.id;
-    console.log("[FORM] Final ID for submission:", finalId);
-
-    // Create a proper profile with ID preserved
-    const submittedProfile = {
-      ...profile,
-      id: finalId, // Explicitly use the original ID
-    } as PatientProfile;
-
-    onSubmit(submittedProfile);
+    // For editable profiles, submit the form
+    handleSubmit(new Event("submit") as any);
   };
 
   // Render a checklist section
@@ -218,6 +217,27 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
   return (
     <div className="w-full h-full flex flex-col">
+      {isGlobalProfile && (
+        <div className="bg-[#015a8b]/10 p-3 mb-4 rounded-md border border-[#015a8b]">
+          <p className="text-sm font-medium text-[#015a8b] flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
+            This is a default profile and cannot be modified. You can view it or
+            use the back button to return.
+          </p>
+        </div>
+      )}
+
       <div className="border border-[#97a8b5] flex-1 overflow-auto">
         <form className="w-full" onSubmit={handleSubmit}>
           <table className="w-full border-collapse text-[8px] xs:text-[9px] sm:text-xs md:text-sm min-w-[650px]">
@@ -233,12 +253,15 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       Patient Name:
                     </Label>
                     <Input
-                      className="h-6 sm:h-8 text-[8px] xs:text-[9px] sm:text-xs md:text-sm mt-0.5 bg-white"
+                      className={`h-6 sm:h-8 text-[8px] xs:text-[9px] sm:text-xs md:text-sm mt-0.5 ${
+                        isGlobalProfile ? "bg-gray-100" : "bg-white"
+                      }`}
                       placeholder="Enter patient name"
                       value={profile.patientName}
                       onChange={(e) =>
                         updateField("patientName", e.target.value)
                       }
+                      readOnly={isGlobalProfile}
                     />
                   </div>
                 </td>
@@ -1205,7 +1228,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           onClick={handleButtonClick}
           className="bg-[#015a8b] hover:bg-[#216f99] text-white"
         >
-          {isEditMode ? "Update Patient Profile" : "Create Patient Profile"}
+          {isGlobalProfile
+            ? "Back to Profiles"
+            : isEditMode
+            ? "Update Patient Profile"
+            : "Create Patient Profile"}
         </Button>
       </div>
     </div>
