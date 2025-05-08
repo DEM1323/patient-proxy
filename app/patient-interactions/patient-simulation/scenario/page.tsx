@@ -698,7 +698,6 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
                   placeholder={`Type your message...
 
 
-
 (Press Enter to send, Shift+Enter for new line)`}
                   helperText="Use this area to communicate with the patient. Press Enter to send."
                   availableActions={availableActions}
