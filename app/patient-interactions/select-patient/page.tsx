@@ -142,10 +142,37 @@ export default function SelectPatient() {
     router.push(destination);
   };
 
-  const handleSelectSimulation = (simulationId: string) => {
-    router.push(
-      `/patient-interactions/patient-simulation/scenario?scenarioId=${simulationId}`
-    );
+  const handleSelectSimulation = async (simulationId: string) => {
+    try {
+      // Fetch full simulation details to check for linked patient profile
+      const response = await fetch(
+        `/api/simulation-scenarios?id=${simulationId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch simulation details");
+      }
+
+      const data = await response.json();
+      const simulation = data.scenario;
+
+      // Check if this simulation has a linked patient profile
+      let url = `/patient-interactions/patient-simulation/scenario?scenarioId=${simulationId}`;
+
+      // If there's a linked patient profile ID, include it in the URL
+      if (simulation.patient_profile_id) {
+        url += `&patientProfileId=${simulation.patient_profile_id}`;
+      }
+
+      // Navigate to the simulation page
+      router.push(url);
+    } catch (error) {
+      console.error("Error preparing simulation:", error);
+      // Fallback to direct navigation without patient profile
+      router.push(
+        `/patient-interactions/patient-simulation/scenario?scenarioId=${simulationId}`
+      );
+    }
   };
 
   const handleInfoClick = (e: React.MouseEvent, profile: PatientProfile) => {

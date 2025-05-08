@@ -338,6 +338,24 @@ export default function SimulationScenarioPage() {
     },
   ];
 
+  // Add a debug log whenever scenario changes to check if patient profile is properly loaded
+  useEffect(() => {
+    if (scenario && scenario.patient_profile) {
+      console.log("Successfully loaded patient profile:", {
+        name: scenario.patient_profile.patientName,
+        age: scenario.patient_profile.age,
+        gender: scenario.patient_profile.gender,
+        diagnosis: scenario.patient_profile.diagnosis || "Not specified",
+      });
+    } else if (scenario) {
+      console.warn("Scenario loaded without patient profile:", {
+        scenarioTitle: scenario.title,
+        hasPatientProfileId: !!scenario.patient_profile_id,
+        patientProfileId: scenario.patient_profile_id,
+      });
+    }
+  }, [scenario]);
+
   // Fetch scenario data
   useEffect(() => {
     const fetchScenario = async () => {
@@ -348,37 +366,93 @@ export default function SimulationScenarioPage() {
       }
 
       try {
-        const response = await fetch(
-          `/api/simulation-scenarios?id=${scenarioId}&includePatientProfile=true`
+        console.log(`Fetching scenario with ID: ${scenarioId}`);
+
+        // First, fetch the basic scenario data without patient profile
+        const scenarioResponse = await fetch(
+          `/api/simulation-scenarios?id=${scenarioId}`
         );
-        if (!response.ok) {
-          throw new Error("Failed to fetch scenario");
+
+        if (!scenarioResponse.ok) {
+          throw new Error(
+            `Failed to fetch scenario: ${scenarioResponse.status}`
+          );
         }
 
-        const data = await response.json();
+        const scenarioData = await scenarioResponse.json();
+        const scenario = scenarioData.scenario;
 
-        // If patient profile is not included in the scenario, try to fetch it separately
-        if (
-          data.scenario &&
-          data.scenario.patient_profile_id &&
-          !data.scenario.patient_profile
-        ) {
+        if (!scenario) {
+          throw new Error("Scenario not found");
+        }
+
+        console.log("Scenario data fetched:", {
+          title: scenario.title,
+          hasPatientProfileId: !!scenario.patient_profile_id,
+          patientProfileId: scenario.patient_profile_id,
+        });
+
+        // If there's a patient_profile_id, fetch the patient profile
+        let patientProfile = null;
+        if (scenario.patient_profile_id) {
+          console.log(
+            `Fetching patient profile with ID: ${scenario.patient_profile_id}`
+          );
+
           try {
+            // Try the new API endpoint first
             const profileResponse = await fetch(
-              `/api/patient-profiles?id=${data.scenario.patient_profile_id}`
+              `/api/patient-profiles-by-id?id=${scenario.patient_profile_id}`
             );
+
             if (profileResponse.ok) {
               const profileData = await profileResponse.json();
-              // Add patient profile to scenario
-              data.scenario.patient_profile = profileData.profile;
+              patientProfile = profileData.profile;
+
+              console.log("Patient profile fetched successfully:", {
+                name: patientProfile?.patientName,
+                id: patientProfile?.id,
+              });
+            } else {
+              // Fall back to the original endpoint if the new one fails
+              console.warn("New API endpoint failed, trying original endpoint");
+              const fallbackResponse = await fetch(
+                `/api/patient-profiles?id=${scenario.patient_profile_id}`
+              );
+
+              if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                patientProfile = fallbackData.profile;
+
+                console.log("Patient profile fetched via fallback:", {
+                  name: patientProfile?.patientName,
+                  id: patientProfile?.id,
+                });
+              } else {
+                console.error(
+                  "Failed to fetch patient profile from both endpoints"
+                );
+              }
             }
-          } catch (profileErr) {
-            console.error("Failed to fetch patient profile:", profileErr);
-            // Continue without patient profile - not critical
+          } catch (profileError) {
+            console.error("Error fetching patient profile:", profileError);
           }
         }
 
-        setScenario(data.scenario);
+        // Combine scenario and patient profile data
+        const completeScenario = {
+          ...scenario,
+          patient_profile: patientProfile,
+        };
+
+        console.log("Final scenario data:", {
+          title: completeScenario.title,
+          hasPatientProfile: !!completeScenario.patient_profile,
+          patientName: completeScenario.patient_profile?.patientName,
+        });
+
+        // Set the scenario in state
+        setScenario(completeScenario);
 
         // Initialize with system message and briefing
         const initialMessages: Message[] = [
@@ -393,15 +467,38 @@ export default function SimulationScenarioPage() {
             id: "briefing-1",
             role: "assistant",
             content:
-              data.scenario.student_report || "No patient report available.",
+              completeScenario.student_report || "No patient report available.",
             timestamp: new Date(),
           },
         ];
 
+        // If we have a patient profile, include that information in the briefing
+        if (completeScenario.patient_profile) {
+          const patientInfo = completeScenario.patient_profile;
+          initialMessages.push({
+            id: "patient-info",
+            role: "system",
+            content: `Patient Information:\nName: ${
+              patientInfo.patientName
+            }\nAge: ${patientInfo.age}\nGender: ${
+              patientInfo.gender
+            }\nDiagnosis: ${patientInfo.diagnosis || "Not specified"}`,
+            timestamp: new Date(),
+          });
+
+          // Also log detailed patient info to ensure it exists
+          console.log("Patient profile details for chat:", {
+            name: patientInfo.patientName,
+            age: patientInfo.age,
+            gender: patientInfo.gender,
+            diagnosis: patientInfo.diagnosis || "Not specified",
+          });
+        }
+
         setMessages(initialMessages);
       } catch (err) {
+        console.error("Error in fetchScenario:", err);
         setError("Error loading simulation scenario. Please try again later.");
-        console.error(err);
       } finally {
         setLoading(false);
       }
