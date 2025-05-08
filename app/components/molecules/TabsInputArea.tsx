@@ -61,7 +61,7 @@ export const TabsInputArea: React.FC<TabsInputAreaProps> = ({
       <Tabs defaultValue={defaultTab}>
         <TabsList className="mb-3">
           <TabsTrigger value="chat">Communication</TabsTrigger>
-          <TabsTrigger value="actions">Clinical Actions</TabsTrigger>
+          <TabsTrigger value="actions">Simulation Actions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chat" className="space-y-3 mt-0">
@@ -79,7 +79,7 @@ export const TabsInputArea: React.FC<TabsInputAreaProps> = ({
 
         <TabsContent value="actions" className="space-y-3 mt-0 mb-2">
           <p className="text-xs text-gray-500 text-center">
-            Select clinical actions to perform during the interaction.
+            Select simulation actions to perform during the interaction.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-0">
             {availableActions.map((action) => (

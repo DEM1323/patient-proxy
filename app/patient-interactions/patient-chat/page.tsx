@@ -33,6 +33,12 @@ import {
   DialogTitle,
 } from "@/app/components/ui/dialog";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
+import { ChatContainer } from "@/app/components/molecules/ChatContainer";
+import {
+  ChatMessage as ChatMessageComponent,
+  type MessageRole,
+} from "@/app/components/molecules/ChatMessage";
+import { ExitConfirmationDialog } from "@/app/components/molecules/ExitConfirmationDialog";
 
 interface Message {
   id: string;
@@ -63,6 +69,20 @@ const CheckboxItem = ({
 
 // Patient Info Modal component was here, now replaced with the Dialog component
 
+// Add a utility function to convert the chat messages to the format expected by ChatContainer
+const adaptMessageFormat = (messages: Message[], patientName?: string) => {
+  return messages.map((msg) => ({
+    id: msg.id,
+    role:
+      msg.sender === "user"
+        ? ("user" as MessageRole)
+        : ("patient" as MessageRole),
+    content: msg.text,
+    timestamp: msg.timestamp,
+    senderName: msg.sender === "user" ? "You" : patientName || "Patient",
+  }));
+};
+
 export default function PatientChat() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,8 +107,9 @@ export default function PatientChat() {
   const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
   const sessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showPatientInfo, setShowPatientInfo] = useState(false);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
-  // Clinical actions that can be performed during the chat
+  // Simulation actions that can be performed during the chat
   const availableActions = [
     {
       id: "vitals",
@@ -125,7 +146,7 @@ export default function PatientChat() {
     },
   ];
 
-  // Handle performing a clinical action
+  // Handle performing a simulation action
   const handleAction = (actionId: string, optionId?: string) => {
     const action = availableActions.find((a) => a.id === actionId);
     if (!action) return;
@@ -138,26 +159,30 @@ export default function PatientChat() {
       }
     }
 
-    // Get result for the action
+    // Simulate a result for the action
     const result = getActionResult(actionId, optionId);
 
-    // Add clinical action to message list
+    // Add simulation action to message list
     const actionMessage: Message = {
       id: Date.now().toString(),
-      text: `Performed: ${actionName}\nResult: ${result}`,
-      sender: "user",
+      text: `**${actionName}**\nResult: ${result}`,
+      sender: "system",
       timestamp: new Date(),
     };
+
+    setMessages((prev) => [...prev, actionMessage]);
 
     // Add patient's response to the action
-    const responseMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      text: getPatientActionResponse(actionId, optionId),
-      sender: "patient",
-      timestamp: new Date(),
-    };
+    setTimeout(() => {
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: getPatientActionResponse(actionId, optionId),
+        sender: "patient",
+        timestamp: new Date(),
+      };
 
-    setMessages((prev) => [...prev, actionMessage, responseMessage]);
+      setMessages((prev) => [...prev, responseMessage]);
+    }, 1000);
   };
 
   // Get result text for a performed action
@@ -193,7 +218,7 @@ export default function PatientChat() {
     }
   };
 
-  // Get patient's response to clinical actions
+  // Get patient's response to simulation actions
   const getPatientActionResponse = (
     actionId: string,
     optionId?: string
@@ -609,49 +634,62 @@ export default function PatientChat() {
     }
   };
 
-  const Title = patient && (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8"
-        onClick={() =>
-          router.push("/patient-interactions/select-patient?mode=chat")
-        }
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </Button>
-      <div>
-        <div className="text-sm font-bold">
-          Patient: <span className="font-normal">{patient.patientName}</span>
-          {patient.isGlobal && (
-            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-              Default Profile
-            </span>
-          )}
-        </div>
-        <div className="text-sm text-gray-600">
-          Age: {patient.age} | Gender: {patient.gender}
-        </div>
-      </div>
-      {patient.diagnosis && (
+  // Add a handler for the back button
+  const handleBackButton = () => {
+    if (messages.length > 0) {
+      // Show confirmation dialog if there are messages
+      setShowExitConfirmation(true);
+    } else {
+      // Direct exit if no messages
+      router.push("/patient-interactions/select-patient?mode=chat");
+    }
+  };
+
+  // Patient info header component
+  const HeaderContent = () => {
+    if (!patient) return null;
+    return (
+      <div className="flex items-center space-x-2">
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 ml-1"
-          onClick={() => setShowPatientInfo(true)}
-          title="View patient information"
+          className="h-8 w-8"
+          onClick={handleBackButton}
         >
-          <Info className="h-4 w-4 text-blue-500" />
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-      )}
-    </div>
-  );
+        <div>
+          <div className="text-sm font-bold">
+            Patient: <span className="font-normal">{patient.patientName}</span>
+            {patient.isGlobal && (
+              <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                Default Profile
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-600">
+            Age: {patient.age} | Gender: {patient.gender}
+          </div>
+        </div>
+        {patient.diagnosis && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 ml-1"
+            onClick={() => setShowPatientInfo(true)}
+            title="View patient information"
+          >
+            <Info className="h-4 w-4 text-blue-500" />
+          </Button>
+        )}
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
       <ContentLayout
-        title="Patient Chat"
+        title={patient ? <HeaderContent /> : "Patient Chat"}
         showSearch={false}
         backgroundColor="bg-[#F8F9FA]"
       >
@@ -671,7 +709,7 @@ export default function PatientChat() {
   if (error) {
     return (
       <ContentLayout
-        title="Patient Chat"
+        title={patient ? <HeaderContent /> : "Patient Chat"}
         showSearch={false}
         backgroundColor="bg-[#F8F9FA]"
       >
@@ -789,7 +827,7 @@ export default function PatientChat() {
   if (!patient) {
     return (
       <ContentLayout
-        title="Patient Chat"
+        title={patient ? <HeaderContent /> : "Patient Chat"}
         showSearch={false}
         backgroundColor="bg-[#F8F9FA]"
       >
@@ -812,7 +850,7 @@ export default function PatientChat() {
 
   return (
     <ContentLayout
-      title={Title}
+      title={patient ? <HeaderContent /> : "Patient Chat"}
       showSearch={false}
       backgroundColor="bg-[#F8F9FA]"
     >
@@ -832,7 +870,7 @@ export default function PatientChat() {
             </DialogHeader>
             <ScrollArea className="h-full max-h-[calc(95vh-120px)]">
               <div className="h-full w-full max-w-full overflow-x-auto">
-                <table className="h-full w-full border-collapse text-[8px] xs:text-[9px] sm:text-xs md:text-sm min-w-[650px]">
+                <table className="h-full w-full border-collapse text-[8px] xs:text-[9px] sm:text-sm min-w-[650px]">
                   <tbody>
                     {/* Patient Basic Info Row */}
                     <tr>
@@ -841,7 +879,7 @@ export default function PatientChat() {
                         colSpan={2}
                       >
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Patient Name:
                           </strong>{" "}
                           {patient.patientName || (
@@ -851,7 +889,7 @@ export default function PatientChat() {
                       </td>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Age:
                           </strong>{" "}
                           {patient.age || (
@@ -861,7 +899,7 @@ export default function PatientChat() {
                       </td>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Gender:
                           </strong>{" "}
                           {patient.gender || (
@@ -874,13 +912,13 @@ export default function PatientChat() {
                         rowSpan={2}
                       >
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Allergies:
                           </strong>{" "}
                           {patient.allergies || "No known allergies"}
                         </div>
                         <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Unit:
                           </strong>{" "}
                           {patient.unit || (
@@ -888,7 +926,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Major support:
                           </strong>{" "}
                           {patient.majorSupport || (
@@ -896,7 +934,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Phone:
                           </strong>{" "}
                           {patient.phone || (
@@ -904,7 +942,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Immunizations:
                           </strong>{" "}
                           {patient.immunizations || (
@@ -921,7 +959,7 @@ export default function PatientChat() {
                         colSpan={2}
                       >
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Case:
                           </strong>{" "}
                           {patient.case || (
@@ -929,7 +967,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Diagnosis:
                           </strong>{" "}
                           {patient.diagnosis || (
@@ -937,7 +975,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             History:
                           </strong>{" "}
                           {patient.history || (
@@ -945,7 +983,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Type of operation:
                           </strong>{" "}
                           {patient.operationType || (
@@ -953,7 +991,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Height:
                           </strong>{" "}
                           {patient.height || (
@@ -961,7 +999,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Consultation:
                           </strong>{" "}
                           {patient.consultation || (
@@ -969,7 +1007,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Consent obtained:
                           </strong>{" "}
                           {patient.consentObtained ? "✓ Yes" : "☐ Yes"}
@@ -981,7 +1019,7 @@ export default function PatientChat() {
                         colSpan={2}
                       >
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Weight:
                           </strong>{" "}
                           {patient.weight || (
@@ -989,7 +1027,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Physician:
                           </strong>{" "}
                           {patient.physician || (
@@ -997,7 +1035,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Advanced directives:
                           </strong>{" "}
                           {patient.advancedDirectives || (
@@ -1005,7 +1043,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Diet:
                           </strong>{" "}
                           {patient.diet || (
@@ -1013,7 +1051,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Fall precautions:
                           </strong>{" "}
                           {patient.fallPrecautions || (
@@ -1021,7 +1059,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Restraints:
                           </strong>{" "}
                           {patient.restraints || (
@@ -1029,7 +1067,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Isolation precautions:
                           </strong>{" "}
                           {patient.isolationPrecautions || (
@@ -1043,7 +1081,7 @@ export default function PatientChat() {
                     <tr>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Monitoring:
                           </strong>
                         </div>
@@ -1062,19 +1100,19 @@ export default function PatientChat() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
                             No monitoring items
                           </div>
                         )}
                       </td>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Medication:
                           </strong>
                         </div>
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Medications:
                           </strong>
                           {patient.medicationItems &&
@@ -1093,7 +1131,7 @@ export default function PatientChat() {
                               </div>
                             ))
                           ) : (
-                            <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                            <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
                               No medications
                             </div>
                           )}
@@ -1104,7 +1142,7 @@ export default function PatientChat() {
                         colSpan={3}
                       >
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Respiratory:
                           </strong>
                         </div>
@@ -1123,7 +1161,7 @@ export default function PatientChat() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
                             No respiratory items
                           </div>
                         )}
@@ -1134,7 +1172,7 @@ export default function PatientChat() {
                     <tr>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Diagnostic studies:
                           </strong>
                         </div>
@@ -1153,14 +1191,14 @@ export default function PatientChat() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
                             No diagnostic studies
                           </div>
                         )}
                       </td>
                       <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Social history:
                           </strong>
                         </div>
@@ -1179,12 +1217,12 @@ export default function PatientChat() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
                             No social history items
                           </div>
                         )}
                         <div className="mt-2 sm:mt-3">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Race/Religion:
                           </strong>{" "}
                           {patient.raceReligion || (
@@ -1192,7 +1230,7 @@ export default function PatientChat() {
                           )}
                         </div>
                         <div className="mt-2 sm:mt-3">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Medication brought from home:
                           </strong>
                         </div>
@@ -1211,7 +1249,7 @@ export default function PatientChat() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm mt-1">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm mt-1">
                             No medications from home
                           </div>
                         )}
@@ -1221,7 +1259,7 @@ export default function PatientChat() {
                         colSpan={3}
                       >
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Activity of daily living:
                           </strong>
                         </div>
@@ -1240,13 +1278,13 @@ export default function PatientChat() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
                             No activity items
                           </div>
                         )}
 
                         <div className="mt-2 sm:mt-3">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Discharge planning:
                           </strong>{" "}
                           {patient.dischargePlanning || (
@@ -1263,7 +1301,7 @@ export default function PatientChat() {
                         colSpan={5}
                       >
                         <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
                             Drains:
                           </strong>
                         </div>
@@ -1284,7 +1322,7 @@ export default function PatientChat() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-xs md:text-sm">
+                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
                             No drains
                           </div>
                         )}
@@ -1373,24 +1411,7 @@ export default function PatientChat() {
 
         {/* Messages Area */}
         {!isLoading && (
-          <div className="flex-1 overflow-y-auto space-y-4 p-6">
-            {/* Initial greeting loading indicator */}
-            {isTyping && messages.length === 0 && (
-              <div className="flex justify-start">
-                <div className="bg-[#E9ECEF] text-gray-900 max-w-[70%] rounded-[10px] p-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium opacity-75 mb-1">
-                      {patient?.patientName || "Patient"}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <p className="text-sm">Preparing a greeting...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
+          <div className="flex-1 overflow-y-auto">
             {/* Display non-critical errors as a notification banner */}
             {error && messages.length > 0 && (
               <div className="mx-2 mb-4 p-3 bg-amber-50 text-amber-700 rounded-md text-sm">
@@ -1401,57 +1422,16 @@ export default function PatientChat() {
               </div>
             )}
 
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.sender === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[70%] rounded-[10px] p-4 ${
-                    message.sender === "user"
-                      ? "bg-[#015a8b] text-white"
-                      : "bg-[#E9ECEF] text-gray-900"
-                  }`}
-                >
-                  {message.sender === "user" ? (
-                    <div className="flex flex-col">
-                      <span className="text-xs font-medium opacity-75 mb-1">
-                        You
-                      </span>
-                      <p className="text-sm leading-relaxed">{message.text}</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col">
-                      <span className="text-xs font-medium opacity-75 mb-1">
-                        {patient?.patientName || "Patient"}
-                      </span>
-                      <p className="text-sm leading-relaxed">{message.text}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {/* Typing indicator */}
-            {isTyping && messages.length > 0 && (
-              <div className="flex justify-start">
-                <div className="bg-[#E9ECEF] text-gray-900 max-w-[70%] rounded-[10px] p-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium opacity-75 mb-1">
-                      {patient?.patientName || "Patient"}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <p className="text-sm">Typing...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
+            <ChatContainer
+              messages={adaptMessageFormat(messages, patient?.patientName)}
+              isTyping={isTyping}
+              typingMessageProps={{
+                role: "patient",
+                senderName: patient?.patientName || "Patient",
+                content: "",
+              }}
+              className="p-6"
+            />
           </div>
         )}
 
@@ -1488,6 +1468,15 @@ export default function PatientChat() {
           </div>
         )}
       </div>
+
+      {/* Exit Confirmation Dialog */}
+      <ExitConfirmationDialog
+        isOpen={showExitConfirmation}
+        onClose={() => setShowExitConfirmation(false)}
+        onExit={handleBackButton}
+        title="Exit Chat?"
+        message="You are in the middle of a chat session. If you exit now, your conversation will not be saved."
+      />
     </ContentLayout>
   );
 }

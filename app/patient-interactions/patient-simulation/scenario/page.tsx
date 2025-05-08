@@ -13,6 +13,12 @@ import {
   Activity,
   ClipboardList,
   ThumbsUp,
+  Info,
+  Check,
+  FileText,
+  FileQuestion,
+  User,
+  Terminal,
 } from "lucide-react";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { Button } from "@/app/components/ui/button";
@@ -24,10 +30,21 @@ import {
 } from "@/app/components/ui/tabs";
 import { ChatInput } from "@/app/components/molecules/ChatInput";
 import { TabsInputArea } from "@/app/components/molecules/TabsInputArea";
+import { ChatContainer } from "@/app/components/molecules/ChatContainer";
+import {
+  ChatMessage,
+  type MessageRole,
+} from "@/app/components/molecules/ChatMessage";
+import { ExitConfirmationDialog } from "@/app/components/molecules/ExitConfirmationDialog";
+import { ContentLayout } from "@/app/components/layouts/ContentLayout";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
 
 // Message types
-type MessageRole = "user" | "assistant" | "system" | "action";
-
 interface Message {
   id: string;
   role: MessageRole;
@@ -49,6 +66,210 @@ interface SimulationAction {
   }>;
 }
 
+// Update the header component with proper types
+interface HeaderContentProps {
+  scenario: SimulationScenario | null;
+  simulationPhase: SimulationPhase;
+  handleExit: () => void;
+  startSimulation: () => void;
+  endSimulation: () => void;
+  showPatientInfo?: boolean;
+  setShowPatientInfo?: (show: boolean) => void;
+  onMenuOptionClick?: (option: string) => void;
+  simulationDuration?: string;
+}
+
+const HeaderContent: React.FC<HeaderContentProps> = ({
+  scenario,
+  simulationPhase,
+  handleExit,
+  startSimulation,
+  endSimulation,
+  showPatientInfo = false,
+  setShowPatientInfo = () => {},
+  onMenuOptionClick = () => {},
+  simulationDuration = "00:00",
+}) => {
+  const patientProfile = scenario?.patient_profile;
+
+  const menuOptions = [
+    {
+      id: "patient-report",
+      label1: "Patient",
+      label2: "Report",
+      icon: <FileText className="h-4 w-4" />,
+    },
+    {
+      id: "scenario-overview",
+      label1: "Scenario",
+      label2: "Overview",
+      icon: <FileQuestion className="h-4 w-4" />,
+    },
+    {
+      id: "patient-information",
+      label1: "Patient",
+      label2: "Information",
+      icon: <User className="h-4 w-4" />,
+    },
+    {
+      id: "simulation-actions",
+      label1: "Simulation",
+      label2: "Actions",
+      icon: <Terminal className="h-4 w-4" />,
+    },
+  ];
+
+  return (
+    <div className="flex justify-between items-center w-full">
+      <div className="flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 mr-3"
+          onClick={handleExit}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+
+        <div className="flex items-center">
+          {/* Scenario title and phase */}
+          <div className="min-w-[180px]">
+            <h1 className="text-xl font-semibold text-[#015a8b]">
+              {scenario?.title || "Simulation Scenario"}
+            </h1>
+            <div className="flex items-center text-sm text-gray-500">
+              <Clock className="h-4 w-4 mr-1" />
+              <span>
+                {simulationPhase === "briefing" ? (
+                  "Briefing"
+                ) : simulationPhase === "simulation" ? (
+                  <span className="flex items-center">
+                    Time:{" "}
+                    <span className="font-medium ml-1 text-[#015a8b]">
+                      {simulationDuration}
+                    </span>
+                  </span>
+                ) : (
+                  "Debriefing"
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Divider */}
+          {patientProfile && (
+            <div className="h-10 border-r border-gray-300 mx-4" />
+          )}
+
+          {/* Patient info section */}
+          {patientProfile && (
+            <div className="flex items-center">
+              <div>
+                <div className="text-sm font-bold flex items-center">
+                  Patient:{" "}
+                  <span className="font-normal ml-1">
+                    {patientProfile.patientName}
+                  </span>
+                  {patientProfile.isGlobal && (
+                    <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                      Default Profile
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Age: {patientProfile.age} | Gender: {patientProfile.gender}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 ml-2"
+                onClick={() => setShowPatientInfo(true)}
+                title="View patient information"
+              >
+                <Info className="h-4 w-4 text-blue-500" />
+              </Button>
+            </div>
+          )}
+
+          {/* Divider before menu options */}
+          <div className="h-10 border-r border-gray-300 mx-3" />
+
+          {/* Menu options with text stacked on two lines */}
+          <div className="flex">
+            {menuOptions.map((option) => (
+              <Button
+                key={option.id}
+                variant="ghost"
+                className="flex flex-col items-center justify-center w-16 h-14 px-1 py-1 mx-1 text-gray-600 hover:text-[#015a8b] hover:bg-gray-100"
+                onClick={() => onMenuOptionClick(option.id)}
+                title={`${option.label1} ${option.label2}`}
+              >
+                {option.icon}
+                <div className="flex flex-col items-center mt-1">
+                  <span className="text-[10px] leading-tight font-medium">
+                    {option.label1}
+                  </span>
+                  <span className="text-[10px] leading-tight font-medium">
+                    {option.label2}
+                  </span>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        {simulationPhase === "briefing" && (
+          <Button
+            onClick={startSimulation}
+            className="bg-[#015a8b] hover:bg-[#014a71]"
+          >
+            Begin Simulation
+          </Button>
+        )}
+        {simulationPhase === "simulation" && (
+          <Button
+            onClick={endSimulation}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
+            End Simulation
+          </Button>
+        )}
+        {simulationPhase === "debriefing" && (
+          <Button
+            onClick={handleExit}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Complete & Exit
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Add the CheckboxItem component
+const CheckboxItem = ({
+  label,
+  checked,
+}: {
+  label: string;
+  checked: boolean;
+}) => (
+  <div className="flex items-start">
+    <div
+      className={`flex-shrink-0 w-4 h-4 mr-1 border border-gray-500 rounded flex items-center justify-center ${
+        checked ? "bg-[#015a8b] border-[#015a8b]" : "bg-white"
+      }`}
+    >
+      {checked && <Check className="w-3 h-3 text-white" />}
+    </div>
+    <span className="font-semibold">{label}</span>
+  </div>
+);
+
 export default function SimulationScenarioPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -68,10 +289,17 @@ export default function SimulationScenarioPage() {
   >([]);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [patientObservations, setPatientObservations] = useState<string[]>([]);
+  const [showPatientInfo, setShowPatientInfo] = useState(false);
+  const [activeMenuOption, setActiveMenuOption] = useState<string | null>(null);
+  const [simulationStartTime, setSimulationStartTime] = useState<Date | null>(
+    null
+  );
+  const [simulationDuration, setSimulationDuration] = useState<string>("00:00");
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Constants - Actions that students can take in the simulation
   const availableActions: SimulationAction[] = [
@@ -121,13 +349,35 @@ export default function SimulationScenarioPage() {
 
       try {
         const response = await fetch(
-          `/api/simulation-scenarios?id=${scenarioId}`
+          `/api/simulation-scenarios?id=${scenarioId}&includePatientProfile=true`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch scenario");
         }
 
         const data = await response.json();
+
+        // If patient profile is not included in the scenario, try to fetch it separately
+        if (
+          data.scenario &&
+          data.scenario.patient_profile_id &&
+          !data.scenario.patient_profile
+        ) {
+          try {
+            const profileResponse = await fetch(
+              `/api/patient-profiles?id=${data.scenario.patient_profile_id}`
+            );
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              // Add patient profile to scenario
+              data.scenario.patient_profile = profileData.profile;
+            }
+          } catch (profileErr) {
+            console.error("Failed to fetch patient profile:", profileErr);
+            // Continue without patient profile - not critical
+          }
+        }
+
         setScenario(data.scenario);
 
         // Initialize with system message and briefing
@@ -165,9 +415,25 @@ export default function SimulationScenarioPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle phase transition
+  // Start simulation with timer
   const startSimulation = () => {
+    const startTime = new Date();
+    setSimulationStartTime(startTime);
     setSimulationPhase("simulation");
+
+    // Start timer to update duration
+    timerIntervalRef.current = setInterval(() => {
+      const currentTime = new Date();
+      const elapsedMs = currentTime.getTime() - startTime.getTime();
+      const elapsedSec = Math.floor(elapsedMs / 1000);
+      const minutes = Math.floor(elapsedSec / 60);
+      const seconds = elapsedSec % 60;
+      setSimulationDuration(
+        `${minutes.toString().padStart(2, "0")}:${seconds
+          .toString()
+          .padStart(2, "0")}`
+      );
+    }, 1000);
 
     // Add system message indicating phase change
     setMessages((prev) => [
@@ -195,7 +461,14 @@ export default function SimulationScenarioPage() {
     }, 1000);
   };
 
+  // End simulation and clear timer
   const endSimulation = () => {
+    // Clear the timer
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
     setSimulationPhase("debriefing");
 
     // Generate AI feedback based on action log and observations
@@ -427,7 +700,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     }
   };
 
-  // Handle performing a clinical action
+  // Handle performing a simulation action
   const handleAction = (actionId: string, optionId?: string) => {
     const action = availableActions.find((a) => a.id === actionId);
     if (!action) return;
@@ -532,214 +805,333 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     }
   };
 
+  // Add handler for menu option clicks
+  const handleMenuOptionClick = (option: string) => {
+    setActiveMenuOption(option);
+
+    // Handle different menu options
+    switch (option) {
+      case "patient-report":
+        // Show patient report
+        break;
+      case "scenario-overview":
+        // Show scenario overview
+        break;
+      case "patient-information":
+        // Show patient information
+        setShowPatientInfo(true);
+        break;
+      case "simulation-actions":
+        // Show simulation actions
+        break;
+    }
+  };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, []);
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#015a8b]"></div>
-      </div>
+      <ContentLayout
+        title="Simulation Scenario"
+        showSearch={false}
+        backgroundColor="bg-[#F8F9FA]"
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#015a8b] mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading scenario...</p>
+          </div>
+        </div>
+      </ContentLayout>
     );
   }
 
   if (error || !scenario) {
     return (
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-800 font-medium text-lg">
-            {error || "Scenario not found"}
-          </p>
-          <button
-            onClick={() =>
-              router.push("/patient-interactions/patient-simulation")
-            }
-            className="mt-4 bg-red-100 text-red-800 px-4 py-2 rounded hover:bg-red-200"
-          >
-            Return to Scenarios
-          </button>
+      <ContentLayout
+        title="Simulation Scenario"
+        showSearch={false}
+        backgroundColor="bg-[#F8F9FA]"
+      >
+        <div className="flex flex-col items-center justify-center h-full p-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
+            <p className="text-red-800 font-medium mb-4">
+              {error || "Scenario not found"}
+            </p>
+            <Button
+              onClick={() =>
+                router.push("/patient-interactions/patient-simulation")
+              }
+              className="bg-[#015a8b] hover:bg-[#014a71]"
+            >
+              Return to Scenarios
+            </Button>
+          </div>
         </div>
-      </div>
+      </ContentLayout>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 py-2 px-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <button
-              onClick={handleExit}
-              className="mr-4 text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-[#015a8b]">
-                {scenario.title}
-              </h1>
-              <div className="flex items-center text-sm text-gray-500">
-                <Clock className="h-4 w-4 mr-1" />
-                <span>
-                  {simulationPhase === "briefing"
-                    ? "Briefing"
-                    : simulationPhase === "simulation"
-                    ? "Simulation in progress"
-                    : "Debriefing"}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div>
-            {simulationPhase === "briefing" && (
-              <Button
-                onClick={startSimulation}
-                className="bg-[#015a8b] hover:bg-[#014a71]"
-              >
-                Begin Simulation
-              </Button>
-            )}
-            {simulationPhase === "simulation" && (
-              <Button
-                onClick={endSimulation}
-                className="bg-amber-600 hover:bg-amber-700"
-              >
-                End Simulation
-              </Button>
-            )}
-            {simulationPhase === "debriefing" && (
-              <Button
-                onClick={handleExit}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Complete & Exit
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <div className="flex flex-1 overflow-hidden">
+    <ContentLayout
+      title={
+        <HeaderContent
+          scenario={scenario}
+          simulationPhase={simulationPhase}
+          handleExit={handleExit}
+          startSimulation={startSimulation}
+          endSimulation={endSimulation}
+          showPatientInfo={showPatientInfo}
+          setShowPatientInfo={setShowPatientInfo}
+          onMenuOptionClick={handleMenuOptionClick}
+          simulationDuration={simulationDuration}
+        />
+      }
+      showSearch={false}
+      backgroundColor="bg-[#F8F9FA]"
+    >
+      <div className="h-full flex flex-col w-full">
         {/* Main chat */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
           {/* Messages area */}
-          <ScrollArea className="flex-1 p-4 custom-scrollbar">
-            <div className="max-w-3xl mx-auto space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.role === "user"
-                        ? "bg-[#015a8b] text-white"
-                        : message.role === "system"
-                        ? "bg-amber-100 text-amber-800 border border-amber-200"
-                        : message.role === "action"
-                        ? "bg-green-100 text-green-800 border border-green-200"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    <div
-                      className="prose prose-sm max-w-none"
-                      style={{
-                        whiteSpace: "pre-wrap",
-                        // Add markdown styling within the divs
-                        ...(message.role === "assistant" && {
-                          "& h1": {
-                            fontWeight: "bold",
-                            fontSize: "1.25rem",
-                            marginTop: "1rem",
-                            marginBottom: "0.5rem",
-                          },
-                          "& h2": {
-                            fontWeight: "bold",
-                            fontSize: "1.1rem",
-                            marginTop: "1rem",
-                            marginBottom: "0.5rem",
-                          },
-                          "& ul": {
-                            paddingLeft: "1.5rem",
-                            marginTop: "0.5rem",
-                            marginBottom: "0.5rem",
-                          },
-                          "& li": { marginBottom: "0.25rem" },
-                        }),
-                      }}
-                    >
-                      {message.content}
-                    </div>
-                    <div className="text-xs opacity-70 mt-1 text-right">
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
+          <ChatContainer
+            messages={messages}
+            isTyping={isProcessing}
+            typingMessageProps={{
+              role: "assistant",
+              senderName: "Patient",
+            }}
+            className="w-full max-w-full"
+          />
 
           {/* Input area */}
           {simulationPhase === "simulation" && (
-            <div className="border-t border-[#015a8b] bg-[#F8F9FA] p-4">
-              <div className="max-w-3xl mx-auto">
-                <TabsInputArea
-                  value={currentInput}
-                  onChange={setCurrentInput}
-                  onSend={handleSendMessage}
-                  isProcessing={isProcessing}
-                  disabled={!!error}
-                  inputRef={inputRef}
-                  placeholder={`Type your message...
+            <div className="border-t border-[#015a8b] pt-4 px-6 bg-[#F8F9FA] w-full">
+              <TabsInputArea
+                value={currentInput}
+                onChange={setCurrentInput}
+                onSend={handleSendMessage}
+                isProcessing={isProcessing}
+                disabled={!!error}
+                inputRef={inputRef}
+                placeholder={`Type your message...
 
 
 (Press Enter to send, Shift+Enter for new line)`}
-                  helperText="Use this area to communicate with the patient. Press Enter to send."
-                  availableActions={availableActions}
-                  onActionSelect={handleAction}
-                  defaultTab="chat"
-                />
-              </div>
+                helperText="Use this area to communicate with the patient. Press Enter to send."
+                availableActions={availableActions}
+                onActionSelect={handleAction}
+                defaultTab="chat"
+                className="w-full"
+              />
             </div>
           )}
         </div>
-      </div>
 
-      {/* Exit Confirmation Dialog */}
-      {showExitConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Exit Simulation?</h3>
-            <p className="mb-6 text-gray-600">
-              You are in the middle of a simulation. If you exit now, your
-              progress will not be saved.
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setShowExitConfirmation(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() =>
-                  router.push(
-                    "/patient-interactions/select-patient?mode=simulation"
-                  )
-                }
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Exit Anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        {/* Patient Info Modal */}
+        {showPatientInfo && scenario?.patient_profile && (
+          <Dialog open={showPatientInfo} onOpenChange={setShowPatientInfo}>
+            <DialogContent className="max-w-[95vw] w-[1200px] max-h-[95vh] p-6 overflow-hidden">
+              <DialogHeader className="pb-4">
+                <DialogTitle className="text-2xl text-[#015a8b]">
+                  Patient Profile Details
+                  {scenario.patient_profile.isGlobal && (
+                    <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                      Default Profile
+                    </span>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="h-full max-h-[calc(95vh-120px)]">
+                <div className="h-full w-full max-w-full overflow-x-auto">
+                  <table className="h-full w-full border-collapse text-[8px] xs:text-[9px] sm:text-xs md:text-sm min-w-[650px]">
+                    <tbody>
+                      {/* Patient Basic Info Row */}
+                      <tr>
+                        <td
+                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/3 align-top"
+                          colSpan={2}
+                        >
+                          <div className="mb-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Patient Name:
+                            </strong>{" "}
+                            {scenario.patient_profile.patientName || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
+                          <div className="mb-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Age:
+                            </strong>{" "}
+                            {scenario.patient_profile.age || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
+                          <div className="mb-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Gender:
+                            </strong>{" "}
+                            {scenario.patient_profile.gender || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td
+                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/3 align-top"
+                          rowSpan={2}
+                        >
+                          <div className="mb-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Allergies:
+                            </strong>{" "}
+                            {scenario.patient_profile.allergies ||
+                              "No known allergies"}
+                          </div>
+                          <div className="mt-1 sm:mt-2">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Unit:
+                            </strong>{" "}
+                            {scenario.patient_profile.unit || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 sm:mt-2">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Major support:
+                            </strong>{" "}
+                            {scenario.patient_profile.majorSupport || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 sm:mt-2">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Phone:
+                            </strong>{" "}
+                            {scenario.patient_profile.phone || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 sm:mt-2">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Immunizations:
+                            </strong>{" "}
+                            {scenario.patient_profile.immunizations || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Case Details Row */}
+                      <tr>
+                        <td
+                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 align-top"
+                          colSpan={2}
+                        >
+                          <div className="mb-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Case:
+                            </strong>{" "}
+                            {scenario.patient_profile.case || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-0.5 sm:mt-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Diagnosis:
+                            </strong>{" "}
+                            {scenario.patient_profile.diagnosis || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-0.5 sm:mt-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              History:
+                            </strong>{" "}
+                            {scenario.patient_profile.history || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td
+                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 align-top"
+                          colSpan={2}
+                        >
+                          <div className="mt-0.5 sm:mt-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Weight:
+                            </strong>{" "}
+                            {scenario.patient_profile.weight || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-0.5 sm:mt-1">
+                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
+                              Height:
+                            </strong>{" "}
+                            {scenario.patient_profile.height || (
+                              <span className="text-gray-400">
+                                Not specified
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Additional rows for monitoring items, medication, etc. can be added here based on patient profile data */}
+                      {/* For this example, I'm keeping it simplified */}
+                    </tbody>
+                  </table>
+                </div>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        <ExitConfirmationDialog
+          isOpen={showExitConfirmation}
+          onClose={() => setShowExitConfirmation(false)}
+          onExit={() =>
+            router.push("/patient-interactions/select-patient?mode=simulation")
+          }
+          title="Exit Simulation?"
+          message="You are in the middle of a simulation. If you exit now, your progress will not be saved."
+        />
+      </div>
+    </ContentLayout>
   );
 }
