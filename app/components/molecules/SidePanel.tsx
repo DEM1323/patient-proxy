@@ -58,7 +58,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       </div>
 
       {/* Main content area with padding at the bottom for navigation */}
-      <ScrollArea className="h-[calc(100%-56px)]">
+      <ScrollArea className="h-[calc(100%-58px)]">
         <div className="p-4 pb-16">{children}</div>
       </ScrollArea>
 
