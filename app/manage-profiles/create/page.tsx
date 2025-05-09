@@ -63,10 +63,10 @@ export default function CreateProfile() {
       <Button
         onClick={() => router.push("/manage-profiles")}
         variant="ghost"
-        className="mr-2 p-1 h-8 w-8"
+        className="mr-2 p-1 h-8 w-8 hover:bg-[#015a8b] rounded-full group"
         aria-label="Back to Manage Profiles"
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
       </Button>
       <span className="text-xl sm:text-2xl md:text-3xl font-bold">
         Create a New Patient Profile

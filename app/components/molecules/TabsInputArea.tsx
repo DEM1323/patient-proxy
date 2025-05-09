@@ -24,7 +24,7 @@ interface TabsInputAreaProps {
   // Chat input props
   value: string;
   onChange: (value: string) => void;
-  onSend: (e?: any) => void;
+  onSend: (e?: React.FormEvent) => void;
   isProcessing: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -58,13 +58,13 @@ export const TabsInputArea: React.FC<TabsInputAreaProps> = ({
 }) => {
   return (
     <div className={`${className}`}>
-      <Tabs defaultValue={defaultTab}>
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-3">
           <TabsTrigger value="chat">Communication</TabsTrigger>
           <TabsTrigger value="actions">Simulation Actions</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="chat" className="space-y-3 mt-0">
+        <TabsContent value="chat" className="space-y-3 mt-0 w-full">
           <ChatInput
             value={value}
             onChange={onChange}
@@ -74,10 +74,11 @@ export const TabsInputArea: React.FC<TabsInputAreaProps> = ({
             inputRef={inputRef}
             placeholder={placeholder}
             helperText={helperText}
+            className="w-full"
           />
         </TabsContent>
 
-        <TabsContent value="actions" className="space-y-3 mt-0 mb-2">
+        <TabsContent value="actions" className="space-y-3 mt-0 mb-2 w-full">
           <p className="text-xs text-gray-500 text-center">
             Select simulation actions to perform during the interaction.
           </p>

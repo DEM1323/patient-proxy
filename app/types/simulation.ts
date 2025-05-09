@@ -52,6 +52,11 @@ export interface AIObservationLog {
   result?: string;
 }
 
+export interface DetailedPatientData {
+  dob?: string;
+  mrNumber?: string;
+}
+
 export interface SimulationScenario {
   id: string;
   title: string;
@@ -65,6 +70,9 @@ export interface SimulationScenario {
   // Link to patient profile
   patient_profile_id: string;
   patient_profile?: PatientProfile;
+
+  // Detailed patient data specific to this scenario
+  detailed_patient_data?: DetailedPatientData;
 
   medical_history_prior: string;
   medical_history_recent: string;

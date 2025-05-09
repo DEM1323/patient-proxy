@@ -35,6 +35,21 @@ export default function EditProfilePage({ params: paramsPromise }: PageProps) {
         if (profileData) {
           setProfile(profileData);
 
+          // If this is a global profile, show message and redirect back
+          if (profileData.isGlobal) {
+            toast({
+              title: "Cannot edit default profile",
+              description: "Default profiles cannot be modified.",
+              variant: "destructive",
+            });
+
+            // Navigate back after a short delay
+            setTimeout(() => {
+              router.push("/manage-profiles/edit");
+            }, 1500);
+            return;
+          }
+
           // Calculate and store the current page number
           const profilesObj = await getProfiles();
           const profiles = Object.values(profilesObj);
@@ -58,7 +73,7 @@ export default function EditProfilePage({ params: paramsPromise }: PageProps) {
     };
 
     fetchProfile();
-  }, [profileId]);
+  }, [profileId, router]);
 
   const handleSubmit = async (updatedProfile: PatientProfile) => {
     try {
@@ -125,10 +140,11 @@ export default function EditProfilePage({ params: paramsPromise }: PageProps) {
       <Button
         onClick={handleBack}
         variant="ghost"
-        className="mr-2 p-1 h-8 w-8"
+        size="icon"
+        className="h-8 w-8 mr-3 hover:bg-[#015a8b] rounded-full group"
         aria-label="Back to Edit Profiles"
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
       </Button>
       <span className="text-xl sm:text-2xl md:text-3xl font-bold">
         Edit Patient Profile

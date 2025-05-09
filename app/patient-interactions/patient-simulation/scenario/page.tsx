@@ -43,6 +43,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog";
+import { PatientProfileModal } from "@/app/components/molecules/PatientProfileModal";
+import {
+  ScenarioOverviewPanel,
+  PatientReportPanel,
+  PatientInformationPanel,
+  SimulationActionsPanel,
+} from "@/app/components/molecules/SidePanel";
 
 // Message types
 interface Message {
@@ -94,16 +101,16 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
 
   const menuOptions = [
     {
-      id: "patient-report",
-      label1: "Patient",
-      label2: "Report",
-      icon: <FileText className="h-4 w-4" />,
-    },
-    {
       id: "scenario-overview",
       label1: "Scenario",
       label2: "Overview",
       icon: <FileQuestion className="h-4 w-4" />,
+    },
+    {
+      id: "patient-report",
+      label1: "Patient",
+      label2: "Report",
+      icon: <FileText className="h-4 w-4" />,
     },
     {
       id: "patient-information",
@@ -125,10 +132,10 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 mr-3"
+          className="h-8 w-8 mr-3 hover:bg-[#015a8b] rounded-full group"
           onClick={handleExit}
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
         </Button>
 
         <div className="flex items-center">
@@ -183,11 +190,11 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 ml-2"
+                className="h-6 w-6 ml-2 hover:bg-[#015a8b] rounded-full group"
                 onClick={() => setShowPatientInfo(true)}
                 title="View patient information"
               >
-                <Info className="h-4 w-4 text-blue-500" />
+                <Info className="h-4 w-4 text-[#015a8b] group-hover:text-white" />
               </Button>
             </div>
           )}
@@ -250,26 +257,6 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
   );
 };
 
-// Add the CheckboxItem component
-const CheckboxItem = ({
-  label,
-  checked,
-}: {
-  label: string;
-  checked: boolean;
-}) => (
-  <div className="flex items-start">
-    <div
-      className={`flex-shrink-0 w-4 h-4 mr-1 border border-gray-500 rounded flex items-center justify-center ${
-        checked ? "bg-[#015a8b] border-[#015a8b]" : "bg-white"
-      }`}
-    >
-      {checked && <Check className="w-3 h-3 text-white" />}
-    </div>
-    <span className="font-semibold">{label}</span>
-  </div>
-);
-
 export default function SimulationScenarioPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -295,6 +282,7 @@ export default function SimulationScenarioPage() {
     null
   );
   const [simulationDuration, setSimulationDuration] = useState<string>("00:00");
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -394,7 +382,17 @@ export default function SimulationScenarioPage() {
 
         // If there's a patient_profile_id, fetch the patient profile
         let patientProfile = null;
-        if (scenario.patient_profile_id) {
+        // Check if the scenario already includes a complete patient profile
+        // If it does, use it without making additional API calls
+        if (scenario.patient_profile) {
+          console.log("Patient profile already included in scenario data:", {
+            name: scenario.patient_profile.patientName,
+            id: scenario.patient_profile.id,
+          });
+          patientProfile = scenario.patient_profile;
+        }
+        // Otherwise, if we have a patient_profile_id, fetch the profile separately
+        else if (scenario.patient_profile_id) {
           console.log(
             `Fetching patient profile with ID: ${scenario.patient_profile_id}`
           );
@@ -407,7 +405,19 @@ export default function SimulationScenarioPage() {
 
             if (profileResponse.ok) {
               const profileData = await profileResponse.json();
-              patientProfile = profileData.profile;
+
+              // Handle the returned data based on the API structure
+              if (profileData.profile && profileData.profile.profile_data) {
+                // New API returns structured data
+                patientProfile = {
+                  ...profileData.profile.profile_data,
+                  id: profileData.profile.id,
+                  isGlobal: profileData.profile.is_global,
+                };
+              } else if (profileData.profile) {
+                // Direct profile data
+                patientProfile = profileData.profile;
+              }
 
               console.log("Patient profile fetched successfully:", {
                 name: patientProfile?.patientName,
@@ -904,23 +914,49 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
 
   // Add handler for menu option clicks
   const handleMenuOptionClick = (option: string) => {
-    setActiveMenuOption(option);
+    // If the same option is clicked again, close the panel
+    if (activeMenuOption === option && sidePanelOpen) {
+      setActiveMenuOption(null);
+      setSidePanelOpen(false);
+      return;
+    }
 
-    // Handle different menu options
-    switch (option) {
-      case "patient-report":
-        // Show patient report
-        break;
-      case "scenario-overview":
-        // Show scenario overview
-        break;
-      case "patient-information":
-        // Show patient information
-        setShowPatientInfo(true);
-        break;
-      case "simulation-actions":
-        // Show simulation actions
-        break;
+    // Open the panel with the selected option
+    setActiveMenuOption(option);
+    setSidePanelOpen(true);
+  };
+
+  // Handle closing the side panel
+  const handleCloseSidePanel = () => {
+    setActiveMenuOption(null);
+    setSidePanelOpen(false);
+  };
+
+  // Define the panel navigation order
+  const panelOrder = [
+    "scenario-overview",
+    "patient-report",
+    "patient-information",
+    "simulation-actions",
+  ];
+
+  // Navigate to the next panel
+  const handleNextPanel = () => {
+    if (!activeMenuOption) return;
+
+    const currentIndex = panelOrder.indexOf(activeMenuOption);
+    if (currentIndex < panelOrder.length - 1) {
+      setActiveMenuOption(panelOrder[currentIndex + 1]);
+    }
+  };
+
+  // Navigate to the previous panel
+  const handlePreviousPanel = () => {
+    if (!activeMenuOption) return;
+
+    const currentIndex = panelOrder.indexOf(activeMenuOption);
+    if (currentIndex > 0) {
+      setActiveMenuOption(panelOrder[currentIndex - 1]);
     }
   };
 
@@ -940,7 +976,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         showSearch={false}
         backgroundColor="bg-[#F8F9FA]"
       >
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center h-full p-6">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#015a8b] mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading scenario...</p>
@@ -957,7 +993,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         showSearch={false}
         backgroundColor="bg-[#F8F9FA]"
       >
-        <div className="flex flex-col items-center justify-center h-full p-4">
+        <div className="flex flex-col items-center justify-center h-full p-6">
           <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
             <p className="text-red-800 font-medium mb-4">
               {error || "Scenario not found"}
@@ -994,229 +1030,116 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
       showSearch={false}
       backgroundColor="bg-[#F8F9FA]"
     >
-      <div className="h-full flex flex-col w-full">
-        {/* Main chat */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
-          {/* Messages area */}
-          <ChatContainer
-            messages={messages}
-            isTyping={isProcessing}
-            typingMessageProps={{
-              role: "assistant",
-              senderName: "Patient",
-            }}
-            className="w-full max-w-full"
-          />
+      <div className="h-full flex flex-col w-full relative overflow-hidden">
+        {/* Main content area that will resize when panel is open */}
+        <div className="flex-1 flex overflow-hidden">
+          <div
+            className={`flex-1 flex flex-col w-full transition-all duration-300 ease-in-out ${
+              sidePanelOpen ? "mr-[400px]" : ""
+            }`}
+          >
+            {/* Messages area */}
+            <ChatContainer
+              messages={messages}
+              isTyping={isProcessing}
+              typingMessageProps={{
+                role: "assistant",
+                senderName: "Patient",
+              }}
+              className="w-full max-w-full py-4 px-6"
+            />
 
-          {/* Input area */}
-          {simulationPhase === "simulation" && (
-            <div className="border-t border-[#015a8b] pt-4 px-6 bg-[#F8F9FA] w-full">
-              <TabsInputArea
-                value={currentInput}
-                onChange={setCurrentInput}
-                onSend={handleSendMessage}
-                isProcessing={isProcessing}
-                disabled={!!error}
-                inputRef={inputRef}
-                placeholder={`Type your message...
+            {/* Input area */}
+            {simulationPhase === "simulation" && (
+              <div className="border-t border-[#015a8b] py-4 px-6 bg-[#F8F9FA] w-full">
+                <TabsInputArea
+                  value={currentInput}
+                  onChange={setCurrentInput}
+                  onSend={handleSendMessage}
+                  isProcessing={isProcessing}
+                  disabled={!!error}
+                  inputRef={inputRef}
+                  placeholder={`Type your message...
 
 
 (Press Enter to send, Shift+Enter for new line)`}
-                helperText="Use this area to communicate with the patient. Press Enter to send."
-                availableActions={availableActions}
-                onActionSelect={handleAction}
-                defaultTab="chat"
-                className="w-full"
-              />
-            </div>
-          )}
+                  helperText="Use this area to communicate with the patient. Press Enter to send."
+                  availableActions={availableActions}
+                  onActionSelect={handleAction}
+                  defaultTab="chat"
+                  className="w-full"
+                />
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Side Panels - positioned absolutely within the container */}
+        <ScenarioOverviewPanel
+          title="Scenario Overview"
+          isOpen={sidePanelOpen && activeMenuOption === "scenario-overview"}
+          onClose={handleCloseSidePanel}
+          onNext={handleNextPanel}
+          onPrevious={handlePreviousPanel}
+        />
+
+        <PatientReportPanel
+          title="Patient Report"
+          isOpen={sidePanelOpen && activeMenuOption === "patient-report"}
+          onClose={handleCloseSidePanel}
+          onNext={handleNextPanel}
+          onPrevious={handlePreviousPanel}
+        />
+
+        <PatientInformationPanel
+          title="Patient Information"
+          isOpen={sidePanelOpen && activeMenuOption === "patient-information"}
+          onClose={handleCloseSidePanel}
+          onNext={handleNextPanel}
+          onPrevious={handlePreviousPanel}
+          patientData={
+            scenario?.detailed_patient_data || {
+              dob: "2/10/XX",
+              mrNumber: "PCS21000",
+            }
+          }
+          patientProfile={
+            scenario?.patient_profile
+              ? {
+                  gender: scenario.patient_profile.gender,
+                  age:
+                    scenario.patient_profile.age != null
+                      ? scenario.patient_profile.age
+                      : undefined,
+                  weight: scenario.patient_profile.weight,
+                  height: scenario.patient_profile.height,
+                  allergies: scenario.patient_profile.allergies,
+                }
+              : {}
+          }
+          medicalHistory={{
+            prior: scenario?.medical_history_prior,
+            recent: scenario?.medical_history_recent,
+          }}
+        />
+
+        <SimulationActionsPanel
+          title="Simulation Actions"
+          isOpen={sidePanelOpen && activeMenuOption === "simulation-actions"}
+          onClose={handleCloseSidePanel}
+          onNext={handleNextPanel}
+          onPrevious={handlePreviousPanel}
+          availableActions={availableActions}
+          onActionSelect={handleAction}
+        />
 
         {/* Patient Info Modal */}
         {showPatientInfo && scenario?.patient_profile && (
-          <Dialog open={showPatientInfo} onOpenChange={setShowPatientInfo}>
-            <DialogContent className="max-w-[95vw] w-[1200px] max-h-[95vh] p-6 overflow-hidden">
-              <DialogHeader className="pb-4">
-                <DialogTitle className="text-2xl text-[#015a8b]">
-                  Patient Profile Details
-                  {scenario.patient_profile.isGlobal && (
-                    <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                      Default Profile
-                    </span>
-                  )}
-                </DialogTitle>
-              </DialogHeader>
-              <ScrollArea className="h-full max-h-[calc(95vh-120px)]">
-                <div className="h-full w-full max-w-full overflow-x-auto">
-                  <table className="h-full w-full border-collapse text-[8px] xs:text-[9px] sm:text-xs md:text-sm min-w-[650px]">
-                    <tbody>
-                      {/* Patient Basic Info Row */}
-                      <tr>
-                        <td
-                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/3 align-top"
-                          colSpan={2}
-                        >
-                          <div className="mb-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Patient Name:
-                            </strong>{" "}
-                            {scenario.patient_profile.patientName || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
-                          <div className="mb-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Age:
-                            </strong>{" "}
-                            {scenario.patient_profile.age || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
-                          <div className="mb-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Gender:
-                            </strong>{" "}
-                            {scenario.patient_profile.gender || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td
-                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/3 align-top"
-                          rowSpan={2}
-                        >
-                          <div className="mb-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Allergies:
-                            </strong>{" "}
-                            {scenario.patient_profile.allergies ||
-                              "No known allergies"}
-                          </div>
-                          <div className="mt-1 sm:mt-2">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Unit:
-                            </strong>{" "}
-                            {scenario.patient_profile.unit || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 sm:mt-2">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Major support:
-                            </strong>{" "}
-                            {scenario.patient_profile.majorSupport || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 sm:mt-2">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Phone:
-                            </strong>{" "}
-                            {scenario.patient_profile.phone || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 sm:mt-2">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Immunizations:
-                            </strong>{" "}
-                            {scenario.patient_profile.immunizations || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Case Details Row */}
-                      <tr>
-                        <td
-                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 align-top"
-                          colSpan={2}
-                        >
-                          <div className="mb-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Case:
-                            </strong>{" "}
-                            {scenario.patient_profile.case || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-0.5 sm:mt-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Diagnosis:
-                            </strong>{" "}
-                            {scenario.patient_profile.diagnosis || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-0.5 sm:mt-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              History:
-                            </strong>{" "}
-                            {scenario.patient_profile.history || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td
-                          className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 align-top"
-                          colSpan={2}
-                        >
-                          <div className="mt-0.5 sm:mt-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Weight:
-                            </strong>{" "}
-                            {scenario.patient_profile.weight || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-0.5 sm:mt-1">
-                            <strong className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-bold">
-                              Height:
-                            </strong>{" "}
-                            {scenario.patient_profile.height || (
-                              <span className="text-gray-400">
-                                Not specified
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Additional rows for monitoring items, medication, etc. can be added here based on patient profile data */}
-                      {/* For this example, I'm keeping it simplified */}
-                    </tbody>
-                  </table>
-                </div>
-              </ScrollArea>
-            </DialogContent>
-          </Dialog>
+          <PatientProfileModal
+            open={showPatientInfo}
+            onOpenChange={setShowPatientInfo}
+            patient={scenario.patient_profile}
+          />
         )}
 
         <ExitConfirmationDialog

@@ -6,12 +6,13 @@ import { Button } from "@/app/components/ui/button";
 interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSend: (e?: any) => void;
+  onSend: (e?: React.FormEvent) => void;
   isProcessing: boolean;
   disabled?: boolean;
   placeholder?: string;
   helperText?: string;
   inputRef?: React.Ref<HTMLTextAreaElement>;
+  className?: string;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -23,6 +24,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   placeholder = `Type your message...\n\n\n(Press Enter to send, Shift+Enter for new line)`,
   helperText = "Use this area to communicate with the patient. Press Enter to send.",
   inputRef,
+  className = "",
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Submit on Enter press (but not with Shift key)
@@ -32,17 +34,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleSend = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-    }
-    onSend(e as any);
+  const handleSend = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onSend();
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="flex">
-        <div className="flex-1 relative">
+    <div className={`flex flex-col ${className}`}>
+      <div className="flex w-full">
+        <div className="flex-1 relative w-full">
           <textarea
             ref={inputRef}
             placeholder={placeholder}

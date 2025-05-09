@@ -35,11 +35,11 @@ export const ContentLayout: React.FC<ContentLayoutProps> = ({
       {/* Content Area */}
       <div className="flex-1 p-4 bg-white flex flex-col overflow-hidden">
         <div
-          className={`h-full p-4 rounded-md border border-[#015a8b] flex flex-col overflow-auto ${backgroundColor}`}
+          className={`h-full rounded-md border border-[#015a8b] flex flex-col overflow-auto ${backgroundColor}`}
         >
           {/* Title and Actions */}
           {(title || actions) && (
-            <div className="flex justify-between items-center mb-6 flex-shrink-0">
+            <div className="flex justify-between items-center px-6 py-4 flex-shrink-0">
               {title &&
                 (typeof title === "string" ? (
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">

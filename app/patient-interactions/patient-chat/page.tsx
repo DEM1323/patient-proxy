@@ -39,35 +39,14 @@ import {
   type MessageRole,
 } from "@/app/components/molecules/ChatMessage";
 import { ExitConfirmationDialog } from "@/app/components/molecules/ExitConfirmationDialog";
+import { PatientProfileModal } from "@/app/components/molecules/PatientProfileModal";
 
 interface Message {
   id: string;
   text: string;
-  sender: "user" | "patient";
+  sender: "user" | "patient" | "system";
   timestamp: Date;
 }
-
-// CheckboxItem component from select-patient page
-const CheckboxItem = ({
-  label,
-  checked,
-}: {
-  label: string;
-  checked: boolean;
-}) => (
-  <div className="flex items-start">
-    <div
-      className={`flex-shrink-0 w-4 h-4 mr-1 border border-gray-500 rounded flex items-center justify-center ${
-        checked ? "bg-[#015a8b] border-[#015a8b]" : "bg-white"
-      }`}
-    >
-      {checked && <Check className="w-3 h-3 text-white" />}
-    </div>
-    <span className="font-semibold">{label}</span>
-  </div>
-);
-
-// Patient Info Modal component was here, now replaced with the Dialog component
 
 // Add a utility function to convert the chat messages to the format expected by ChatContainer
 const adaptMessageFormat = (messages: Message[], patientName?: string) => {
@@ -543,8 +522,10 @@ export default function PatientChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     if (!newMessage.trim() || !sessionId || !authToken || isTyping) return;
 
     const userMessage: Message = {
@@ -653,10 +634,10 @@ export default function PatientChat() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 hover:bg-[#015a8b] rounded-full group"
           onClick={handleBackButton}
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
         </Button>
         <div>
           <div className="text-sm font-bold">
@@ -675,11 +656,11 @@ export default function PatientChat() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 ml-1"
+            className="h-6 w-6 ml-1 hover:bg-[#015a8b] rounded-full group"
             onClick={() => setShowPatientInfo(true)}
             title="View patient information"
           >
-            <Info className="h-4 w-4 text-blue-500" />
+            <Info className="h-4 w-4 text-[#015a8b] group-hover:text-white" />
           </Button>
         )}
       </div>
@@ -856,489 +837,16 @@ export default function PatientChat() {
     >
       {/* Patient Info Modal */}
       {showPatientInfo && patient && (
-        <Dialog open={showPatientInfo} onOpenChange={setShowPatientInfo}>
-          <DialogContent className="max-w-[95vw] w-[1200px] max-h-[95vh] p-6 overflow-hidden">
-            <DialogHeader className="pb-4">
-              <DialogTitle className="text-2xl text-[#015a8b]">
-                Patient Profile Details
-                {patient.isGlobal && (
-                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                    Default Profile
-                  </span>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-            <ScrollArea className="h-full max-h-[calc(95vh-120px)]">
-              <div className="h-full w-full max-w-full overflow-x-auto">
-                <table className="h-full w-full border-collapse text-[8px] xs:text-[9px] sm:text-sm min-w-[650px]">
-                  <tbody>
-                    {/* Patient Basic Info Row */}
-                    <tr>
-                      <td
-                        className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/3 align-top"
-                        colSpan={2}
-                      >
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Patient Name:
-                          </strong>{" "}
-                          {patient.patientName || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Age:
-                          </strong>{" "}
-                          {patient.age || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/6 align-top">
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Gender:
-                          </strong>{" "}
-                          {patient.gender || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                      </td>
-                      <td
-                        className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/3 align-top"
-                        rowSpan={2}
-                      >
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Allergies:
-                          </strong>{" "}
-                          {patient.allergies || "No known allergies"}
-                        </div>
-                        <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Unit:
-                          </strong>{" "}
-                          {patient.unit || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Major support:
-                          </strong>{" "}
-                          {patient.majorSupport || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Phone:
-                          </strong>{" "}
-                          {patient.phone || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-1 sm:mt-2">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Immunizations:
-                          </strong>{" "}
-                          {patient.immunizations || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Case Details Row */}
-                    <tr>
-                      <td
-                        className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 align-top"
-                        colSpan={2}
-                      >
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Case:
-                          </strong>{" "}
-                          {patient.case || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Diagnosis:
-                          </strong>{" "}
-                          {patient.diagnosis || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            History:
-                          </strong>{" "}
-                          {patient.history || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Type of operation:
-                          </strong>{" "}
-                          {patient.operationType || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Height:
-                          </strong>{" "}
-                          {patient.height || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Consultation:
-                          </strong>{" "}
-                          {patient.consultation || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Consent obtained:
-                          </strong>{" "}
-                          {patient.consentObtained ? "✓ Yes" : "☐ Yes"}
-                          {!patient.consentObtained ? "✓ No" : "☐ No"}
-                        </div>
-                      </td>
-                      <td
-                        className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 align-top"
-                        colSpan={2}
-                      >
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Weight:
-                          </strong>{" "}
-                          {patient.weight || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Physician:
-                          </strong>{" "}
-                          {patient.physician || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Advanced directives:
-                          </strong>{" "}
-                          {patient.advancedDirectives || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Diet:
-                          </strong>{" "}
-                          {patient.diet || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Fall precautions:
-                          </strong>{" "}
-                          {patient.fallPrecautions || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Restraints:
-                          </strong>{" "}
-                          {patient.restraints || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 sm:mt-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Isolation precautions:
-                          </strong>{" "}
-                          {patient.isolationPrecautions || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Monitoring, Medication, Respiratory Row */}
-                    <tr>
-                      <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Monitoring:
-                          </strong>
-                        </div>
-                        {patient.monitoringItems?.length > 0 ? (
-                          patient.monitoringItems.map((item) => (
-                            <div key={item.id} className="mt-1 sm:mt-2">
-                              <CheckboxItem
-                                label={item.title}
-                                checked={item.checked}
-                              />
-                              {item.details && (
-                                <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                  ({item.details})
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
-                            No monitoring items
-                          </div>
-                        )}
-                      </td>
-                      <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Medication:
-                          </strong>
-                        </div>
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Medications:
-                          </strong>
-                          {patient.medicationItems &&
-                          patient.medicationItems.length > 0 ? (
-                            patient.medicationItems.map((item) => (
-                              <div key={item.id} className="mt-1 sm:mt-2">
-                                <CheckboxItem
-                                  label={item.title}
-                                  checked={item.checked}
-                                />
-                                {item.details && (
-                                  <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                    ({item.details})
-                                  </div>
-                                )}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
-                              No medications
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td
-                        className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-3/5 align-top"
-                        colSpan={3}
-                      >
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Respiratory:
-                          </strong>
-                        </div>
-                        {patient.respiratoryItems?.length > 0 ? (
-                          patient.respiratoryItems.map((item) => (
-                            <div key={item.id} className="mt-1 sm:mt-2">
-                              <CheckboxItem
-                                label={item.title}
-                                checked={item.checked}
-                              />
-                              {item.details && (
-                                <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                  ({item.details})
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
-                            No respiratory items
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-
-                    {/* Diagnostic Studies, Social History, Activity of Daily Living Row */}
-                    <tr>
-                      <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Diagnostic studies:
-                          </strong>
-                        </div>
-                        {patient.diagnosticItems?.length > 0 ? (
-                          patient.diagnosticItems.map((item) => (
-                            <div key={item.id} className="mt-1 sm:mt-2">
-                              <CheckboxItem
-                                label={item.title}
-                                checked={item.checked}
-                              />
-                              {item.details && (
-                                <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                  ({item.details})
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
-                            No diagnostic studies
-                          </div>
-                        )}
-                      </td>
-                      <td className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-1/5 align-top">
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Social history:
-                          </strong>
-                        </div>
-                        {patient.socialHistoryItems?.length > 0 ? (
-                          patient.socialHistoryItems.map((item) => (
-                            <div key={item.id} className="mt-1 sm:mt-2">
-                              <CheckboxItem
-                                label={item.title}
-                                checked={item.checked}
-                              />
-                              {item.details && (
-                                <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                  ({item.details})
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
-                            No social history items
-                          </div>
-                        )}
-                        <div className="mt-2 sm:mt-3">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Race/Religion:
-                          </strong>{" "}
-                          {patient.raceReligion || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                        <div className="mt-2 sm:mt-3">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Medication brought from home:
-                          </strong>
-                        </div>
-                        {patient.medicationFromHomeItems?.length > 0 ? (
-                          patient.medicationFromHomeItems.map((item) => (
-                            <div key={item.id} className="mt-1 sm:mt-2">
-                              <CheckboxItem
-                                label={item.title}
-                                checked={item.checked}
-                              />
-                              {item.details && (
-                                <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                  ({item.details})
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm mt-1">
-                            No medications from home
-                          </div>
-                        )}
-                      </td>
-                      <td
-                        className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 w-3/5 align-top"
-                        colSpan={3}
-                      >
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Activity of daily living:
-                          </strong>
-                        </div>
-                        {patient.activityItems?.length > 0 ? (
-                          patient.activityItems.map((item) => (
-                            <div key={item.id} className="mt-1 sm:mt-2">
-                              <CheckboxItem
-                                label={item.title}
-                                checked={item.checked}
-                              />
-                              {item.details && (
-                                <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                  ({item.details})
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
-                            No activity items
-                          </div>
-                        )}
-
-                        <div className="mt-2 sm:mt-3">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Discharge planning:
-                          </strong>{" "}
-                          {patient.dischargePlanning || (
-                            <span className="text-gray-400">Not specified</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Drains Row */}
-                    <tr>
-                      <td
-                        className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 sm:p-2 align-top"
-                        colSpan={5}
-                      >
-                        <div className="mb-1">
-                          <strong className="text-[9px] xs:text-[10px] sm:text-sm font-bold">
-                            Drains:
-                          </strong>
-                        </div>
-                        {patient.drainItems?.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                            {patient.drainItems.map((item) => (
-                              <div key={item.id} className="mt-1 sm:mt-2">
-                                <CheckboxItem
-                                  label={item.title}
-                                  checked={item.checked}
-                                />
-                                {item.details && (
-                                  <div className="mt-0.5 sm:mt-1 ml-5 font-normal text-gray-700">
-                                    ({item.details})
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-gray-400 text-[9px] xs:text-[10px] sm:text-sm">
-                            No drains
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
+        <PatientProfileModal
+          open={showPatientInfo}
+          onOpenChange={setShowPatientInfo}
+          patient={patient}
+        />
       )}
 
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col w-full">
         {/* Debug Info - now collapsible */}
-        <div className="bg-gray-100 text-xs text-gray-600 rounded mb-2 overflow-hidden">
+        <div className="bg-gray-100 text-xs text-gray-600 rounded mb-2 overflow-hidden w-full">
           <div
             className="p-2 flex justify-between items-center cursor-pointer hover:bg-gray-200"
             onClick={() => setDebugBannerExpanded(!debugBannerExpanded)}
@@ -1376,7 +884,7 @@ export default function PatientChat() {
 
         {/* Loading indicator */}
         {isLoading && (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center w-full">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#015a8b] mx-auto"></div>
               <p className="mt-4 text-gray-600">
@@ -1388,7 +896,7 @@ export default function PatientChat() {
 
         {/* Error Display */}
         {!isLoading && error && messages.length === 0 && (
-          <div className="mx-6 mb-4 p-4 bg-red-50 text-red-700 rounded-md">
+          <div className="mx-6 mb-4 p-4 bg-red-50 text-red-700 rounded-md w-full">
             <div className="flex items-center mb-1">
               <AlertTriangle className="h-5 w-5 mr-2" />
               <span className="font-semibold">Error</span>
@@ -1411,7 +919,7 @@ export default function PatientChat() {
 
         {/* Messages Area */}
         {!isLoading && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto w-full">
             {/* Display non-critical errors as a notification banner */}
             {error && messages.length > 0 && (
               <div className="mx-2 mb-4 p-3 bg-amber-50 text-amber-700 rounded-md text-sm">
@@ -1430,7 +938,7 @@ export default function PatientChat() {
                 senderName: patient?.patientName || "Patient",
                 content: "",
               }}
-              className="p-6"
+              className="p-6 w-full max-w-full"
             />
           </div>
         )}
@@ -1438,10 +946,10 @@ export default function PatientChat() {
         {/* Input Area */}
         <form
           onSubmit={handleSendMessage}
-          className="mt-4 border-t border-[#015a8b] pt-4 px-6"
+          className="mt-4 border-t border-[#015a8b] py-4 px-6 w-full"
         >
-          <div className="flex items-center">
-            <div className="flex-1">
+          <div className="flex items-center w-full">
+            <div className="flex-1 w-full">
               <TabsInputArea
                 value={newMessage}
                 onChange={setNewMessage}
@@ -1453,6 +961,7 @@ export default function PatientChat() {
                 availableActions={availableActions}
                 onActionSelect={handleAction}
                 defaultTab="chat"
+                className="w-full"
               />
             </div>
           </div>
@@ -1460,7 +969,7 @@ export default function PatientChat() {
 
         {/* Add conditional session expiry warning if needed */}
         {sessionTimeRemaining && sessionTimeRemaining < 15 * 60 * 1000 && (
-          <div className="mt-2 text-center pb-4 bg-[#F8F9FA]">
+          <div className="mt-2 text-center pb-4 bg-[#F8F9FA] w-full">
             <span className="block text-amber-600 font-medium mt-1">
               Your session will expire in{" "}
               {formatTimeRemaining(sessionTimeRemaining)}
@@ -1473,7 +982,10 @@ export default function PatientChat() {
       <ExitConfirmationDialog
         isOpen={showExitConfirmation}
         onClose={() => setShowExitConfirmation(false)}
-        onExit={handleBackButton}
+        onExit={() => {
+          setShowExitConfirmation(false);
+          router.push("/patient-interactions/select-patient?mode=chat");
+        }}
         title="Exit Chat?"
         message="You are in the middle of a chat session. If you exit now, your conversation will not be saved."
       />

@@ -154,10 +154,11 @@ export default function EditProfiles() {
           router.push("/manage-profiles");
         }}
         variant="ghost"
-        className="mr-2 p-1 h-8 w-8"
+        size="icon"
+        className="h-8 w-8 mr-3 hover:bg-[#015a8b] rounded-full group"
         aria-label="Back to Manage Profiles"
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
       </Button>
       <span className="text-xl sm:text-2xl md:text-3xl font-bold">
         Edit Patient Profiles
@@ -172,6 +173,12 @@ export default function EditProfiles() {
         <Button
           onClick={() => handleEditProfile(currentProfiles[0].id)}
           className="flex items-center bg-[#015a8b] hover:bg-[#216f99] text-white"
+          disabled={currentProfiles[0].isGlobal}
+          title={
+            currentProfiles[0].isGlobal
+              ? "Default profiles cannot be edited"
+              : "Edit profile"
+          }
         >
           <Edit className="mr-1 h-4 w-4" />
           Edit Profile

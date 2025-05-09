@@ -57,8 +57,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Format the response to match the expected format in the frontend
+    const formattedProfile = {
+      ...data.profile_data,
+      id: data.id,
+      isGlobal: data.is_global,
+    };
+
     return NextResponse.json({
-      profile: data,
+      profile: formattedProfile,
       success: true,
     });
   } catch (error: any) {

@@ -29,6 +29,24 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
+      // Process the patient profile data to match expected format if it exists
+      if (data && data.patient_profile) {
+        // Transform the profile_data from the database into the expected format in the frontend
+        data.patient_profile = {
+          ...data.patient_profile.profile_data,
+          id: data.patient_profile.id,
+          isGlobal: data.patient_profile.is_global,
+        };
+      }
+
+      // If no detailed_patient_data exists, create it from existing fields for backwards compatibility
+      if (data && !data.detailed_patient_data) {
+        data.detailed_patient_data = {
+          dob: "2/10/XX", // Default value, should be updated in real scenarios
+          mrNumber: "PCS21000", // Default value, should be updated in real scenarios
+        };
+      }
+
       return NextResponse.json({ scenario: data });
     } else {
       // Fetch all scenarios the user has access to

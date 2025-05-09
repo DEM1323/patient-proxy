@@ -402,10 +402,10 @@ export default function SelectPatient() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 hover:bg-[#015a8b]/10"
+                    className="absolute top-2 right-2 h-8 w-8 hover:bg-[#015a8b] rounded-full group"
                     onClick={(e) => handleSimulationInfoClick(e, simulation)}
                   >
-                    <Info className="h-5 w-5 text-[#015a8b]" />
+                    <Info className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
                   </Button>
                   <CardHeader>
                     <CardTitle className="text-[#015a8b]">
@@ -445,10 +445,10 @@ export default function SelectPatient() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-2 right-2 h-8 w-8 hover:bg-[#015a8b]/10"
+                    className="absolute top-2 right-2 h-8 w-8 hover:bg-[#015a8b] rounded-full group"
                     onClick={(e) => handleInfoClick(e, profile)}
                   >
-                    <Info className="h-5 w-5 text-[#015a8b]" />
+                    <Info className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
                   </Button>
                   <CardHeader>
                     <CardTitle className="text-[#015a8b]">

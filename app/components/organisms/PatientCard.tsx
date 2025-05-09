@@ -42,10 +42,10 @@ export const PatientCard: React.FC<PatientCardProps> = ({
           {profile.isGlobal && (
             <tr>
               <td
-                className="border border-[#97a8b5] bg-[#015a8b]/10 p-1 text-center"
+                className="border border-[#97a8b5] bg-[#97a8b5]/30 p-1 text-center"
                 colSpan={5}
               >
-                <div className="inline-flex items-center rounded-full bg-[#015a8b] px-2 py-0.5 text-[8px] xs:text-[9px] sm:text-[10px] md:text-xs font-medium text-white">
+                <div className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-green-800 text-[8px] xs:text-[9px] sm:text-[10px] md:text-xs font-medium">
                   Default Profile - Read Only
                 </div>
               </td>
