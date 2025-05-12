@@ -69,12 +69,23 @@ export interface SimulationScenario {
   vital_signs?: Record<string, string>;
   lab_results?: Record<string, string>;
   expected_treatment_steps?: ExpectedTreatmentStep[];
-  scenario_chart?: ScenarioChart;
+  scenario_chart?: ScenarioChart | ScenarioChartPoint[] | any[];
   ai_patient_prompts?: AIPatientPrompt[];
   created_at?: string;
   updated_at?: string;
   created_by?: string;
   is_global?: boolean;
+  estimated_time_minutes?: number;
+  guided_reflection_time_minutes?: number;
+  target_group?: string;
+  brief_summary?: string;
+  learning_objectives?: SimulationLearningObjective[];
+  student_report?: string;
+  correct_treatment_steps?: string[];
+  debriefing_notes?: string;
+  ai_expected_actions?: string[];
+  ai_feedback_rules?: AIFeedbackRule[];
+  ai_debrief_template?: string;
 }
 
 export interface ScenarioChart {
