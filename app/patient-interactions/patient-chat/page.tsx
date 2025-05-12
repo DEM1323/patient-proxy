@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { ContentLayout } from "@/app/components/layouts/ContentLayout";
@@ -46,6 +46,15 @@ import {
   PatientConfigModal,
   PatientConfigOptions,
 } from "@/app/components/molecules/PatientConfigModal";
+
+// Add a utility function to generate unique message IDs
+const generateUniqueId = (() => {
+  let counter = 0;
+  return () => {
+    counter++;
+    return `${Date.now()}-${counter}`;
+  };
+})();
 
 interface Message {
   id: string;
@@ -155,7 +164,7 @@ export default function PatientChat() {
 
     // Add simulation action to message list
     const actionMessage: Message = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       text: `**${actionName}**\nResult: ${result}`,
       sender: "system",
       timestamp: new Date(),
@@ -166,7 +175,7 @@ export default function PatientChat() {
     // Add patient's response to the action
     setTimeout(() => {
       const responseMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: generateUniqueId(),
         text: getPatientActionResponse(actionId, optionId),
         sender: "patient",
         timestamp: new Date(),
@@ -546,7 +555,7 @@ export default function PatientChat() {
 
       // Add initial greeting message from patient with custom greeting
       const initialMessage: Message = {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         text: customGreeting,
         sender: "patient",
         timestamp: new Date(),
@@ -578,7 +587,7 @@ export default function PatientChat() {
     if (!newMessage.trim() || !sessionId || !authToken || isTyping) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       text: newMessage,
       sender: "user",
       timestamp: new Date(),
@@ -639,7 +648,7 @@ export default function PatientChat() {
 
       // Create patient message from AI response
       const patientMessage: Message = {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         text: data.response,
         sender: "patient",
         timestamp: new Date(),
@@ -683,7 +692,7 @@ export default function PatientChat() {
 
     // Add a system message to indicate configuration change
     const configMessage: Message = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       text: `Patient configuration updated (Emotion: ${options.emotion}, Health Literacy: ${options.healthLiteracy})`,
       sender: "system",
       timestamp: new Date(),
@@ -726,7 +735,7 @@ export default function PatientChat() {
 
       // Create patient greeting message
       const patientMessage: Message = {
-        id: Date.now().toString(),
+        id: generateUniqueId(),
         text: greeting,
         sender: "patient",
         timestamp: new Date(),
@@ -893,17 +902,6 @@ export default function PatientChat() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-[#015a8b] hover:bg-blue-50 hover:text-[#014a71] flex items-center"
-            onClick={() => handleDownloadTranscript()}
-            title="Download transcript"
-            disabled={messages.length === 0}
-          >
-            <Download className="h-3 w-3 mr-1" />
-            Download
-          </Button>
           <Button
             variant="ghost"
             size="sm"

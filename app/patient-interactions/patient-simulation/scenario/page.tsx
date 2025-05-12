@@ -24,6 +24,7 @@ import {
   FileQuestion,
   User,
   Terminal,
+  Download,
 } from "lucide-react";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { Button } from "@/app/components/ui/button";
@@ -59,6 +60,16 @@ import {
   PatientConfigOptions,
 } from "@/app/components/molecules/PatientConfigModal";
 import { TabsInputArea } from "@/app/components/molecules/TabsInputArea";
+import { toast } from "react-hot-toast";
+
+// Add a utility function to generate unique message IDs
+const generateUniqueId = (() => {
+  let counter = 0;
+  return () => {
+    counter++;
+    return `${Date.now()}-${counter}`;
+  };
+})();
 
 // Message types
 interface Message {
@@ -90,6 +101,7 @@ interface HeaderContentProps {
   handleExit: () => void;
   startSimulation: () => void;
   endSimulation: () => void;
+  handleDownloadTranscript?: () => void;
   showPatientInfo?: boolean;
   setShowPatientInfo?: (show: boolean) => void;
   onMenuOptionClick?: (option: string) => void;
@@ -102,6 +114,7 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
   handleExit,
   startSimulation,
   endSimulation,
+  handleDownloadTranscript = () => {},
   showPatientInfo = false,
   setShowPatientInfo = () => {},
   onMenuOptionClick = () => {},
@@ -238,6 +251,7 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
       </div>
 
       <div>
+        {/* Phase-specific action buttons */}
         {simulationPhase === "briefing" && (
           <Button
             onClick={startSimulation}
@@ -589,7 +603,7 @@ export default function SimulationScenarioPage() {
 
     // Add initial system and patient messages
     const systemMessage: Message = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       role: "system",
       content:
         "Simulation started. You are now in a clinical encounter with the patient.",
@@ -597,7 +611,7 @@ export default function SimulationScenarioPage() {
     };
 
     const patientMessage: Message = {
-      id: (Date.now() + 100).toString(),
+      id: generateUniqueId(),
       role: "assistant",
       content: "Hello, I'm here for my appointment today.",
       timestamp: new Date(),
@@ -717,14 +731,14 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now().toString(),
+            id: generateUniqueId(),
             role: "system",
             content:
               "The simulation has ended. Here is your debriefing feedback.",
             timestamp: new Date(),
           },
           {
-            id: (Date.now() + 1).toString(),
+            id: generateUniqueId(),
             role: "assistant",
             content: feedback,
             timestamp: new Date(),
@@ -737,14 +751,14 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now().toString(),
+            id: generateUniqueId(),
             role: "system",
             content:
               "The simulation has ended. Here is your debriefing feedback.",
             timestamp: new Date(),
           },
           {
-            id: (Date.now() + 1).toString(),
+            id: generateUniqueId(),
             role: "assistant",
             content: `# Simulation Debrief\n\nSimulation completed. Review your actions and consider how you might improve in future scenarios.`,
             timestamp: new Date(),
@@ -770,7 +784,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     if (!currentInput.trim() || isProcessing) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       role: "user",
       content: currentInput,
       timestamp: new Date(),
@@ -861,7 +875,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
 
       // Add the AI response
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: generateUniqueId(),
         role: "assistant",
         content: data.response || getSimulatedResponse(currentInput), // Fall back to simulated response if API fails
         timestamp: new Date(),
@@ -875,7 +889,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
 
       // If there's an error, still provide a simulated response
       const fallbackMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: generateUniqueId(),
         role: "assistant",
         content: getSimulatedResponse(currentInput),
         timestamp: new Date(),
@@ -912,7 +926,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
 
     // Add action to messages
     const actionMessage: Message = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       role: "action",
       content: `Performed: ${actionName}\nResult: ${newAction.result}`,
       timestamp: new Date(),
@@ -979,7 +993,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         .then((data) => {
           // Add the patient's response to the action
           const patientResponseMessage: Message = {
-            id: (Date.now() + 2).toString(),
+            id: generateUniqueId(),
             role: "assistant",
             content: data.response || `*reacts to ${actionName}*`,
             timestamp: new Date(),
@@ -998,7 +1012,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
           if (data.feedback && data.feedback.length > 0) {
             // Add feedback as a system message
             const feedbackMessage: Message = {
-              id: (Date.now() + 3).toString(),
+              id: generateUniqueId(),
               role: "system",
               content: `Feedback: ${data.feedback.join(" | ")}`,
               timestamp: new Date(),
@@ -1012,7 +1026,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
 
           // Fallback patient response if API fails
           const fallbackMessage: Message = {
-            id: (Date.now() + 2).toString(),
+            id: generateUniqueId(),
             role: "assistant",
             content: `*reacts to ${actionName}*`,
             timestamp: new Date(),
@@ -1129,8 +1143,11 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     if (simulationPhase === "simulation") {
       // Show confirmation dialog if in middle of simulation
       setShowExitConfirmation(true);
+    } else if (simulationPhase === "debriefing") {
+      // Show exit confirmation with download option in debriefing phase
+      setShowExitConfirmation(true);
     } else {
-      // Direct exit if in briefing or debriefing phases
+      // Direct exit if in briefing phase
       router.push("/patient-interactions/select-patient?mode=simulation");
     }
   };
@@ -1212,6 +1229,127 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     }, 1000);
   };
 
+  // Handle downloading transcript
+  const handleDownloadTranscript = () => {
+    if (messages.length === 0) {
+      toast.error("No messages to download");
+      return;
+    }
+
+    // Create transcript text
+    let transcript = `Simulation Scenario Transcript\n`;
+    transcript += `Date: ${new Date().toLocaleString()}\n`;
+    transcript += `Scenario: ${scenario?.title || "Unknown"}\n`;
+    transcript += `Duration: ${simulationDuration}\n`;
+
+    // Add patient information if available
+    if (scenario?.patient_profile) {
+      const patient = scenario.patient_profile;
+      transcript += `\nPatient Information:\n`;
+      transcript += `Name: ${patient.patientName || "Unknown"}\n`;
+      transcript += `Age: ${patient.age || "Unknown"} | Gender: ${
+        patient.gender || "Unknown"
+      }\n`;
+
+      if (patient.diagnosis) {
+        transcript += `Diagnosis: ${patient.diagnosis}\n`;
+      }
+
+      if (patient.allergies) {
+        transcript += `Allergies: ${patient.allergies}\n`;
+      }
+
+      // Add medications if available
+      if (patient.medicationItems && patient.medicationItems.length > 0) {
+        const medications = patient.medicationItems
+          .filter((item: any) => item.checked)
+          .map(
+            (item: any) =>
+              `${item.title}${item.details ? ` (${item.details})` : ""}`
+          )
+          .join(", ");
+
+        if (medications) {
+          transcript += `Medications: ${medications}\n`;
+        }
+      }
+    }
+
+    // Add detailed patient data if available
+    if (scenario?.detailed_patient_data) {
+      transcript += `\nDetailed Patient Data:\n`;
+      Object.entries(scenario.detailed_patient_data).forEach(([key, value]) => {
+        if (value) {
+          transcript += `${key}: ${value}\n`;
+        }
+      });
+    }
+
+    // Add configuration information if applicable
+    if (patientConfig) {
+      transcript += `\nPatient Configuration:\n`;
+      transcript += `Emotional State: ${patientConfig.emotion}\n`;
+      transcript += `Health Literacy Level: ${patientConfig.healthLiteracy}\n`;
+    }
+
+    // Add actions performed
+    if (actionLog.length > 0) {
+      transcript += `\nActions Performed:\n`;
+      actionLog.forEach((action, index) => {
+        transcript += `${index + 1}. ${action.action}: ${
+          action.result || "Completed"
+        }\n`;
+      });
+    }
+
+    // Add observations
+    if (patientObservations.length > 0) {
+      transcript += `\nObservations:\n`;
+      patientObservations.forEach((observation, index) => {
+        transcript += `${index + 1}. ${observation}\n`;
+      });
+    }
+
+    transcript += `\n--- Conversation Transcript ---\n\n`;
+
+    // Add messages to transcript
+    messages.forEach((msg) => {
+      const timestamp = msg.timestamp.toLocaleString();
+      const sender =
+        msg.role === "user"
+          ? "Provider"
+          : msg.role === "assistant"
+          ? scenario?.patient_profile?.patientName || "Patient"
+          : "System";
+
+      // Skip system messages related to initialization if desired
+      if (
+        msg.role === "system" &&
+        (msg.content.includes("simulation initialized") ||
+          msg.content.includes("Configuration updated"))
+      ) {
+        return;
+      }
+
+      transcript += `[${timestamp}] ${sender}:\n${msg.content}\n\n`;
+    });
+
+    // Create and download file
+    const blob = new Blob([transcript], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `simulation_transcript_${
+      scenario?.title?.replace(/\s+/g, "_") || "scenario"
+    }_${new Date().toISOString().split("T")[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("Transcript downloaded successfully");
+  };
+
   if (loading) {
     return (
       <ContentLayout
@@ -1264,6 +1402,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
           handleExit={handleExit}
           startSimulation={startSimulation}
           endSimulation={endSimulation}
+          handleDownloadTranscript={handleDownloadTranscript}
           showPatientInfo={showPatientInfo}
           setShowPatientInfo={setShowPatientInfo}
           onMenuOptionClick={handleMenuOptionClick}
@@ -1396,11 +1535,38 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         <ExitConfirmationDialog
           isOpen={showExitConfirmation}
           onClose={() => setShowExitConfirmation(false)}
-          onExit={() =>
-            router.push("/patient-interactions/select-patient?mode=simulation")
+          onExit={() => {
+            router.push("/patient-interactions/select-patient?mode=simulation");
+          }}
+          title={
+            simulationPhase === "simulation"
+              ? "Exit Simulation?"
+              : "End Session?"
           }
-          title="Exit Simulation?"
-          message="You are in the middle of a simulation. If you exit now, your progress will not be saved."
+          message={
+            simulationPhase === "simulation"
+              ? "You are in the middle of a simulation. If you exit now, your progress will not be saved."
+              : "Do you want to end this session? You can download a transcript before leaving."
+          }
+          cancelText="Cancel"
+          exitText={
+            simulationPhase === "simulation" ? "Exit Anyway" : "End Session"
+          }
+          extraButton={
+            simulationPhase === "debriefing" ? (
+              <Button
+                onClick={() => {
+                  handleDownloadTranscript();
+                  router.push(
+                    "/patient-interactions/select-patient?mode=simulation"
+                  );
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Download & Exit
+              </Button>
+            ) : undefined
+          }
         />
       </div>
     </ContentLayout>
