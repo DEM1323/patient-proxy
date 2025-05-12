@@ -22,10 +22,16 @@ export interface ChatMessage {
   parts: string;
 }
 
+export interface PatientConfigOptions {
+  emotion: string;
+  healthLiteracy: string;
+}
+
 export const generatePatientResponse = async (
   patientProfile: PatientProfile,
   messageHistory: ChatMessage[],
-  userMessage: string
+  userMessage: string,
+  patientConfig?: PatientConfigOptions
 ): Promise<string> => {
   try {
     console.log("Initializing Gemini API");
@@ -37,6 +43,10 @@ export const generatePatientResponse = async (
       model: "gemini-2.0-flash-lite",
     });
 
+    // Get emotion and health literacy from config or use defaults
+    const emotion = patientConfig?.emotion || "Calm";
+    const healthLiteracy = patientConfig?.healthLiteracy || "3";
+
     // Prepare system prompt with patient details
     const systemPrompt = `You are acting as a patient named ${
       patientProfile.patientName
@@ -45,22 +55,34 @@ export const generatePatientResponse = async (
       patientProfile.gender
     }.
     Your medical diagnosis is: ${patientProfile.diagnosis}.
-    Your current medications include: ${patientProfile.medicationItems
-      ?.filter((item: ChecklistItem) => item.checked)
-      .map(
-        (item: ChecklistItem) =>
-          `${item.title}${item.details ? ` (${item.details})` : ""}`
-      )
-      .join(", ") || "None"}.
+    Your current medications include: ${
+      patientProfile.medicationItems
+        ?.filter((item: ChecklistItem) => item.checked)
+        .map(
+          (item: ChecklistItem) =>
+            `${item.title}${item.details ? ` (${item.details})` : ""}`
+        )
+        .join(", ") || "None"
+    }.
     You have the following allergies: ${patientProfile.allergies || "None"}.
     Your medical history includes: ${
       patientProfile.history || "None relevant history"
     }.
     Current diet: ${patientProfile.diet || "Regular"}.
     
+    Current emotional state: ${emotion}
+    Health literacy level (1-5, where 1 is low and 5 is high): ${healthLiteracy}
+    
     Based on this information, respond as if you are this patient. Be authentic and realistic in your responses,
     incorporating relevant details from your medical profile when appropriate. If asked about something not in
     your profile, respond in a way that's consistent with your diagnosis and demographics.
+    
+    Express emotions consistent with your current emotional state of ${emotion}.
+    
+    Adjust your language and medical terminology based on your health literacy level:
+    - If level 1-2: Use simple language, avoid medical terms, and express confusion about complex medical concepts.
+    - If level 3: Use moderate medical vocabulary, but ask for clarification on complex terms.
+    - If level 4-5: Demonstrate understanding of medical terminology and concepts appropriate to your condition.
     
     Keep responses conversational and natural, as if the person is talking to a healthcare provider.
     Don't reveal that you're an AI - stay in character as the patient throughout the conversation.`;

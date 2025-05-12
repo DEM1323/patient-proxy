@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SimulationScenario } from "@/app/types/simulation";
+import {
+  SimulationScenario,
+  PatientProfileData,
+  PatientProfileItem,
+} from "@/app/types/patient-simulation";
+import { PatientProfile } from "@/app/types/patient";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -29,7 +34,6 @@ import {
   TabsTrigger,
 } from "@/app/components/ui/tabs";
 import { ChatInput } from "@/app/components/molecules/ChatInput";
-import { TabsInputArea } from "@/app/components/molecules/TabsInputArea";
 import { ChatContainer } from "@/app/components/molecules/ChatContainer";
 import {
   ChatMessage,
@@ -50,6 +54,11 @@ import {
   PatientInformationPanel,
   SimulationActionsPanel,
 } from "@/app/components/molecules/SidePanel";
+import {
+  PatientConfigModal,
+  PatientConfigOptions,
+} from "@/app/components/molecules/PatientConfigModal";
+import { TabsInputArea } from "@/app/components/molecules/TabsInputArea";
 
 // Message types
 interface Message {
@@ -57,6 +66,7 @@ interface Message {
   role: MessageRole;
   content: string;
   timestamp: Date;
+  senderName?: string;
 }
 
 // Simulation phases
@@ -231,9 +241,9 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
         {simulationPhase === "briefing" && (
           <Button
             onClick={startSimulation}
-            className="bg-[#015a8b] hover:bg-[#014a71]"
+            className="w-full bg-[#015a8b] hover:bg-blue-800 text-white"
           >
-            Begin Simulation
+            Start Simulation
           </Button>
         )}
         {simulationPhase === "simulation" && (
@@ -256,6 +266,49 @@ const HeaderContent: React.FC<HeaderContentProps> = ({
     </div>
   );
 };
+
+// Add this helper function to convert between types
+function convertToPatientProfileData(
+  profile: PatientProfile
+): PatientProfileData {
+  // Convert ChecklistItem[] to PatientProfileItem[]
+  const convertItems = (items: any[] = []): PatientProfileItem[] => {
+    return items.map((item) => ({
+      title: item.title || "",
+      details: item.details || "",
+      checked: item.checked || false,
+    }));
+  };
+
+  return {
+    id: profile.id,
+    patientName: profile.patientName,
+    age: profile.age ? String(profile.age) : undefined, // Convert age to string or undefined
+    gender: profile.gender,
+    diagnosis: profile.diagnosis,
+    allergies: profile.allergies,
+    weight: profile.weight,
+    height: profile.height,
+    medicationItems: convertItems(profile.medicationItems),
+    respiratoryItems: convertItems(profile.respiratoryItems),
+    diagnosticItems: convertItems(profile.diagnosticItems),
+    socialHistoryItems: convertItems(profile.socialHistoryItems),
+    activityItems: convertItems(profile.activityItems),
+    drainItems: convertItems(profile.drainItems),
+    medicationFromHomeItems: convertItems(profile.medicationFromHomeItems),
+    monitoringItems: convertItems(profile.monitoringItems),
+    majorSupport: profile.majorSupport,
+    diet: profile.diet,
+    fallPrecautions: profile.fallPrecautions,
+    isolationPrecautions: profile.isolationPrecautions,
+    dischargePlanning: profile.dischargePlanning,
+    isGlobal: profile.isGlobal,
+    // Add socialHistory from history field
+    socialHistory: profile.history,
+    // Add medicalHistory from history field too
+    medicalHistory: profile.history,
+  };
+}
 
 export default function SimulationScenarioPage() {
   const router = useRouter();
@@ -283,11 +336,17 @@ export default function SimulationScenarioPage() {
   );
   const [simulationDuration, setSimulationDuration] = useState<string>("00:00");
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [patientConfig, setPatientConfig] = useState<PatientConfigOptions>({
+    emotion: "Calm",
+    healthLiteracy: "3",
+  });
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const patientProfileDataRef = useRef<PatientProfileData | null>(null);
 
   // Constants - Actions that students can take in the simulation
   const availableActions: SimulationAction[] = [
@@ -482,21 +541,11 @@ export default function SimulationScenarioPage() {
           },
         ];
 
-        // If we have a patient profile, include that information in the briefing
+        // If we have a patient profile, log the details but don't add the system message
         if (completeScenario.patient_profile) {
           const patientInfo = completeScenario.patient_profile;
-          initialMessages.push({
-            id: "patient-info",
-            role: "system",
-            content: `Patient Information:\nName: ${
-              patientInfo.patientName
-            }\nAge: ${patientInfo.age}\nGender: ${
-              patientInfo.gender
-            }\nDiagnosis: ${patientInfo.diagnosis || "Not specified"}`,
-            timestamp: new Date(),
-          });
 
-          // Also log detailed patient info to ensure it exists
+          // Log detailed patient info to ensure it exists
           console.log("Patient profile details for chat:", {
             name: patientInfo.patientName,
             age: patientInfo.age,
@@ -524,48 +573,38 @@ export default function SimulationScenarioPage() {
 
   // Start simulation with timer
   const startSimulation = () => {
-    const startTime = new Date();
-    setSimulationStartTime(startTime);
+    setShowConfigModal(true);
+  };
+
+  // When config is saved, actually start the simulation
+  const handleConfigSave = (options: PatientConfigOptions) => {
+    setPatientConfig(options);
+    setShowConfigModal(false);
+
+    // Set the simulation phase
     setSimulationPhase("simulation");
 
-    // Start timer to update duration
-    timerIntervalRef.current = setInterval(() => {
-      const currentTime = new Date();
-      const elapsedMs = currentTime.getTime() - startTime.getTime();
-      const elapsedSec = Math.floor(elapsedMs / 1000);
-      const minutes = Math.floor(elapsedSec / 60);
-      const seconds = elapsedSec % 60;
-      setSimulationDuration(
-        `${minutes.toString().padStart(2, "0")}:${seconds
-          .toString()
-          .padStart(2, "0")}`
-      );
-    }, 1000);
+    // Start the timer
+    startTimer();
 
-    // Add system message indicating phase change
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: "system",
-        content:
-          "You are now entering the simulation phase. Interact with the patient and perform necessary actions.",
-        timestamp: new Date(),
-      },
-    ]);
+    // Add initial system and patient messages
+    const systemMessage: Message = {
+      id: Date.now().toString(),
+      role: "system",
+      content:
+        "Simulation started. You are now in a clinical encounter with the patient.",
+      timestamp: new Date(),
+    };
 
-    // Add initial patient message
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: "Hello. I'm not feeling well today. Can you help me?",
-          timestamp: new Date(),
-        },
-      ]);
-    }, 1000);
+    const patientMessage: Message = {
+      id: (Date.now() + 100).toString(),
+      role: "assistant",
+      content: "Hello, I'm here for my appointment today.",
+      timestamp: new Date(),
+      senderName: scenario?.patient_profile?.patientName || "Patient",
+    };
+
+    setMessages([systemMessage, patientMessage]);
   };
 
   // End simulation and clear timer
@@ -742,42 +781,81 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     setIsProcessing(true);
 
     try {
-      // Prepare simulation context for the AI
-      const simulationContext = {
-        scenarioId: scenarioId,
-        patientProfile: scenario?.patient_profile || {},
-        medicalHistory: {
-          prior: scenario?.medical_history_prior || "",
-          recent: scenario?.medical_history_recent || "",
-        },
-        aiPrompts: scenario?.ai_patient_prompts || [],
-        actionHistory: actionLog,
-      };
+      let authToken = null;
+      try {
+        authToken =
+          sessionStorage.getItem("token") || localStorage.getItem("token");
+      } catch (error) {
+        console.error("Error accessing storage:", error);
+      }
 
-      // Call the simulation AI endpoint
-      const response = await fetch("/api/ai/simulation-chat", {
+      // Ensure we have the patient profile data
+      let patientProfileData: PatientProfileData =
+        patientProfileDataRef.current || {
+          id: "",
+          patientName: "",
+          age: "",
+          gender: "",
+          medicationItems: [],
+        };
+
+      if (
+        Object.keys(patientProfileData).length === 0 ||
+        !patientProfileData.patientName
+      ) {
+        const convertedProfile = convertToPatientProfileData(
+          scenario?.patient_profile as PatientProfile
+        );
+        if (convertedProfile) {
+          patientProfileData = convertedProfile;
+          patientProfileDataRef.current = convertedProfile;
+        }
+      }
+
+      console.log("[handleSendMessage] Patient:", patientProfileData);
+      console.log("[handleSendMessage] Message history:", messages);
+
+      // Format message history for API
+      const formattedMessageHistory = messages
+        .filter((msg) => msg.role !== "system")
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp || new Date().toISOString(),
+        }));
+
+      // Format action history for API
+      const formattedActionHistory = actionLog.map((action) => ({
+        action: action.action,
+        result: action.result,
+        timestamp: action.timestamp || new Date().toISOString(),
+      }));
+
+      // Make API call to get patient response
+      const response = await fetch("/api/patient-simulation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
           message: currentInput,
-          context: simulationContext,
-          messageHistory: messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
+          patientId: patientProfileData.id || scenario?.patient_profile?.id,
+          scenarioId: scenario?.id,
+          messageHistory: formattedMessageHistory,
+          actionHistory: formattedActionHistory,
+          patientConfig: patientConfig, // Include patient configuration
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get AI response");
+        throw new Error(`Failed to get AI response: ${response.status}`);
       }
 
       const data = await response.json();
 
       // Record any observations from the AI
-      if (data.observations) {
+      if (data.observations && data.observations.length > 0) {
         recordObservation(data.observations);
       }
 
@@ -787,6 +865,8 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         role: "assistant",
         content: data.response || getSimulatedResponse(currentInput), // Fall back to simulated response if API fails
         timestamp: new Date(),
+        senderName:
+          data.senderName || patientProfileData.patientName || "Patient", // Use the patient name instead of "AI Assistant"
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -799,6 +879,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
         role: "assistant",
         content: getSimulatedResponse(currentInput),
         timestamp: new Date(),
+        senderName: scenario?.patient_profile?.patientName || "Patient", // Use patient name for fallback too
       };
 
       setMessages((prev) => [...prev, fallbackMessage]);
@@ -838,32 +919,174 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     };
 
     setMessages((prev) => [...prev, actionMessage]);
+
+    // Get a patient response to the action
+    if (simulationPhase === "simulation") {
+      setIsProcessing(true);
+
+      // Make sure we have the most complete patient profile data
+      const patientProfile = scenario?.patient_profile || {
+        id: "",
+        patientName: "",
+      };
+
+      // Convert PatientProfile to PatientProfileData for the API
+      const patientProfileData = convertToPatientProfileData(
+        patientProfile as PatientProfile
+      );
+
+      // Log the action and patient data for debugging
+      console.log("Sending action for patient response:", {
+        action: actionName,
+        patientName: patientProfileData.patientName,
+        hasMedications:
+          patientProfileData.medicationItems?.some(
+            (item: any) => item.checked
+          ) || false,
+        hasDrains:
+          patientProfileData.drainItems?.some((item: any) => item.checked) ||
+          false,
+      });
+
+      // Format previous action history
+      const formattedActionHistory = actionLog.map((act) => ({
+        type: act.action,
+        detail: act.result || "",
+        timestamp: act.timestamp.getTime(),
+      }));
+
+      // Call the patient simulation endpoint for an action response without authentication
+      fetch("/api/patient-simulation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: actionName,
+          patientId: patientProfileData.id,
+          scenarioId: scenarioId,
+          isAction: true,
+          actionHistory: formattedActionHistory,
+          patientConfig: patientConfig, // Add the patient configuration
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to get AI response: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Add the patient's response to the action
+          const patientResponseMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            role: "assistant",
+            content: data.response || `*reacts to ${actionName}*`,
+            timestamp: new Date(),
+            senderName:
+              data.senderName || patientProfileData.patientName || "Patient",
+          };
+
+          setMessages((prev) => [...prev, patientResponseMessage]);
+
+          // Record any observations from the AI
+          if (data.observations && data.observations.length > 0) {
+            recordObservation(data.observations);
+          }
+
+          // Record any feedback from the AI
+          if (data.feedback && data.feedback.length > 0) {
+            // Add feedback as a system message
+            const feedbackMessage: Message = {
+              id: (Date.now() + 3).toString(),
+              role: "system",
+              content: `Feedback: ${data.feedback.join(" | ")}`,
+              timestamp: new Date(),
+            };
+
+            setMessages((prev) => [...prev, feedbackMessage]);
+          }
+        })
+        .catch((error) => {
+          console.error("Error getting action response:", error);
+
+          // Fallback patient response if API fails
+          const fallbackMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            role: "assistant",
+            content: `*reacts to ${actionName}*`,
+            timestamp: new Date(),
+            senderName: patientProfileData.patientName || "Patient",
+          };
+
+          setMessages((prev) => [...prev, fallbackMessage]);
+        })
+        .finally(() => {
+          setIsProcessing(false);
+        });
+    }
   };
 
   // Simulate response based on input
   // In the future, this will be replaced with Gemini API call
   const getSimulatedResponse = (input: string): string => {
     const lowerInput = input.toLowerCase();
+    const patientName = scenario?.patient_profile?.patientName || "Patient";
+    const isDoris = patientName.toLowerCase().includes("doris");
 
+    // Responses specific to Doris Bowman
+    if (isDoris) {
+      if (lowerInput.includes("pain") || lowerInput.includes("hurt")) {
+        return "Yes, I'm experiencing some pain in my abdominal area where the incision is. It's probably about a 6 out of 10 right now.";
+      } else if (
+        lowerInput.includes("how are you") ||
+        lowerInput.includes("feeling")
+      ) {
+        return "I'm feeling pretty groggy and sore. The anesthesia is still wearing off, I think. My abdomen is hurting where they made the incision.";
+      } else if (
+        lowerInput.includes("medication") ||
+        lowerInput.includes("medicine")
+      ) {
+        return "I've been taking iron supplements for my anemia related to the heavy bleeding. The doctor mentioned I was given some morphine right before leaving the operating room.";
+      } else if (
+        lowerInput.includes("surgery") ||
+        lowerInput.includes("operation") ||
+        lowerInput.includes("procedure")
+      ) {
+        return "I had a total abdominal hysterectomy with bilateral salpingo-oophorectomy. The doctor said it went well, but I'm still pretty sore.";
+      } else if (
+        lowerInput.includes("name") ||
+        lowerInput.includes("who are you")
+      ) {
+        return "My name is Doris Bowman. I'm here recovering from my surgery.";
+      }
+    }
+
+    // Generic fallback responses if not Doris or no specific match
     if (lowerInput.includes("pain") || lowerInput.includes("hurt")) {
-      return "Yes, I'm experiencing a sharp pain in my abdomen. It's about a 7 out of 10 on the pain scale.";
+      return "Yes, I'm experiencing pain. It's uncomfortable, especially when I move.";
     } else if (
       lowerInput.includes("how are you") ||
       lowerInput.includes("feeling")
     ) {
-      return "I'm feeling quite dizzy and nauseous. I also have this pain that won't go away.";
+      return "I'm not feeling my best right now. I'm a bit uncomfortable and tired.";
     } else if (
       lowerInput.includes("medication") ||
       lowerInput.includes("medicine")
     ) {
-      return "I take lisinopril for my blood pressure. I'm also allergic to penicillin.";
+      return "I'm not on many medications. The doctor did mention something about pain medication though.";
     } else if (
       lowerInput.includes("history") ||
       lowerInput.includes("condition")
     ) {
-      return "I was diagnosed with hypertension about 5 years ago. I've also had two surgeries in the past - an appendectomy and a knee replacement.";
+      return `The doctor explained my diagnosis to me, but I'm still trying to understand what it all means.`;
+    } else if (
+      lowerInput.includes("name") ||
+      lowerInput.includes("who are you")
+    ) {
+      return `My name is ${patientName}. I'm the patient.`;
     } else {
-      return "I'm not sure I understand. Could you please clarify or maybe check my vitals?";
+      return "I'm not sure I understand. Could you please clarify that or maybe check how I'm doing?";
     }
   };
 
@@ -969,6 +1192,26 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
     };
   }, []);
 
+  // Start the simulation timer
+  const startTimer = () => {
+    const startTime = new Date();
+    setSimulationStartTime(startTime);
+
+    // Start timer to update duration
+    timerIntervalRef.current = setInterval(() => {
+      const currentTime = new Date();
+      const elapsedMs = currentTime.getTime() - startTime.getTime();
+      const elapsedSec = Math.floor(elapsedMs / 1000);
+      const minutes = Math.floor(elapsedSec / 60);
+      const seconds = elapsedSec % 60;
+      setSimulationDuration(
+        `${minutes.toString().padStart(2, "0")}:${seconds
+          .toString()
+          .padStart(2, "0")}`
+      );
+    }, 1000);
+  };
+
   if (loading) {
     return (
       <ContentLayout
@@ -1044,7 +1287,7 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
               isTyping={isProcessing}
               typingMessageProps={{
                 role: "assistant",
-                senderName: "Patient",
+                senderName: scenario?.patient_profile?.patientName || "Patient",
               }}
               className="w-full max-w-full py-4 px-6"
             />
@@ -1138,9 +1381,17 @@ ${improvements.map((i) => `* ${i}`).join("\n")}
           <PatientProfileModal
             open={showPatientInfo}
             onOpenChange={setShowPatientInfo}
-            patient={scenario.patient_profile}
+            patient={scenario.patient_profile as any}
           />
         )}
+
+        {/* Patient Config Modal */}
+        <PatientConfigModal
+          isOpen={showConfigModal}
+          onClose={() => setShowConfigModal(false)}
+          onSave={handleConfigSave}
+          initialOptions={patientConfig}
+        />
 
         <ExitConfirmationDialog
           isOpen={showExitConfirmation}

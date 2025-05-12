@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const authToken = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     const body = await request.json();
-    const { sessionId, message } = body;
+    const { sessionId, message, patientConfig } = body;
 
     if (!sessionId || !message) {
       console.error(
@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
       const aiResponse = await generatePatientResponse(
         patientProfile,
         updatedHistory,
-        message
+        message,
+        patientConfig
       );
 
       // Log the AI response with the patient name prefix

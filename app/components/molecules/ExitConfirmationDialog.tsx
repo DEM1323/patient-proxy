@@ -1,6 +1,6 @@
 import React from "react";
 
-interface ExitConfirmationDialogProps {
+export interface ExitConfirmationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onExit: () => void;
@@ -8,6 +8,7 @@ interface ExitConfirmationDialogProps {
   message?: string;
   cancelText?: string;
   exitText?: string;
+  extraButton?: React.ReactNode;
 }
 
 export const ExitConfirmationDialog: React.FC<ExitConfirmationDialogProps> = ({
@@ -18,6 +19,7 @@ export const ExitConfirmationDialog: React.FC<ExitConfirmationDialogProps> = ({
   message = "You are in the middle of a session. If you exit now, your progress will not be saved.",
   cancelText = "Cancel",
   exitText = "Exit Anyway",
+  extraButton,
 }) => {
   if (!isOpen) return null;
 
@@ -33,6 +35,7 @@ export const ExitConfirmationDialog: React.FC<ExitConfirmationDialogProps> = ({
           >
             {cancelText}
           </button>
+          {extraButton}
           <button
             onClick={onExit}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"

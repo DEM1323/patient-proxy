@@ -22,6 +22,8 @@ import {
   StethoscopeIcon,
   Pill,
   ClipboardList,
+  Download,
+  LogOut,
 } from "lucide-react";
 import { type ChatMessage } from "@/app/lib/gemini";
 import { supabase } from "@/app/lib/supabase";
@@ -40,6 +42,10 @@ import {
 } from "@/app/components/molecules/ChatMessage";
 import { ExitConfirmationDialog } from "@/app/components/molecules/ExitConfirmationDialog";
 import { PatientProfileModal } from "@/app/components/molecules/PatientProfileModal";
+import {
+  PatientConfigModal,
+  PatientConfigOptions,
+} from "@/app/components/molecules/PatientConfigModal";
 
 interface Message {
   id: string;
@@ -87,6 +93,12 @@ export default function PatientChat() {
   const sessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showPatientInfo, setShowPatientInfo] = useState(false);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [patientConfig, setPatientConfig] = useState<PatientConfigOptions>({
+    emotion: "Calm",
+    healthLiteracy: "3",
+  });
+  const [showEndChatConfirmation, setShowEndChatConfirmation] = useState(false);
 
   // Simulation actions that can be performed during the chat
   const availableActions = [
@@ -473,9 +485,6 @@ export default function PatientChat() {
         `[CHAT] Session initialized: ${data.sessionId} for patient: ${data.patientName}`
       );
 
-      // Log the initial greeting with patient prefix
-      console.log(`[${data.patientName || "PATIENT"}] ${data.greeting}`);
-
       // Store session ID and auth token
       setSessionId(data.sessionId);
       // Store auth token in component state for later use
@@ -496,14 +505,54 @@ export default function PatientChat() {
         } as PatientProfile);
       }
 
-      // Add initial greeting message from patient
+      // Create a more appropriate greeting based on current emotion setting
+      // instead of using the default API greeting
+      const patientName = data.fullProfile?.patientName || data.patientName;
+      let customGreeting = "";
+
+      // Generate greeting based on the current emotion setting
+      switch (patientConfig.emotion) {
+        case "Anxious":
+          customGreeting = `Hi... I'm ${patientName}. *fidgets nervously* I'm a bit worried about being here today. Do you have time to see me?`;
+          break;
+        case "Confused":
+          customGreeting = `Hello... I'm ${patientName}. I'm not entirely sure why I'm here or what's happening. Can you help me understand?`;
+          break;
+        case "Angry":
+          customGreeting = `I'm ${patientName}. *crosses arms* I've been waiting for quite a while. I hope this doesn't take too long.`;
+          break;
+        case "Sad":
+          customGreeting = `Hi, I'm ${patientName}... *sighs* I haven't been feeling well lately. Thanks for seeing me today.`;
+          break;
+        case "Frustrated":
+          customGreeting = `I'm ${patientName}. *exhales deeply* I've been dealing with this for a while and not getting better. Hope you can help.`;
+          break;
+        case "Worried":
+          customGreeting = `Hello, I'm ${patientName}. I'm concerned about my symptoms and what they might mean. Can we talk about that?`;
+          break;
+        case "In Pain":
+          customGreeting = `Hi... *winces* I'm ${patientName}. Sorry if I seem distracted, I'm in quite a bit of discomfort right now.`;
+          break;
+        case "Hopeful":
+          customGreeting = `Hi! I'm ${patientName}. I'm really looking forward to our conversation today. I've heard good things about you.`;
+          break;
+        case "Calm":
+        default:
+          customGreeting = `Hello, I'm ${patientName}. Thank you for seeing me today. How can we make the most of our time together?`;
+      }
+
+      // Log the customized greeting
+      console.log(`[${patientName || "PATIENT"}] ${customGreeting}`);
+
+      // Add initial greeting message from patient with custom greeting
       const initialMessage: Message = {
         id: Date.now().toString(),
-        text: data.greeting,
+        text: customGreeting,
         sender: "patient",
         timestamp: new Date(),
       };
 
+      // Set the message directly - no need for complex logic in initialization
       setMessages([initialMessage]);
     } catch (error) {
       console.error(`[CHAT] Initialization error: ${(error as Error).message}`);
@@ -557,6 +606,7 @@ export default function PatientChat() {
         body: JSON.stringify({
           sessionId,
           message: newMessage,
+          patientConfig, // Include patient configuration
         }),
       });
 
@@ -626,43 +676,245 @@ export default function PatientChat() {
     }
   };
 
+  // Add new function to handle configuration saving
+  const handleConfigSave = (options: PatientConfigOptions) => {
+    setPatientConfig(options);
+    console.log("Patient configuration updated:", options);
+
+    // Add a system message to indicate configuration change
+    const configMessage: Message = {
+      id: Date.now().toString(),
+      text: `Patient configuration updated (Emotion: ${options.emotion}, Health Literacy: ${options.healthLiteracy})`,
+      sender: "system",
+      timestamp: new Date(),
+    };
+
+    // Generate an initial greeting based on the emotion state
+    if (patient) {
+      // Create an appropriate greeting based on emotional state
+      let greeting = "";
+
+      switch (options.emotion) {
+        case "Anxious":
+          greeting = `Hi... I'm ${patient.patientName}. *fidgets nervously* I'm a bit worried about being here today. Do you have time to see me?`;
+          break;
+        case "Confused":
+          greeting = `Hello... I'm ${patient.patientName}. I'm not entirely sure why I'm here or what's happening. Can you help me understand?`;
+          break;
+        case "Angry":
+          greeting = `I'm ${patient.patientName}. *crosses arms* I've been waiting for quite a while. I hope this doesn't take too long.`;
+          break;
+        case "Sad":
+          greeting = `Hi, I'm ${patient.patientName}... *sighs* I haven't been feeling well lately. Thanks for seeing me today.`;
+          break;
+        case "Frustrated":
+          greeting = `I'm ${patient.patientName}. *exhales deeply* I've been dealing with this for a while and not getting better. Hope you can help.`;
+          break;
+        case "Worried":
+          greeting = `Hello, I'm ${patient.patientName}. I'm concerned about my symptoms and what they might mean. Can we talk about that?`;
+          break;
+        case "In Pain":
+          greeting = `Hi... *winces* I'm ${patient.patientName}. Sorry if I seem distracted, I'm in quite a bit of discomfort right now.`;
+          break;
+        case "Hopeful":
+          greeting = `Hi! I'm ${patient.patientName}. I'm really looking forward to our conversation today. I've heard good things about you.`;
+          break;
+        case "Calm":
+        default:
+          greeting = `Hello, I'm ${patient.patientName}. Thank you for seeing me today. How can we make the most of our time together?`;
+      }
+
+      // Create patient greeting message
+      const patientMessage: Message = {
+        id: Date.now().toString(),
+        text: greeting,
+        sender: "patient",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => {
+        // First add the system message about config update
+        const updatedMessages = [...prev, configMessage];
+
+        // If there are only user/system messages (no patient messages yet)
+        const hasPatientMessages = prev.some((msg) => msg.sender === "patient");
+
+        if (!hasPatientMessages) {
+          // Add the patient's first message
+          return [...updatedMessages, patientMessage];
+        } else {
+          // Add a new patient response based on the updated configuration
+          return [...updatedMessages, patientMessage];
+        }
+      });
+    } else {
+      // Just add the system message if no patient is loaded
+      setMessages((prev) => [...prev, configMessage]);
+    }
+  };
+
+  // Function to generate and download transcript
+  const handleDownloadTranscript = () => {
+    if (messages.length === 0) {
+      toast.error("No messages to download");
+      return;
+    }
+
+    // Create transcript text
+    let transcript = `Patient Chat Transcript\n`;
+    transcript += `Date: ${new Date().toLocaleString()}\n`;
+    transcript += `Patient: ${patient?.patientName || "Unknown"}\n`;
+    transcript += `Age: ${patient?.age || "Unknown"} | Gender: ${
+      patient?.gender || "Unknown"
+    }\n`;
+
+    // Add diagnostic information if available
+    if (patient?.diagnosis) {
+      transcript += `Diagnosis: ${patient.diagnosis}\n`;
+    }
+
+    if (patient?.allergies) {
+      transcript += `Allergies: ${patient.allergies}\n`;
+    }
+
+    if (patient?.medicationItems && patient.medicationItems.length > 0) {
+      const medications = patient.medicationItems
+        .filter((item) => item.checked)
+        .map(
+          (item) => `${item.title}${item.details ? ` (${item.details})` : ""}`
+        )
+        .join(", ");
+
+      if (medications) {
+        transcript += `Medications: ${medications}\n`;
+      }
+    }
+
+    // Add configuration information
+    transcript += `\nPatient Configuration:\n`;
+    transcript += `Emotional State: ${patientConfig.emotion}\n`;
+    transcript += `Health Literacy Level: ${patientConfig.healthLiteracy}\n`;
+
+    transcript += `\n--- Conversation ---\n\n`;
+
+    // Add messages to transcript
+    messages.forEach((msg) => {
+      const timestamp = msg.timestamp.toLocaleString();
+      const sender =
+        msg.sender === "user"
+          ? "Provider"
+          : msg.sender === "patient"
+          ? patient?.patientName || "Patient"
+          : "System";
+
+      transcript += `[${timestamp}] ${sender}:\n${msg.text}\n\n`;
+    });
+
+    // Create and download file
+    const blob = new Blob([transcript], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chat_transcript_${
+      patient?.patientName?.replace(/\s+/g, "_") || "patient"
+    }_${new Date().toISOString().split("T")[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("Transcript downloaded successfully");
+  };
+
+  // Function to end chat
+  const handleEndChat = (shouldDownload = false) => {
+    if (shouldDownload) {
+      handleDownloadTranscript();
+    }
+
+    // Clean up local storage
+    if (sessionId) {
+      localStorage.removeItem(`chat_session_expiry_${sessionId}`);
+    }
+
+    // Navigate back to select page
+    router.push("/patient-interactions/select-patient?mode=chat");
+  };
+
   // Patient info header component
   const HeaderContent = () => {
     if (!patient) return null;
     return (
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 hover:bg-[#015a8b] rounded-full group"
-          onClick={handleBackButton}
-        >
-          <ArrowLeft className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
-        </Button>
-        <div>
-          <div className="text-sm font-bold">
-            Patient: <span className="font-normal">{patient.patientName}</span>
-            {patient.isGlobal && (
-              <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                Default Profile
-              </span>
-            )}
-          </div>
-          <div className="text-sm text-gray-600">
-            Age: {patient.age} | Gender: {patient.gender}
-          </div>
-        </div>
-        {patient.diagnosis && (
+      <div className="flex items-center space-x-2 justify-between w-full">
+        <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 ml-1 hover:bg-[#015a8b] rounded-full group"
-            onClick={() => setShowPatientInfo(true)}
-            title="View patient information"
+            className="h-8 w-8 hover:bg-[#015a8b] rounded-full group"
+            onClick={handleBackButton}
           >
-            <Info className="h-4 w-4 text-[#015a8b] group-hover:text-white" />
+            <ArrowLeft className="h-5 w-5 text-[#015a8b] group-hover:text-white" />
           </Button>
-        )}
+          <div>
+            <div className="text-sm font-bold">
+              Patient:{" "}
+              <span className="font-normal">{patient.patientName}</span>
+              {patient.isGlobal && (
+                <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  Default Profile
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-gray-600">
+              Age: {patient.age} | Gender: {patient.gender}
+            </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            {patient.diagnosis && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:bg-[#015a8b] rounded-full group"
+                onClick={() => setShowPatientInfo(true)}
+                title="View patient information"
+              >
+                <Info className="h-4 w-4 text-[#015a8b] group-hover:text-white" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-[#015a8b] hover:bg-blue-50 hover:text-[#014a71]"
+              onClick={() => setShowConfigModal(true)}
+              title="Configure patient behavior"
+            >
+              Configure
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-[#015a8b] hover:bg-blue-50 hover:text-[#014a71] flex items-center"
+            onClick={() => handleDownloadTranscript()}
+            title="Download transcript"
+            disabled={messages.length === 0}
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Download
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center"
+            onClick={() => setShowEndChatConfirmation(true)}
+            title="End chat"
+          >
+            <LogOut className="h-3 w-3 mr-1" />
+            End Chat
+          </Button>
+        </div>
       </div>
     );
   };
@@ -843,6 +1095,37 @@ export default function PatientChat() {
           patient={patient}
         />
       )}
+
+      {/* Patient Configuration Modal */}
+      <PatientConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        onSave={handleConfigSave}
+        initialOptions={patientConfig}
+        patientName={patient?.patientName}
+      />
+
+      {/* Add End Chat Confirmation Dialog */}
+      <ExitConfirmationDialog
+        isOpen={showEndChatConfirmation}
+        onClose={() => setShowEndChatConfirmation(false)}
+        onExit={() => handleEndChat(false)}
+        title="End Chat Session?"
+        message="Do you want to end this chat session? You can download a transcript of this conversation before ending."
+        cancelText="Cancel"
+        exitText="End Chat"
+        extraButton={
+          <Button
+            onClick={() => {
+              handleEndChat(true);
+              setShowEndChatConfirmation(false);
+            }}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Download & End
+          </Button>
+        }
+      />
 
       <div className="h-full flex flex-col w-full">
         {/* Debug Info - now collapsible */}
