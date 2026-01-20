@@ -197,4 +197,4 @@ When you start a Simulation Scenario, the interaction typically progresses throu
 
 - Conversation Data is deleted every two hours
 
-For additional support or questions, please contact your instructor or the technical support team.
+For additional support or questions, please contact your instructor.

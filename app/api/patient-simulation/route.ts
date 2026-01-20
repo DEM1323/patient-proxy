@@ -421,9 +421,9 @@ async function callGeminiAPI(
     return response;
   }
 
-  // Using Gemini 2.0 Flash-lite model
+  // Using Gemini 2.5 Flash model
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-lite",
+    model: "gemini-2.5-flash",
   });
 
   // Create initial history with system prompt
@@ -1278,7 +1278,7 @@ For example, if the action is checking vitals and the patient has hypertension, 
 
     // Generate a custom response for this action
     const genAI = getGeminiAPI();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(actionPrompt);
     const response = await result.response;
     return response.text();

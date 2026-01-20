@@ -37,10 +37,10 @@ export const generatePatientResponse = async (
     console.log("Initializing Gemini API");
     const genAI = getGeminiAPI();
 
-    // Using the correct model name for Gemini 2.0 Flash-lite
-    console.log("Creating model with gemini-2.0-flash-lite");
+    // Using the correct model name for Gemini 2.5 Flash
+    console.log("Creating model with gemini-2.5-flash");
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.5-flash",
     });
 
     // Get emotion and health literacy from config or use defaults

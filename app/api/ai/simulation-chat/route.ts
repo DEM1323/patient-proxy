@@ -317,10 +317,10 @@ async function callGeminiAPI(
   console.log("Initializing Gemini API for simulation");
   const genAI = getGeminiAPI();
 
-  // Using Gemini 2.0 Flash-lite model
-  console.log("Creating model with gemini-2.0-flash-lite");
+  // Using Gemini 2.5 Flash model
+  console.log("Creating model with gemini-2.5-flash");
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-lite",
+    model: "gemini-2.5-flash",
   });
 
   // Format history in the way Gemini expects it
