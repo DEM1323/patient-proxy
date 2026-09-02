@@ -44,6 +44,13 @@ as protected Convex deployment environment variables. The private roster is
 present in development and production with distinct Learner and Faculty
 identities; their emails are intentionally not documented.
 
+The client-only AuthKit integration currently sets `devMode` because the
+`workers.dev` alpha does not have a custom WorkOS authentication API domain.
+This follows WorkOS guidance and stores the refresh token in browser local
+storage so it survives the callback reload. Before handling production-grade
+data, configure a custom authentication domain and remove `devMode` so WorkOS
+can use its secure HTTP-only cookie mode.
+
 `PILOT_ROSTER_JSON` uses this versioned shape. Emails are normalized only by
 trimming whitespace and lowercasing; domains and aliases do not grant access.
 

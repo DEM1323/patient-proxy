@@ -16,6 +16,7 @@ export function MembershipAccessProvider({
   return (
     <AuthKitProvider
       clientId={workosClientId}
+      devMode
       redirectUri={workosRedirectUri}
       onRedirectCallback={() => window.location.replace("/")}
     >
