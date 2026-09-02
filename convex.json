@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/convex/schemas/convex.schema.json",
+  "functions": "convex/",
+  "authKit": {
+    "dev": {
+      "configure": {
+        "redirectUris": ["http://localhost:5173/callback"],
+        "appHomepageUrl": "http://localhost:5173",
+        "corsOrigins": ["http://localhost:5173"]
+      },
+      "localEnvVars": {
+        "VITE_WORKOS_CLIENT_ID": "${authEnv.WORKOS_CLIENT_ID}",
+        "VITE_WORKOS_REDIRECT_URI": "http://localhost:5173/callback"
+      }
+    },
+    "prod": {
+      "environmentType": "production",
+      "configure": {
+        "redirectUris": [
+          "https://patient-proxy-alpha.dem1323.workers.dev/callback"
+        ],
+        "appHomepageUrl": "https://patient-proxy-alpha.dem1323.workers.dev",
+        "corsOrigins": [
+          "https://patient-proxy-alpha.dem1323.workers.dev"
+        ]
+      }
+    }
+  }
+}

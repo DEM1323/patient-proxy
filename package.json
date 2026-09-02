@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "vite",
+    "dev:backend": "convex dev",
+    "dev:legacy": "next dev",
+    "build": "npm run typecheck && vite build",
+    "build:legacy": "next build",
+    "deploy": "npm run build && wrangler deploy",
+    "lint": "eslint src/alpha convex vite.config.mts",
+    "test": "vitest run",
+    "typecheck": "tsc --project tsconfig.alpha.json",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
@@ -21,8 +27,12 @@
     "@radix-ui/react-toast": "^1.2.6",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
+    "@tanstack/react-router": "^1.170.27",
+    "@workos-inc/authkit-react": "^0.16.2",
+    "@workos-inc/node": "^10.13.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "convex": "^1.43.0",
     "lucide-react": "^0.484.0",
     "next": "15.2.8",
     "react": "^19.0.0",
@@ -33,15 +43,23 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@eslint/eslintrc": "^3",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^6.0.5",
+    "convex-test": "^0.0.56",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
+    "jsdom": "^26.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.122.0"
   }
 }
