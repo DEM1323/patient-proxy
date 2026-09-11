@@ -2,6 +2,19 @@
 
 A training platform that enables healthcare students to practice clinical communication skills through simulated patient interactions powered by Google Gemini.
 
+## Alpha replacement
+
+The repository is being migrated in verified vertical slices to a Vite, TanStack Router, Convex, and Cloudflare Workers runtime. The replacement SPA is now the default development target; the legacy Next.js prototype remains available until the alpha journey passes its checks.
+
+```bash
+npm ci
+npm run dev:backend
+# In a second terminal:
+npm run dev
+```
+
+Open `http://localhost:5173/deployment-check`. See [Alpha Deployment Spine](./docs/alpha/DEPLOYMENT.md) for Convex and Cloudflare setup, and [Alpha Wayfinder](./docs/alpha/WAYFINDER.md) for compact current context. Run the legacy prototype with `npm run dev:legacy`.
+
 ## Project Overview
 
 This project is part of an independent study (IT 478) at UMass Boston, supervised by Rosemary Samia. It aims to create an interactive training tool that helps healthcare students develop effective clinical communication skills through AI-simulated patient scenarios.
