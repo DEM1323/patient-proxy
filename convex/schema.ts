@@ -4,6 +4,10 @@ import {
   clinicalTruthValidator,
   learnerBriefValidator,
 } from "./attemptStart/scenarioContent";
+import {
+  attemptEventKindValidator,
+  exchangeStatusValidator,
+} from "./attemptInteraction/validators";
 import { membershipRoleValidator } from "./membershipAccess/roles";
 
 export default defineSchema({
@@ -73,7 +77,25 @@ export default defineSchema({
     institutionId: v.id("pilotInstitutions"),
     attemptId: v.id("attempts"),
     sequence: v.number(),
-    kind: v.union(v.literal("attempt_started"), v.literal("attempt_ended")),
+    kind: attemptEventKindValidator,
     occurredAt: v.number(),
+    // Message events only. Recorded conversation is evidence, never Clinical
+    // Truth.
+    text: v.optional(v.string()),
   }).index("by_attempt_sequence", ["attemptId", "sequence"]),
+  // Recoverable request state for one Learner message and its patient reply.
+  // Only the generation matching `generation` may commit a reply.
+  exchangeRequests: defineTable({
+    institutionId: v.id("pilotInstitutions"),
+    attemptId: v.id("attempts"),
+    clientRequestId: v.string(),
+    status: exchangeStatusValidator,
+    generation: v.number(),
+    learnerSequence: v.number(),
+    patientSequence: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_attempt_client_request", ["attemptId", "clientRequestId"])
+    .index("by_attempt_learner_sequence", ["attemptId", "learnerSequence"]),
 });

@@ -6,6 +6,10 @@ import {
   listAvailableScenarios,
   startAttempt,
 } from "./model";
+import {
+  attemptEventKindValidator,
+  openExchangeValidator,
+} from "../attemptInteraction/validators";
 import { learnerBriefValidator } from "./scenarioContent";
 
 const estimatedMinutesValidator = v.object({ min: v.number(), max: v.number() });
@@ -75,13 +79,12 @@ export const ownAttempt = query({
       timeline: v.array(
         v.object({
           sequence: v.number(),
-          kind: v.union(
-            v.literal("attempt_started"),
-            v.literal("attempt_ended"),
-          ),
+          kind: attemptEventKindValidator,
           occurredAt: v.number(),
+          text: v.optional(v.string()),
         }),
       ),
+      exchange: v.union(v.null(), openExchangeValidator),
     }),
   ),
   handler: (ctx, { attemptId }) => getOwnAttempt(ctx, attemptId),

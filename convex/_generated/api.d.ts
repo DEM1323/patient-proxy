@@ -8,6 +8,12 @@
  * @module
  */
 
+import type * as attemptInteraction_access from "../attemptInteraction/access.js";
+import type * as attemptInteraction_gemini from "../attemptInteraction/gemini.js";
+import type * as attemptInteraction_generation from "../attemptInteraction/generation.js";
+import type * as attemptInteraction_model from "../attemptInteraction/model.js";
+import type * as attemptInteraction_patientPrompt from "../attemptInteraction/patientPrompt.js";
+import type * as attemptInteraction_validators from "../attemptInteraction/validators.js";
 import type * as attemptStart_access from "../attemptStart/access.js";
 import type * as attemptStart_model from "../attemptStart/model.js";
 import type * as attemptStart_pilotProvisioning from "../attemptStart/pilotProvisioning.js";
@@ -27,6 +33,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "attemptInteraction/access": typeof attemptInteraction_access;
+  "attemptInteraction/gemini": typeof attemptInteraction_gemini;
+  "attemptInteraction/generation": typeof attemptInteraction_generation;
+  "attemptInteraction/model": typeof attemptInteraction_model;
+  "attemptInteraction/patientPrompt": typeof attemptInteraction_patientPrompt;
+  "attemptInteraction/validators": typeof attemptInteraction_validators;
   "attemptStart/access": typeof attemptStart_access;
   "attemptStart/model": typeof attemptStart_model;
   "attemptStart/pilotProvisioning": typeof attemptStart_pilotProvisioning;
