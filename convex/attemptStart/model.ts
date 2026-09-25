@@ -1,5 +1,13 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import {
+  abandonOpenExchanges,
+  getOpenExchange,
+} from "../attemptInteraction/model";
+import type {
+  AttemptEventKind,
+  OpenExchange,
+} from "../attemptInteraction/validators";
 import { requireRole } from "../membershipAccess/authorization";
 import type { MembershipView } from "../membershipAccess/model";
 import type { LearnerBrief } from "./scenarioContent";
@@ -42,9 +50,12 @@ export type AttemptView = {
   };
   timeline: {
     sequence: number;
-    kind: "attempt_started" | "attempt_ended";
+    kind: AttemptEventKind;
     occurredAt: number;
+    text?: string;
   }[];
+  // The latest exchange still awaiting or recoverable, only while Active.
+  exchange: OpenExchange | null;
 };
 
 export async function listAvailableScenarios(
@@ -129,6 +140,7 @@ export async function startAttempt(
       endedAt: now,
       endReason: "learner_restarted",
     });
+    await abandonOpenExchanges(ctx, activeAttempt._id, now);
     await appendAttemptEvent(ctx, activeAttempt, "attempt_ended", now);
   }
 
@@ -155,13 +167,8 @@ export async function getOwnAttempt(
   rawAttemptId: string,
 ): Promise<AttemptView | null> {
   const learner = await requireRole(ctx, "learner");
-  const attemptId = ctx.db.normalizeId("attempts", rawAttemptId);
-  const attempt = attemptId ? await ctx.db.get(attemptId) : null;
-  if (
-    !attempt ||
-    attempt.institutionId !== learner.institution.id ||
-    attempt.learnerMembershipId !== learner.id
-  ) {
+  const attempt = await findOwnAttempt(ctx, learner, rawAttemptId);
+  if (!attempt) {
     return null;
   }
 
@@ -187,12 +194,34 @@ export async function getOwnAttempt(
       setting: version.learnerBrief.setting,
       version: version.version,
     },
-    timeline: events.map(({ sequence, kind, occurredAt }) => ({
-      sequence,
-      kind,
-      occurredAt,
-    })),
+    timeline: events.map(({ sequence, kind, occurredAt, text }) =>
+      text === undefined
+        ? { sequence, kind, occurredAt }
+        : { sequence, kind, occurredAt, text },
+    ),
+    exchange:
+      attempt.status === "active"
+        ? await getOpenExchange(ctx, attempt._id)
+        : null,
   };
+}
+
+// Malformed, foreign, and other Learners' identifiers all resolve to null.
+export async function findOwnAttempt(
+  ctx: ReadContext,
+  learner: MembershipView,
+  rawAttemptId: string,
+) {
+  const attemptId = ctx.db.normalizeId("attempts", rawAttemptId);
+  const attempt = attemptId ? await ctx.db.get(attemptId) : null;
+  if (
+    !attempt ||
+    attempt.institutionId !== learner.institution.id ||
+    attempt.learnerMembershipId !== learner.id
+  ) {
+    return null;
+  }
+  return attempt;
 }
 
 async function findAvailableScenario(
@@ -262,11 +291,13 @@ async function findActiveAttempt(ctx: ReadContext, learner: MembershipView) {
     .unique();
 }
 
-async function appendAttemptEvent(
+// The only writer of Attempt timeline sequence numbers.
+export async function appendAttemptEvent(
   ctx: MutationCtx,
   attempt: Doc<"attempts">,
-  kind: Doc<"attemptEvents">["kind"],
+  kind: AttemptEventKind,
   occurredAt: number,
+  text?: string,
 ) {
   const lastEvent = await ctx.db
     .query("attemptEvents")
@@ -275,11 +306,14 @@ async function appendAttemptEvent(
     )
     .order("desc")
     .first();
+  const sequence = (lastEvent?.sequence ?? 0) + 1;
   await ctx.db.insert("attemptEvents", {
     institutionId: attempt.institutionId,
     attemptId: attempt._id,
-    sequence: (lastEvent?.sequence ?? 0) + 1,
+    sequence,
     kind,
     occurredAt,
+    ...(text === undefined ? {} : { text }),
   });
+  return sequence;
 }

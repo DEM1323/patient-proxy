@@ -221,13 +221,34 @@ export function ScenarioUnavailableView() {
   );
 }
 
-const timelineLabels: Record<OwnAttempt["timeline"][number]["kind"], string> = {
+export type ComposerProps = {
+  draft: string;
+  onDraftChange: (draft: string) => void;
+  onSend: () => void;
+  onRetry: () => void;
+  // A send or retry command is awaiting the server.
+  submitting: boolean;
+  notice: string | null;
+};
+
+const lifecycleLabels = {
   attempt_started: "Attempt started",
   attempt_ended: "Attempt ended",
 };
 
-export function AttemptView({ attempt }: { attempt: OwnAttempt }) {
+export const maxMessageLength = 2000;
+
+export function AttemptView({
+  attempt,
+  composer,
+}: {
+  attempt: OwnAttempt;
+  composer: ComposerProps;
+}) {
   const active = attempt.status === "active";
+  const patientName = attempt.scenario.patientName;
+  const firstName = patientName.split(" ")[0];
+  const { exchange } = attempt;
   return (
     <main className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-secondary">
@@ -237,16 +258,14 @@ export function AttemptView({ attempt }: { attempt: OwnAttempt }) {
         {attempt.scenario.title}
       </h1>
       <p className="mt-3 text-lg text-slate-700">
-        {attempt.scenario.patientName} · Scenario Version{" "}
-        {attempt.scenario.version}
+        {patientName} · Scenario Version {attempt.scenario.version}
       </p>
 
       {active ? (
         <p className="mt-6 rounded-lg border border-sky-200 bg-sky-50 px-5 py-4 leading-7 text-slate-700">
           This simulation is continuous. If your connection drops or this page
-          reloads, it reconnects to this same Attempt. The conversation with{" "}
-          {attempt.scenario.patientName} is not yet available in this alpha
-          build.
+          reloads, it reconnects to this same Attempt and its recorded
+          conversation.
         </p>
       ) : (
         <p className="mt-6 rounded-lg border border-slate-200 bg-white px-5 py-4 leading-7 text-slate-700">
@@ -254,22 +273,72 @@ export function AttemptView({ attempt }: { attempt: OwnAttempt }) {
         </p>
       )}
 
-      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Timeline</h2>
-        <ol className="mt-4 space-y-3">
+      <section
+        aria-labelledby="conversation-title"
+        className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+      >
+        <h2 id="conversation-title" className="text-lg font-semibold text-slate-950">
+          Conversation with {patientName}
+        </h2>
+        <ol className="mt-4 space-y-4">
           {attempt.timeline.map((event) => (
-            <li key={event.sequence} className="flex gap-4 text-slate-700">
-              <time
-                dateTime={new Date(event.occurredAt).toISOString()}
-                className="w-24 shrink-0 font-mono text-sm text-slate-500"
-              >
-                {formatTime(event.occurredAt)}
-              </time>
-              <span>{timelineLabels[event.kind]}</span>
+            <li key={event.sequence}>
+              {event.kind === "learner_message" ||
+              event.kind === "patient_message" ? (
+                <Message
+                  speaker={event.kind === "learner_message" ? "You" : patientName}
+                  fromLearner={event.kind === "learner_message"}
+                  text={event.text ?? ""}
+                  occurredAt={event.occurredAt}
+                />
+              ) : (
+                <p className="text-center text-sm text-slate-500">
+                  {lifecycleLabels[event.kind]} ·{" "}
+                  <time dateTime={new Date(event.occurredAt).toISOString()}>
+                    {formatTime(event.occurredAt)}
+                  </time>
+                </p>
+              )}
             </li>
           ))}
         </ol>
+        <div aria-live="polite">
+          {exchange?.status === "pending" && (
+            <p className="mt-4 max-w-[80%] rounded-2xl rounded-bl-sm bg-slate-100 px-4 py-3 italic text-slate-600">
+              {firstName} is responding…
+            </p>
+          )}
+        </div>
+        {exchange?.status === "failed" && (
+          <div
+            role="alert"
+            className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-5 py-4"
+          >
+            <p className="font-medium text-rose-800">
+              {firstName} could not respond to your last message.
+            </p>
+            <p className="mt-1 text-sm text-rose-800">
+              Retry it, or send a different message instead.
+            </p>
+            <button
+              type="button"
+              className={`mt-3 ${secondaryButton}`}
+              disabled={composer.submitting}
+              onClick={composer.onRetry}
+            >
+              Retry
+            </button>
+          </div>
+        )}
       </section>
+
+      {active && (
+        <Composer
+          composer={composer}
+          patientFirstName={firstName}
+          waiting={exchange?.status === "pending"}
+        />
+      )}
 
       {!active && (
         <Link to="/scenarios" className={`mt-8 inline-block ${backLink}`}>
@@ -277,6 +346,100 @@ export function AttemptView({ attempt }: { attempt: OwnAttempt }) {
         </Link>
       )}
     </main>
+  );
+}
+
+function Message({
+  fromLearner,
+  occurredAt,
+  speaker,
+  text,
+}: {
+  fromLearner: boolean;
+  occurredAt: number;
+  speaker: string;
+  text: string;
+}) {
+  return (
+    <div className={fromLearner ? "ml-auto max-w-[80%]" : "max-w-[80%]"}>
+      <p
+        className={`text-xs font-semibold text-slate-500 ${fromLearner ? "text-right" : ""}`}
+      >
+        {speaker} ·{" "}
+        <time dateTime={new Date(occurredAt).toISOString()}>
+          {formatTime(occurredAt)}
+        </time>
+      </p>
+      <p
+        className={`mt-1 whitespace-pre-wrap rounded-2xl px-4 py-3 leading-7 ${
+          fromLearner
+            ? "rounded-br-sm bg-primary text-white"
+            : "rounded-bl-sm bg-slate-100 text-slate-900"
+        }`}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
+function Composer({
+  composer,
+  patientFirstName,
+  waiting,
+}: {
+  composer: ComposerProps;
+  patientFirstName: string;
+  waiting: boolean;
+}) {
+  const disabled = waiting || composer.submitting;
+  const canSend = !disabled && composer.draft.trim().length > 0;
+  return (
+    <form
+      className="mt-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (canSend) {
+          composer.onSend();
+        }
+      }}
+    >
+      <label
+        htmlFor="attempt-message"
+        className="block font-semibold text-slate-950"
+      >
+        Message to {patientFirstName}
+      </label>
+      <textarea
+        id="attempt-message"
+        rows={3}
+        maxLength={maxMessageLength}
+        value={composer.draft}
+        onChange={(event) => composer.onDraftChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            event.currentTarget.form?.requestSubmit();
+          }
+        }}
+        className="mt-2 block w-full rounded-lg border border-slate-300 px-4 py-3 leading-7 text-slate-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      />
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <button type="submit" className={primaryButton} disabled={!canSend}>
+          {composer.submitting ? "Sending…" : "Send"}
+        </button>
+        {waiting && (
+          <p className="text-sm text-slate-600">
+            You can send your next message after {patientFirstName} responds.
+          </p>
+        )}
+      </div>
+      {composer.notice && (
+        <p role="alert" className="mt-4 font-medium text-rose-700">
+          {composer.notice}
+        </p>
+      )}
+    </form>
   );
 }
 
