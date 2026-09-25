@@ -13,7 +13,9 @@ npm run dev:backend
 npm run dev
 ```
 
-Open `http://localhost:5173/deployment-check`. See [Alpha Deployment Spine](./docs/alpha/DEPLOYMENT.md) for Convex and Cloudflare setup, and [Alpha Wayfinder](./docs/alpha/WAYFINDER.md) for compact current context. Run the legacy prototype with `npm run dev:legacy`.
+Open `http://localhost:5173/deployment-check`. See [Alpha Deployment Spine](./docs/alpha/DEPLOYMENT.md) for connection to the existing development project and sign-in verification, and [Current status](./docs/alpha/WAYFINDER.md) for the handoff. Codex, Claude Code, and Cursor share [AGENTS.md](./AGENTS.md). Run the legacy prototype with `npm run dev:legacy`.
+
+The sections below describe the retained legacy Next.js/Supabase prototype, not the alpha runtime or its product requirements.
 
 ## Project Overview
 
@@ -83,7 +85,7 @@ To get the project running locally, follow these main steps. For complete and de
 
 4.  **Run the development server:**
     ```bash
-    npm run dev
+    npm run dev:legacy
     ```
     Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
 
 type AccessDenialReason =
@@ -46,9 +47,11 @@ const journeyDetails: Record<
 };
 
 export function MembershipHome({
+  journeyActions = {},
   membership,
   onSignOut,
 }: {
+  journeyActions?: Partial<Record<MembershipRole, ReactNode>>;
   membership: MembershipSummary;
   onSignOut: () => void;
 }) {
@@ -91,7 +94,11 @@ export function MembershipHome({
                 {journey.title}
               </h2>
               <p className="mt-3 leading-7 text-slate-700">{journey.description}</p>
-              <p className="mt-6 text-sm font-semibold text-primary">Journey available</p>
+              <div className="mt-6">
+                {journeyActions[role] ?? (
+                  <p className="text-sm font-semibold text-primary">Journey available</p>
+                )}
+              </div>
             </section>
           );
         })}

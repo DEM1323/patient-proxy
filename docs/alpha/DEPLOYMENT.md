@@ -9,15 +9,26 @@
 ## Local setup
 
 1. Install dependencies with `npm ci`.
-2. Configure and start Convex with `npm run dev:backend`. Choose a local or cloud development deployment. Convex writes `CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL`, `VITE_WORKOS_CLIENT_ID`, and `VITE_WORKOS_REDIRECT_URI` to the ignored `.env.local` file. If it detects the retained Next.js dependency and writes `NEXT_PUBLIC_CONVEX_URL`, copy that public URL to `VITE_CONVEX_URL` for the replacement SPA.
-3. In a second terminal, start the SPA with `npm run dev`.
-4. Open `http://localhost:5173/deployment-check` and verify that every row reports ready or configured, then open `/` and sign in with an approved test identity.
+2. If this machine is not authenticated, run `npx convex login` and complete browser sign-in using the account that has access to `umb/patient-proxy`. Keep login tokens in the CLI's credential store; do not paste them into chat or tracked files.
+3. For the first connection from this checkout, run `npm run dev:backend -- --configure existing --team umb --project patient-proxy --dev-deployment cloud`. Reuse the existing development deployment and WorkOS configuration. **This command syncs local functions and schema to the shared development backend.** First coordinate with anyone using that deployment and check [current status](WAYFINDER.md); an older checkout can replace newer functions and remove indexes. Subsequent starts use `npm run dev:backend`.
+4. Convex writes the deployment selector, public backend URL, and WorkOS settings from `convex.json` to ignored `.env.local`. Because the retained Next.js dependency may make it write `NEXT_PUBLIC_CONVEX_URL`, rename that key to `VITE_CONVEX_URL`, preserving its development URL. Keep only one backend URL key: leaving both aliases makes Convex warn and refuse automatic URL updates. Keep `VITE_WORKOS_REDIRECT_URI=http://localhost:5173/callback`; restart Vite after editing local configuration if it has not restarted automatically. Any CLI-generated cookie secret also stays in this ignored file.
+5. In a second terminal, start the SPA with `npm run dev -- --host localhost --port 5173 --strictPort`. The ordinary `npm run dev` also defaults to port 5173; the explicit flags prevent silently switching to a port WorkOS does not allow. If 5173 is occupied, stop your prior frontend process first.
+6. Open `http://localhost:5173/deployment-check` and verify every row reports ready or configured. The Cloudflare row reports configuration; it does not prove a local Vite request passed through Cloudflare.
+7. Open `/`, choose **Sign in with Google**, and complete Google sign-in with an exact identity already approved in the development Pilot Roster. The callback should return to `/` and show that Member's assigned journeys. Reload and confirm those journeys and **Sign out** remain visible without another sign-in. A provider unit test checks `devMode`, but only this browser check demonstrates session persistence.
+
+Do not fetch or display backend secret values to verify setup. WorkOS API keys, the private roster, and Gemini configuration stay in the existing protected Convex deployment. Only request missing configuration after identifying the specific failed check.
+
+## Switching development tools
+
+Open this checkout in Codex, Claude Code, or Cursor. All three use root [AGENTS.md](../../AGENTS.md); [CLAUDE.md](../../CLAUDE.md) imports it with `@AGENTS.md`. Cursor needs no duplicate rules file. See official [Codex instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [Claude imports](https://code.claude.com/docs/en/memory), and [Cursor AGENTS.md support](https://cursor.com/docs/rules).
+
+Before continuing in another tool, read the shared guide, [current status](WAYFINDER.md), and working diff. Simultaneous editing requires separate Git worktrees and branches. Each checkout needs its own ignored local environment; coordinate changes to a shared Convex development deployment too.
 
 The legacy Next.js prototype remains available through `npm run dev:legacy`. It still requires its prior Supabase and Gemini environment variables.
 
 ## Verification
 
-Run `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build`. Use `npx wrangler deploy --dry-run` to validate the Cloudflare bundle without publishing it.
+Run `npm run lint`, `npm test`, and `npm run build` once for the alpha baseline. Build already runs `npm run typecheck`; use standalone typecheck for focused edits rather than repeating it during the same baseline. Use `npx wrangler deploy --dry-run` to validate the Cloudflare bundle without publishing it. Keep environmental permission failures separate from code failures, and rerun only checks affected by a fix.
 
 ## Production
 
@@ -29,13 +40,14 @@ Run `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build`. Use `n
 The provisioned alpha targets are:
 
 - Convex team/project: `umb/patient-proxy`
+- Convex development deployment: `adorable-echidna-264` at `https://adorable-echidna-264.convex.cloud` (check the current-status note before syncing)
 - Convex production deployment: `little-elk-419` at `https://little-elk-419.convex.cloud`
 - Cloudflare account: `Dem1323@outlook.com's Account` (`0811a789ae9a6d0fb3af833a80665403`)
 - Cloudflare Worker: `patient-proxy-alpha` at `https://patient-proxy-alpha.dem1323.workers.dev`
 - WorkOS development client: `client_01M0B769HEAC4CG1QQZQ2YB4GT`
 - WorkOS production client: `client_01M0B87CY3Q8E21FXPX3ZZHZWK`
 
-AuthKit uses Google as its only primary sign-in method. Development allows
+The alpha sign-in flow uses Google. Development allows
 `http://localhost:5173/callback` with CORS from `http://localhost:5173`;
 production allows
 `https://patient-proxy-alpha.dem1323.workers.dev/callback` with CORS from the

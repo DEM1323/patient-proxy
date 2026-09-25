@@ -1,6 +1,7 @@
 import { useAuth } from "@workos-inc/authkit-react";
 import { useAction, useConvexAuth, useQuery } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import {
   AccessDeniedView,
@@ -8,6 +9,7 @@ import {
   AccessLoadingView,
   MembershipHome,
   SignInView,
+  type MembershipSummary,
 } from "./view";
 
 type AdmissionState =
@@ -23,6 +25,38 @@ type AdmissionState =
   | null;
 
 export function MembershipAccessPage() {
+  return (
+    <MembershipGate>
+      {({ membership, signOut }) => (
+        <MembershipHome
+          membership={membership}
+          onSignOut={signOut}
+          journeyActions={{
+            learner: (
+              <Link
+                to="/scenarios"
+                className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                Open scenario list
+              </Link>
+            ),
+          }}
+        />
+      )}
+    </MembershipGate>
+  );
+}
+
+// Every alpha route renders through this gate: identity comes from WorkOS, but
+// Membership and roles come only from Convex.
+export function MembershipGate({
+  children,
+}: {
+  children: (member: {
+    membership: MembershipSummary;
+    signOut: () => void;
+  }) => ReactNode;
+}) {
   const { isLoading: workosLoading, signIn, signOut, user } = useAuth();
   const { isAuthenticated, isLoading: convexLoading } = useConvexAuth();
   const membership = useQuery(
@@ -73,12 +107,10 @@ export function MembershipAccessPage() {
     return <AccessLoadingView />;
   }
   if (membership) {
-    return (
-      <MembershipHome
-        membership={membership}
-        onSignOut={() => signOut({ returnTo: window.location.origin })}
-      />
-    );
+    return children({
+      membership,
+      signOut: () => signOut({ returnTo: window.location.origin }),
+    });
   }
   if (admission?.userId === user.id && admission.status === "denied") {
     return (

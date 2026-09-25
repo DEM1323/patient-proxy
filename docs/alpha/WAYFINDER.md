@@ -1,58 +1,10 @@
-# Alpha Wayfinder
+# Alpha current status
 
-## Alpha outcome
+- **Branch:** `codex/dev-setup`, based on clean `alpha` at `d664d1b`. User confirmed this alpha as the development baseline; the earlier PACU schema/indexes are not being restored.
+- **Current task:** [Start the PACU Attempt (#9)](https://github.com/DEM1323/patient-proxy/issues/9) implemented and demonstrated locally; Grok reviewed before commit and its fixes are included in `a3d64a6`, per the user's relayed Claude handoff. Setup is in `76c7975`; the handoff map was added in `b7db8b8`. Next feature: #10; see [HANDOFF.md](HANDOFF.md) for its brief and agent prompts. No production deployment.
+- **Demonstrated behavior (2026-09-25):** Setup baseline as before (Node 24.18.1, deployment-check Ready/Configured, Google sign-in and refresh persistence, unapproved identity denied). For #9, typecheck, lint, 30 tests across 10 files (19 baseline + 11 new), build, and Wrangler dry run pass. In the browser, the approved Learner opened the scenario list through the new home link, saw Initial PACU Assessment via the pilot Learning Group, read a Learner Brief with handoff and visible signs only, and started an Active Attempt pinned to Scenario Version 1. Reloading `/attempts/<id>` restored the same Attempt and timeline; the scenario list showed no resume action. Start again required confirmation; confirming ended the earlier Attempt (timeline: started, ended) and created a new one. A restart records end reason `learner_restarted`, distinct from #13's deliberate `learner_ended`, so later slices can skip the ending guardrail and Formative Feedback for restarts (one earlier dev row keeps `learner_ended`; the schema accepts both). An Attempt ID and a malformed ID used as Scenario IDs showed a generic "not available" page, a Scenario ID used as an Attempt ID showed "Attempt not found", and dev data held exactly the two expected Attempts. Cross-institution, other-Learner, non-Learner, and pinning after a later version are covered by `convex/attemptStart/access.test.ts`, not browser-demonstrated.
+- **Operator step:** No UI manages Learning Groups or Scenario availability yet. `npx convex run attemptStart/pilotProvisioning:provision` idempotently publishes Initial PACU Assessment v1, makes it available to the "PACU Pilot" Learning Group, and enrolls all current Learner and Faculty Memberships. Run on `adorable-echidna-264` (1 Membership enrolled); rerun after admitting new Members.
+- **Blockers:** None. Open questions: how Learning Group membership should be administered beyond the provisioning command, and whether removing availability after Start should end the Active Attempt (an "access suspension" ending). Today, reloading an owned Attempt does not recheck availability. The unchanged lock still reports 22 audit findings (5 low, 6 moderate, 10 high, 1 critical).
+- **Next action:** Prepare and implement [Hold a recoverable patient exchange (#10)](https://github.com/DEM1323/patient-proxy/issues/10) on the existing Active Attempt route: persist messages and recoverable generation state, ground replies in the pinned Scenario Version and timeline, deduplicate retries, and reject late interaction on Ended Attempts. Do not repeat the completed #9 review without new evidence. An explicit End Attempt control belongs to #13; Start retry behavior remains a disclosed #9 limitation. Four generated files have unstaged line-ending-only differences; they were not pushed, per Claude, and are left untouched. The integration target remains `alpha`.
 
-An approved Learner at one Pilot Institution can complete one Simulated Patient Scenario end to end, and authorized Faculty can review the Ended Attempt. Pilot Institution isolation and recoverable behavior are verified. The canonical shared map is [Chart the route to the Patient Proxy pilot alpha](https://github.com/DEM1323/patient-proxy/issues/2).
-
-## Next frontier
-
-Implement [Start the PACU Attempt](https://github.com/DEM1323/patient-proxy/issues/9), the next behavior-first vertical slice.
-
-## Delivery approach
-
-- Use user story mapping to order work by the Learner and Faculty journeys.
-- Use vertical slice architecture so each story owns its UI-to-Convex behavior rather than being split into horizontal technical layers.
-- Use behavior-driven development: agree concrete Given/When/Then examples before implementing each slice, then automate them at the narrowest level that verifies the behavior.
-- Deliver the agreed chain in order: enter the pilot; start the PACU Attempt; hold a recoverable patient exchange; take a recoverable Clinical Action; end the Attempt once; complete the Attempt Debrief; revisit an Ended Attempt; review an authorized Ended Attempt.
-- Keep browser and Convex code grouped by feature. Routes compose feature entry points; protected Convex boundaries derive identity and institution scope.
-
-## Verified completed behavior
-
-- Legacy state inspected: Next.js 15.2.8, React 19, Supabase Google OAuth, and Gemini; Scenario state and Attempt Debrief behavior are not a reliable persistence baseline.
-- Legacy production build fails without Supabase configuration, and legacy lint reports existing errors.
-- The replacement Vite application builds and registers `/deployment-check` with TanStack Router.
-- Cloudflare Workers local serving returns the SPA entry point for direct navigation to `/deployment-check`.
-- Replacement type-checking, linting, tests, production build, and Wrangler deployment dry run pass.
-- The production Convex deployment and Cloudflare Worker are provisioned; the hosted root, direct-route fallback, browser CORS, and Convex health query pass.
-- Development and production WorkOS AuthKit environments use Google-only sign-in, approved redirect/CORS pairs, reachable JWKS endpoints, and private deployment-owned Pilot Rosters with distinct Learner and Faculty identities.
-- The Learner and Faculty journeys are mapped into eight independently demonstrable vertical slices with concrete Given/When/Then acceptance examples and native blocking order.
-- WorkOS authentication now enters Convex through a private exact-email Pilot Roster, binds Membership to the stable WorkOS user ID, and derives Pilot Institution scope without browser identity or role claims.
-- Unapproved and unverified identities create no Membership and receive explicit Institutional Admin contact guidance; consumed roster identities cannot transfer to another WorkOS user.
-- Additive roles render independently without inheritance, and the shared authorization boundary rejects roles or Pilot Institution scope not held by the current Member.
-- The production Convex functions and Cloudflare SPA are deployed; hosted root, login, callback, deployment-check, and health boundaries pass smoke checks.
-
-## Difficult-to-reverse decisions
-
-- The alpha runtime is a Cloudflare-hosted Vite SPA with TanStack Router and Convex as its application backend.
-- Institution-owned data must carry `institutionId`; Convex functions derive identity and enforce Membership/roles instead of trusting browser claims.
-- Gemini and all secrets execute only in protected Convex functions.
-- Legacy runtime remains until the replacement journey passes its checks.
-- WorkOS AuthKit authenticates alpha users through Google and preserves a path to institutional OIDC/SAML.
-- Authentication alone grants no access: a private Pilot Roster assigns each exact identity one Pilot Institution Membership with additive Learner, Faculty, Author, and Institutional Admin roles, then binds it to the stable WorkOS user ID.
-- Attempt content is Learner-owned and automatically deleted 90 days after completion or, for incomplete Attempts, 30 days after last activity; the alpha offers no in-product downloads.
-- Faculty review authorization is derived dynamically from current shared Learning Group membership, current Scenario availability, and Ended Attempt state; Institutional Admin analytics spans the Pilot Institution.
-- The alpha Scenario is a curated 8-12-minute postoperative PACU encounter with Elena Ruiz for pre-licensure nursing Learners. Authored Clinical Actions reveal deterministic Scenario Observations; Simulated Patient dialogue and the Attempt Debrief must remain grounded in recorded evidence and make no competency claim.
-- An Active Attempt is continuous rather than pausable: its current route may recover transport interruption, but the product offers no resume affordance; another simulation run is a new Attempt.
-- Grounded multi-turn dialogue precedes Clinical Actions in delivery, while both remain increments of one `attempt-interaction` feature.
-- Formative Feedback generation starts idempotently after ending but remains hidden until the Learner explicitly answers or skips both Reflection Prompts.
-- The approved 90/30-day retention policy remains, but implementing and verifying automatic deletion is deferred beyond this alpha map.
-
-## Known blockers
-
-- The retained legacy Next.js/Supabase dependency tree has known audit findings; remove it at cutover after replacement checks pass.
-
-## Next three actions
-
-1. Implement [Start the PACU Attempt](https://github.com/DEM1323/patient-proxy/issues/9) through the replacement UI and Convex boundary.
-2. Verify current Learning Group availability, Learner Brief isolation from Clinical Truth, pinned Scenario Version ownership, and cross-institution denial.
-3. Demonstrate one new Active Attempt and the end-before-restart behavior before advancing to [Hold a recoverable patient exchange](https://github.com/DEM1323/patient-proxy/issues/10).
+Read [AGENTS.md](../../AGENTS.md), this note, and the working diff when switching tools. Product boundaries remain in [CONTEXT.md](../../CONTEXT.md); startup commands are in [DEPLOYMENT.md](DEPLOYMENT.md). Historical decisions remain in the [alpha map](https://github.com/DEM1323/patient-proxy/issues/2), linked issues, and Git history (`d664d1b:docs/alpha/WAYFINDER.md`).
