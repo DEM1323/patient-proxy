@@ -36,6 +36,7 @@ An approved Learner completes Elena Ruiz's PACU encounter, receives useful evide
 
 ## References as needed
 
+- [Grok / Claude feature handoff map](docs/alpha/HANDOFF.md) for the remaining alpha route and review prompts; keep current progress in `WAYFINDER.md`.
 - [Domain vocabulary and product boundaries](CONTEXT.md); [domain documentation conventions](docs/agents/domain.md).
 - [Issue tracker](docs/agents/issue-tracker.md); [triage labels](docs/agents/triage-labels.md) when triaging.
 - [Alpha decisions and feature references](https://github.com/DEM1323/patient-proxy/issues/2); historical detail remains in Git history.
