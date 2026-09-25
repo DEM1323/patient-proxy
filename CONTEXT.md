@@ -95,3 +95,17 @@ _Avoid_: Quiz question, assessment item, feedback
 **Learner Reflection**:
 A Learner's explicitly submitted, append-only response to a reflection prompt about an Ended Attempt, visible to that Learner and authorized Faculty as part of the shared learning record. Later clarification adds a new response rather than replacing an earlier one.
 _Avoid_: Private journal, Faculty feedback, assessment
+
+## Established alpha product boundaries
+
+These requirements carry forward the decisions recorded in the [alpha map](https://github.com/DEM1323/patient-proxy/issues/2) and the earlier `docs/alpha/WAYFINDER.md` in Git history. They describe intended behavior, not a claim that every feature is implemented.
+
+- Elena Ruiz's curated PACU encounter lasts approximately 8–12 minutes and supports pre-licensure nursing Learners. Use synthetic data only. Clinical Actions reveal authored, deterministic Scenario Observations; generated dialogue does not alter Clinical Truth.
+- WorkOS Google sign-in authenticates, with a path to institutional OIDC/SAML. Convex enforces exact-identity Pilot Roster admission, stable WorkOS user binding, additive roles, and Pilot Institution isolation. Authentication alone grants no Membership.
+- Starting an Attempt requires current Learning Group Scenario availability. Keep the Learner Brief separate from hidden Clinical Truth; persist Learner ownership and a pinned Scenario Version.
+- An Active Attempt is continuous, with transport recovery on its current route and no resume affordance. Starting again requires ending the earlier Attempt before creating a new run. An Ended Attempt is immutable.
+- Dialogue, the recorded timeline, and the Attempt Debrief must be evidence-grounded. Formative Feedback links to pinned Communication Criteria and makes no competency claim. Clinical Action evaluation remains outside this alpha.
+- Ending starts Formative Feedback generation idempotently. Feedback remains hidden until the Learner explicitly answers or skips both Reflection Prompts. Learner Reflections are append-only and shared with authorized Faculty.
+- Faculty review depends dynamically on current shared Learning Group membership, current Scenario availability, and Ended Attempt state. Institutional Admin analytics spans the Pilot Institution without inheriting other roles.
+- Attempt content is Learner-owned. The approved retention policy is deletion 90 days after completion or 30 days after last activity for incomplete Attempts; automatic deletion implementation and verification remain deferred beyond the original alpha scope. No in-product downloads.
+- Keep Gemini and secrets in protected Convex functions. Retain the legacy runtime until the replacement journey passes its checks.
