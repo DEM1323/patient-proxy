@@ -23,6 +23,12 @@ vi.mock("@workos-inc/authkit-react", () => ({
   }),
 }));
 
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
+}));
+
 vi.mock("convex/react", () => ({
   useAction: () => testState.enterPilot,
   useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
@@ -74,5 +80,8 @@ describe("Membership admission gate", () => {
     );
 
     expect(await screen.findByText("Learner journey")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Open scenario list" }).getAttribute("href"),
+    ).toBe("/scenarios");
   });
 });

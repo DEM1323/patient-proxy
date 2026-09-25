@@ -121,7 +121,7 @@ async function findMembershipByWorkosUserId(
     .unique();
 }
 
-async function ensurePilotInstitution(
+export async function ensurePilotInstitution(
   ctx: MutationCtx,
   institutionKey: PilotInstitutionKey,
 ) {

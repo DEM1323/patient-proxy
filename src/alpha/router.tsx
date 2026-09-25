@@ -8,6 +8,11 @@ import {
 import { DeploymentCheckPage } from "./routes/deployment-check";
 import { HomePage } from "./routes/home";
 import {
+  AttemptPage,
+  LearnerBriefPage,
+  ScenarioListPage,
+} from "./features/attempt-start";
+import {
   CallbackPage,
   LoginPage,
 } from "./features/membership-access/auth-routes";
@@ -61,11 +66,38 @@ const callbackRoute = createRoute({
   component: CallbackPage,
 });
 
+const scenarioListRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/scenarios",
+  component: ScenarioListPage,
+});
+
+const learnerBriefRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/scenarios/$scenarioId",
+  component: function LearnerBriefRoute() {
+    const { scenarioId } = learnerBriefRoute.useParams();
+    return <LearnerBriefPage key={scenarioId} scenarioId={scenarioId} />;
+  },
+});
+
+const attemptRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/attempts/$attemptId",
+  component: function AttemptRoute() {
+    const { attemptId } = attemptRoute.useParams();
+    return <AttemptPage attemptId={attemptId} />;
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   deploymentCheckRoute,
   loginRoute,
   callbackRoute,
+  scenarioListRoute,
+  learnerBriefRoute,
+  attemptRoute,
 ]);
 
 export const router = createRouter({ routeTree });

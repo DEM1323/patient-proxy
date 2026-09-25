@@ -8,6 +8,10 @@
  * @module
  */
 
+import type * as attemptStart_access from "../attemptStart/access.js";
+import type * as attemptStart_model from "../attemptStart/model.js";
+import type * as attemptStart_pilotProvisioning from "../attemptStart/pilotProvisioning.js";
+import type * as attemptStart_scenarioContent from "../attemptStart/scenarioContent.js";
 import type * as health from "../health.js";
 import type * as membershipAccess_access from "../membershipAccess/access.js";
 import type * as membershipAccess_authorization from "../membershipAccess/authorization.js";
@@ -23,6 +27,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "attemptStart/access": typeof attemptStart_access;
+  "attemptStart/model": typeof attemptStart_model;
+  "attemptStart/pilotProvisioning": typeof attemptStart_pilotProvisioning;
+  "attemptStart/scenarioContent": typeof attemptStart_scenarioContent;
   health: typeof health;
   "membershipAccess/access": typeof membershipAccess_access;
   "membershipAccess/authorization": typeof membershipAccess_authorization;
