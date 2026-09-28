@@ -8,6 +8,7 @@ import { MembershipGate } from "../membership-access";
 import { AccessLoadingView } from "../membership-access/view";
 import {
   AttemptNotFoundView,
+  type ActionPanelProps,
   AttemptView,
   type ComposerProps,
   LearnerBriefView,
@@ -134,6 +135,7 @@ function Attempt({ attemptId }: { attemptId: string }) {
   const attempt = useQuery(api.attemptStart.access.ownAttempt, { attemptId });
   const send = useMutation(api.attemptInteraction.access.send);
   const retry = useMutation(api.attemptInteraction.access.retry);
+  const takeAction = useMutation(api.attemptInteraction.access.takeAction);
   const [draft, setDraft] = useState("");
   // A message whose send has not been acknowledged keeps its request id, so
   // sending the same text again cannot record it twice.
@@ -143,6 +145,14 @@ function Attempt({ attemptId }: { attemptId: string }) {
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // An action whose response was lost keeps its request id, so Retry can
+  // never record it twice; choosing an action again is a new occurrence.
+  const [unsentAction, setUnsentAction] = useState<{
+    clientRequestId: string;
+    actionKey: string;
+  } | null>(null);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   if (attempt === undefined) {
     return <AccessLoadingView message="Restoring your Attempt" />;
@@ -210,5 +220,48 @@ function Attempt({ attemptId }: { attemptId: string }) {
       }
     },
   };
-  return <AttemptView attempt={attempt} composer={composer} />;
+  const runAction = async (request: {
+    clientRequestId: string;
+    actionKey: string;
+  }) => {
+    setUnsentAction(request);
+    setActionSubmitting(true);
+    setActionNotice(null);
+    try {
+      const result = await takeAction({ attemptId, ...request });
+      setUnsentAction(null);
+      if (result.status !== "recorded") {
+        setActionNotice(
+          result.status === "ended"
+            ? "This Attempt has ended and no longer accepts Clinical Actions."
+            : "This Attempt is not available.",
+        );
+      }
+    } catch {
+      setActionNotice(
+        "The Clinical Action could not be confirmed. Check your connection and retry it.",
+      );
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
+  const actionPanel: ActionPanelProps = {
+    submitting: actionSubmitting,
+    notice: actionNotice,
+    canRetry: unsentAction !== null,
+    onAction: (actionKey) =>
+      void runAction({ clientRequestId: crypto.randomUUID(), actionKey }),
+    onRetryAction: () => {
+      if (unsentAction) {
+        void runAction(unsentAction);
+      }
+    },
+  };
+  return (
+    <AttemptView
+      actionPanel={actionPanel}
+      attempt={attempt}
+      composer={composer}
+    />
+  );
 }

@@ -53,7 +53,9 @@ function expectNoClinicalTruth(response: unknown) {
     "124/84",
     "5/10",
     "unsure where she is",
-    "nausea",
+    // "nausea" alone appears in an approved, Learner-visible action label.
+    "reports nausea",
+    "sick to her stomach",
     "aspiration",
     ...initialPacuAssessment.clinicalTruth.learningObjectives,
   ]) {

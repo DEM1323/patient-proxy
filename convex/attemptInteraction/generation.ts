@@ -76,10 +76,14 @@ export const context = internalQuery({
     v.null(),
     v.object({
       learnerBrief: learnerBriefValidator,
-      initialState: v.array(v.string()),
+      currentState: v.array(v.string()),
       transcript: v.array(
         v.object({
-          speaker: v.union(v.literal("learner"), v.literal("patient")),
+          speaker: v.union(
+            v.literal("learner"),
+            v.literal("patient"),
+            v.literal("action"),
+          ),
           text: v.string(),
         }),
       ),

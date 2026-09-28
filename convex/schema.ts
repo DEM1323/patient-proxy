@@ -82,7 +82,14 @@ export default defineSchema({
     // Message events only. Recorded conversation is evidence, never Clinical
     // Truth.
     text: v.optional(v.string()),
-  }).index("by_attempt_sequence", ["attemptId", "sequence"]),
+    // Clinical Action events only: the action, the authored observation it
+    // revealed, and the request identity that makes retries idempotent.
+    actionKey: v.optional(v.string()),
+    observation: v.optional(v.string()),
+    clientRequestId: v.optional(v.string()),
+  })
+    .index("by_attempt_sequence", ["attemptId", "sequence"])
+    .index("by_attempt_client_request", ["attemptId", "clientRequestId"]),
   // Recoverable request state for one Learner message and its patient reply.
   // Only the generation matching `generation` may commit a reply.
   exchangeRequests: defineTable({

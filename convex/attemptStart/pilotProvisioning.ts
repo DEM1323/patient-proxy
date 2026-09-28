@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import { ensurePilotInstitution } from "../membershipAccess/model";
 import { initialPacuAssessment } from "./scenarioContent";
@@ -8,7 +8,8 @@ const pilotLearningGroup = { key: "pacu-pilot", name: "PACU Pilot" };
 
 /**
  * Operator command for the alpha, which has no authoring or group
- * administration UI. It idempotently publishes Initial PACU Assessment, makes
+ * administration UI. It idempotently publishes Initial PACU Assessment (a new
+ * Scenario Version whenever the authored content has changed), makes
  * it available to the pilot Learning Group, and enrolls every current Learner
  * and Faculty Membership. Rerun after admitting new Members.
  *
@@ -100,24 +101,57 @@ async function ensurePublishedScenario(
       status: "published",
     }));
 
-  if (existing?.currentVersionId) {
-    const current = await ctx.db.get(existing.currentVersionId);
-    if (current) {
-      return { scenarioId, version: current.version };
-    }
+  const current = existing?.currentVersionId
+    ? await ctx.db.get(existing.currentVersionId)
+    : null;
+  if (current && sameAuthoredContent(current)) {
+    return { scenarioId, version: current.version };
   }
 
+  // Changed authored content becomes a new version; Attempts stay pinned to
+  // the version they started with.
+  const version = (current?.version ?? 0) + 1;
   const versionId = await ctx.db.insert("scenarioVersions", {
     institutionId,
     scenarioId,
-    version: 1,
+    version,
     title: initialPacuAssessment.title,
     learnerBrief: initialPacuAssessment.learnerBrief,
     clinicalTruth: initialPacuAssessment.clinicalTruth,
     createdAt: Date.now(),
   });
   await ctx.db.patch(scenarioId, { currentVersionId: versionId });
-  return { scenarioId, version: 1 };
+  return { scenarioId, version };
+}
+
+function sameAuthoredContent(version: Doc<"scenarioVersions">) {
+  const authored = {
+    title: initialPacuAssessment.title,
+    learnerBrief: initialPacuAssessment.learnerBrief,
+    clinicalTruth: initialPacuAssessment.clinicalTruth,
+  };
+  const { title, learnerBrief, clinicalTruth } = version;
+  return (
+    canonicalJson({ title, learnerBrief, clinicalTruth }) ===
+    canonicalJson(authored)
+  );
+}
+
+// Stored documents need not preserve object key order.
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalJson).join(",")}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map(
+        (key) =>
+          `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`,
+      )
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
 async function ensureLearningGroup(

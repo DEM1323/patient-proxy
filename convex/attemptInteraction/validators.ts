@@ -5,6 +5,7 @@ export const attemptEventKindValidator = v.union(
   v.literal("attempt_ended"),
   v.literal("learner_message"),
   v.literal("patient_message"),
+  v.literal("clinical_action"),
 );
 
 // pending: a reply may still commit. failed: recoverable by retrying the same
@@ -32,6 +33,13 @@ export const sendResultValidator = v.union(
   v.object({ status: v.literal("not_found") }),
 );
 
+export const actionResultValidator = v.union(
+  v.object({ status: v.literal("recorded") }),
+  v.object({ status: v.literal("ended") }),
+  v.object({ status: v.literal("not_found") }),
+);
+
 export type AttemptEventKind = Infer<typeof attemptEventKindValidator>;
 export type OpenExchange = Infer<typeof openExchangeValidator>;
 export type SendResult = Infer<typeof sendResultValidator>;
+export type ActionResult = Infer<typeof actionResultValidator>;

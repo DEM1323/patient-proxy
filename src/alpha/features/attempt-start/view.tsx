@@ -231,6 +231,15 @@ export type ComposerProps = {
   notice: string | null;
 };
 
+export type ActionPanelProps = {
+  onAction: (actionKey: string) => void;
+  // Retries the last action whose response was lost, with the same request.
+  onRetryAction: () => void;
+  submitting: boolean;
+  notice: string | null;
+  canRetry: boolean;
+};
+
 const lifecycleLabels = {
   attempt_started: "Attempt started",
   attempt_ended: "Attempt ended",
@@ -239,9 +248,11 @@ const lifecycleLabels = {
 export const maxMessageLength = 2000;
 
 export function AttemptView({
+  actionPanel,
   attempt,
   composer,
 }: {
+  actionPanel: ActionPanelProps;
   attempt: OwnAttempt;
   composer: ComposerProps;
 }) {
@@ -291,6 +302,14 @@ export function AttemptView({
                   text={event.text ?? ""}
                   occurredAt={event.occurredAt}
                 />
+              ) : event.kind === "clinical_action" ? (
+                event.action && (
+                  <ActionEntry
+                    label={event.action.label}
+                    observation={event.action.observation}
+                    occurredAt={event.occurredAt}
+                  />
+                )
               ) : (
                 <p className="text-center text-sm text-slate-500">
                   {lifecycleLabels[event.kind]} ·{" "}
@@ -340,12 +359,92 @@ export function AttemptView({
         />
       )}
 
+      {active && attempt.clinicalActions.length > 0 && (
+        <ActionPanel actions={attempt.clinicalActions} panel={actionPanel} />
+      )}
+
       {!active && (
         <Link to="/scenarios" className={`mt-8 inline-block ${backLink}`}>
           View Available Scenarios
         </Link>
       )}
     </main>
+  );
+}
+
+function ActionEntry({
+  label,
+  observation,
+  occurredAt,
+}: {
+  label: string;
+  observation: string;
+  occurredAt: number;
+}) {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+      <p className="text-xs font-semibold text-amber-900">
+        Clinical Action · {label} ·{" "}
+        <time dateTime={new Date(occurredAt).toISOString()}>
+          {formatTime(occurredAt)}
+        </time>
+      </p>
+      <p className="mt-1 leading-7 text-slate-900">{observation}</p>
+    </div>
+  );
+}
+
+function ActionPanel({
+  actions,
+  panel,
+}: {
+  actions: OwnAttempt["clinicalActions"];
+  panel: ActionPanelProps;
+}) {
+  return (
+    <section
+      aria-labelledby="clinical-actions-title"
+      className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+    >
+      <h2
+        id="clinical-actions-title"
+        className="text-lg font-semibold text-slate-950"
+      >
+        Clinical Actions
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Choosing an action records that you performed it and shows what you
+        observe. It does not assess your technique.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {actions.map((action) => (
+          <button
+            key={action.key}
+            type="button"
+            className={`${secondaryButton} justify-start text-left`}
+            disabled={panel.submitting}
+            onClick={() => panel.onAction(action.key)}
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
+      {panel.notice && (
+        <div role="alert" className="mt-4">
+          <p className="font-medium text-rose-700">{panel.notice}</p>
+          {panel.canRetry && (
+            <button
+              type="button"
+              className={`mt-3 ${secondaryButton}`}
+              disabled={panel.submitting}
+              onClick={panel.onRetryAction}
+            >
+              Retry action
+            </button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

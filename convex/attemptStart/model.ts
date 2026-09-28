@@ -53,9 +53,13 @@ export type AttemptView = {
     kind: AttemptEventKind;
     occurredAt: number;
     text?: string;
+    // Clinical Action events: the action and the observation it revealed.
+    action?: { key: string; label: string; observation: string };
   }[];
   // The latest exchange still awaiting or recoverable, only while Active.
   exchange: OpenExchange | null;
+  // Labels only; observation rules and progression stay hidden.
+  clinicalActions: { key: string; label: string }[];
 };
 
 export async function listAvailableScenarios(
@@ -182,6 +186,8 @@ export async function getOwnAttempt(
       query.eq("attemptId", attempt._id),
     )
     .collect();
+  const actions = version.clinicalTruth.clinicalActions?.actions ?? [];
+  const labels = new Map(actions.map(({ key, label }) => [key, label]));
 
   return {
     id: attempt._id,
@@ -194,15 +200,28 @@ export async function getOwnAttempt(
       setting: version.learnerBrief.setting,
       version: version.version,
     },
-    timeline: events.map(({ sequence, kind, occurredAt, text }) =>
-      text === undefined
-        ? { sequence, kind, occurredAt }
-        : { sequence, kind, occurredAt, text },
+    timeline: events.map(
+      ({ sequence, kind, occurredAt, text, actionKey, observation }) => ({
+        sequence,
+        kind,
+        occurredAt,
+        ...(text === undefined ? {} : { text }),
+        ...(actionKey === undefined || observation === undefined
+          ? {}
+          : {
+              action: {
+                key: actionKey,
+                label: labels.get(actionKey) ?? actionKey,
+                observation,
+              },
+            }),
+      }),
     ),
     exchange:
       attempt.status === "active"
         ? await getOpenExchange(ctx, attempt._id)
         : null,
+    clinicalActions: actions.map(({ key, label }) => ({ key, label })),
   };
 }
 
@@ -297,7 +316,12 @@ export async function appendAttemptEvent(
   attempt: Doc<"attempts">,
   kind: AttemptEventKind,
   occurredAt: number,
-  text?: string,
+  fields: Partial<
+    Pick<
+      Doc<"attemptEvents">,
+      "text" | "actionKey" | "observation" | "clientRequestId"
+    >
+  > = {},
 ) {
   const lastEvent = await ctx.db
     .query("attemptEvents")
@@ -313,7 +337,7 @@ export async function appendAttemptEvent(
     sequence,
     kind,
     occurredAt,
-    ...(text === undefined ? {} : { text }),
+    ...fields,
   });
   return sequence;
 }

@@ -3,8 +3,9 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { appendAttemptEvent, findOwnAttempt } from "../attemptStart/model";
 import { requireRole } from "../membershipAccess/authorization";
+import { currentStage, observe } from "./clinicalActions";
 import type { PatientContext } from "./patientPrompt";
-import type { OpenExchange, SendResult } from "./validators";
+import type { ActionResult, OpenExchange, SendResult } from "./validators";
 
 type ReadContext = Pick<QueryCtx, "db">;
 
@@ -61,7 +62,7 @@ export async function sendMessage(
     attempt,
     "learner_message",
     now,
-    text,
+    { text },
   );
   const exchangeId = await ctx.db.insert("exchangeRequests", {
     institutionId: attempt.institutionId,
@@ -75,6 +76,56 @@ export async function sendMessage(
   });
   await scheduleGeneration(ctx, { exchangeId, generation: 1 });
   return { status: "pending" };
+}
+
+/**
+ * Records one Clinical Action occurrence and its deterministic authored
+ * observation. Replaying the same clientRequestId returns the recorded
+ * occurrence; a new clientRequestId is an intentional repeat.
+ */
+export async function takeClinicalAction(
+  ctx: MutationCtx,
+  input: { attemptId: string; clientRequestId: string; actionKey: string },
+): Promise<ActionResult> {
+  const learner = await requireRole(ctx, "learner");
+  const attempt = await findOwnAttempt(ctx, learner, input.attemptId);
+  if (!attempt) {
+    return { status: "not_found" };
+  }
+  const clientRequestId = validClientRequestId(input.clientRequestId);
+  const existing = await ctx.db
+    .query("attemptEvents")
+    .withIndex("by_attempt_client_request", (query) =>
+      query.eq("attemptId", attempt._id).eq("clientRequestId", clientRequestId),
+    )
+    .first();
+  if (existing) {
+    return { status: "recorded" };
+  }
+  if (attempt.status !== "active") {
+    return { status: "ended" };
+  }
+
+  const version = await ctx.db.get(attempt.scenarioVersionId);
+  const content = version?.clinicalTruth.clinicalActions;
+  if (!content?.actions.some(({ key }) => key === input.actionKey)) {
+    throw new Error("Unknown Clinical Action");
+  }
+  const events = await ctx.db
+    .query("attemptEvents")
+    .withIndex("by_attempt_sequence", (query) =>
+      query.eq("attemptId", attempt._id),
+    )
+    .collect();
+  const performed = events.flatMap(({ kind, actionKey }) =>
+    kind === "clinical_action" && actionKey ? [actionKey] : [],
+  );
+  await appendAttemptEvent(ctx, attempt, "clinical_action", Date.now(), {
+    actionKey: input.actionKey,
+    observation: observe(content, performed, input.actionKey),
+    clientRequestId,
+  });
+  return { status: "recorded" };
 }
 
 export async function retryExchange(
@@ -160,21 +211,32 @@ export async function loadGenerationContext(
         .lte("sequence", exchange.learnerSequence),
     )
     .collect();
+  const content = version.clinicalTruth.clinicalActions;
+  const labels = new Map(
+    (content?.actions ?? []).map(({ key, label }) => [key, label]),
+  );
   const transcript: PatientContext["transcript"] = [];
+  const performed: string[] = [];
   for (const event of events) {
-    if (event.text === undefined) {
-      continue;
-    }
-    if (event.kind === "learner_message") {
+    if (event.kind === "learner_message" && event.text !== undefined) {
       transcript.push({ speaker: "learner", text: event.text });
-    } else if (event.kind === "patient_message") {
+    } else if (event.kind === "patient_message" && event.text !== undefined) {
       transcript.push({ speaker: "patient", text: event.text });
+    } else if (event.kind === "clinical_action" && event.actionKey) {
+      performed.push(event.actionKey);
+      transcript.push({
+        speaker: "action",
+        text: labels.get(event.actionKey) ?? event.actionKey,
+      });
     }
   }
-  // Progression stays withheld until Clinical Actions can reveal it (#11).
+  // Only the stage reached by recorded Clinical Actions is current; later
+  // progression stays withheld from the Simulated Patient.
   return {
     learnerBrief: version.learnerBrief,
-    initialState: version.clinicalTruth.initialState,
+    currentState: content
+      ? currentStage(content, performed).state
+      : version.clinicalTruth.initialState,
     transcript,
   };
 }
@@ -199,7 +261,7 @@ export async function commitReply(
     attempt,
     "patient_message",
     now,
-    input.text,
+    { text: input.text },
   );
   await ctx.db.patch(exchange._id, {
     status: "completed",
