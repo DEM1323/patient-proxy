@@ -405,3 +405,187 @@ describe("Hold a recoverable patient exchange", () => {
     expect(await exchanges(t)).toHaveLength(1);
   });
 });
+
+describe("Take a recoverable Clinical Action", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    completePatientReply.mockReset();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function actionSetup() {
+    const context = await setup();
+    const act = (clientRequestId: string, actionKey: string) =>
+      context.asLearner.mutation(api.attemptInteraction.access.takeAction, {
+        attemptId: context.attemptId,
+        clientRequestId,
+        actionKey,
+      });
+    const actions = async () =>
+      (await context.view()).timeline.flatMap((event) =>
+        event.action ? [[event.sequence, event.action.key, event.action.observation]] : [],
+      );
+    return { ...context, act, actions };
+  }
+
+  it("records the selection and timing and reveals authored vital signs without AI", async () => {
+    const { act, view } = await actionSetup();
+    const before = Date.now();
+
+    expect(await act("action-1", "vital_signs")).toEqual({ status: "recorded" });
+
+    const restored = await view();
+    expect(restored.clinicalActions).toHaveLength(8);
+    const [, event] = restored.timeline;
+    expect(event).toMatchObject({
+      sequence: 2,
+      kind: "clinical_action",
+      action: {
+        key: "vital_signs",
+        label: "Obtain all vital signs",
+        observation:
+          "BP 124/84, HR 92, RR 8, SpO2 93% on room air, temperature 98.4 F.",
+      },
+    });
+    expect(event.occurredAt).toBeGreaterThanOrEqual(before);
+    expect(completePatientReply).not.toHaveBeenCalled();
+    // Observation rules and unrevealed progression stay hidden.
+    const serialized = JSON.stringify(restored);
+    expect(serialized).not.toContain("SpO2 98%");
+    expect(serialized).not.toContain("sick to her stomach");
+    expect(serialized).not.toContain("ifPerformed");
+  });
+
+  it("keeps one occurrence for a retried request and a new one for an intentional repeat", async () => {
+    const { act, actions } = await actionSetup();
+
+    await act("action-1", "vital_signs");
+    // The response was lost; the browser retries the same request.
+    expect(await act("action-1", "vital_signs")).toEqual({ status: "recorded" });
+    expect(await actions()).toHaveLength(1);
+
+    await act("action-2", "oxygen_monitoring");
+    await act("action-3", "vital_signs");
+    expect(await actions()).toEqual([
+      [2, "vital_signs", expect.stringContaining("93% on room air")],
+      [3, "oxygen_monitoring", "Oxygen applied and continuous monitoring started."],
+      [4, "vital_signs", expect.stringContaining("93% on oxygen")],
+    ]);
+  });
+
+  it("drives the authored progression and gives Elena the current state", async () => {
+    const { act, actions, send, runScheduled } = await actionSetup();
+    completePatientReply.mockResolvedValue("Mm... okay.");
+
+    await send("message-1", "Hi Elena, I'm your nurse.");
+    await runScheduled();
+    const arrivalPrompt = completePatientReply.mock.calls[0][0];
+    expect(arrivalPrompt.systemInstruction).toContain(
+      "Drowsy, pale, shivering, and moaning.",
+    );
+    expect(arrivalPrompt.systemInstruction).not.toContain("sick to her stomach");
+
+    await act("action-1", "position_airway");
+    await act("action-2", "oxygen_monitoring");
+    await act("action-3", "vital_signs");
+    await act("action-4", "emesis_basin");
+    const [, stabilizing, vitals, conclusion] = await actions();
+    expect(stabilizing[2]).toMatch(/SpO2 improves to 98%.*sick to her stomach/);
+    expect(vitals[2]).toBe(
+      "BP 124/84, HR 92, RR 8, SpO2 98% on oxygen, temperature 98.4 F.",
+    );
+    expect(conclusion[2]).toMatch(/concludes the authored progression/);
+
+    await send("message-2", "How are you feeling now?");
+    await runScheduled();
+    const laterPrompt = completePatientReply.mock.calls[1][0];
+    expect(laterPrompt.systemInstruction).toContain(
+      "Now feels sick to her stomach and is worried she might vomit and choke.",
+    );
+    expect(laterPrompt.systemInstruction).not.toContain("Drowsy");
+    expect(laterPrompt.contents.at(-1)).toEqual({
+      role: "user",
+      parts: [
+        { text: "(The nurse performs a Clinical Action: Position for airway safety.)" },
+        { text: "(The nurse performs a Clinical Action: Apply oxygen and monitoring.)" },
+        { text: "(The nurse performs a Clinical Action: Obtain all vital signs.)" },
+        {
+          text: "(The nurse performs a Clinical Action: Provide an emesis basin and position for nausea.)",
+        },
+        { text: "How are you feeling now?" },
+      ],
+    });
+  });
+
+  it("publishes changed authored content as a new version while Attempts stay pinned", async () => {
+    const { t, act, view, attemptId } = await actionSetup();
+    // Simulate an Attempt pinned to a version published before Clinical Actions.
+    await t.run(async (ctx) => {
+      const attempt = (await ctx.db.get(attemptId))!;
+      const version = (await ctx.db.get(attempt.scenarioVersionId))!;
+      const { clinicalActions, ...earlierTruth } = version.clinicalTruth;
+      void clinicalActions;
+      await ctx.db.patch(version._id, { clinicalTruth: earlierTruth });
+    });
+
+    expect(
+      await t.mutation(internal.attemptStart.pilotProvisioning.provision, {}),
+    ).toMatchObject({ scenarioVersion: 2 });
+    expect(
+      await t.mutation(internal.attemptStart.pilotProvisioning.provision, {}),
+    ).toMatchObject({ scenarioVersion: 2 });
+
+    const pinned = await view();
+    expect(pinned.scenario.version).toBe(1);
+    expect(pinned.clinicalActions).toEqual([]);
+    await expect(act("action-1", "vital_signs")).rejects.toThrow(
+      "Unknown Clinical Action",
+    );
+  });
+
+  it("denies Clinical Actions to other Members, Ended Attempts, and unknown actions", async () => {
+    const { t, asPeer, asFaculty, attemptId, act, actions } = await actionSetup();
+    await act("action-1", "hand_hygiene");
+
+    expect(
+      await asPeer.mutation(api.attemptInteraction.access.takeAction, {
+        attemptId,
+        clientRequestId: "peer-action",
+        actionKey: "vital_signs",
+      }),
+    ).toEqual({ status: "not_found" });
+    expect(
+      await asPeer.mutation(api.attemptInteraction.access.takeAction, {
+        attemptId: "not-an-attempt-id",
+        clientRequestId: "peer-action",
+        actionKey: "vital_signs",
+      }),
+    ).toEqual({ status: "not_found" });
+    await expect(
+      asFaculty.mutation(api.attemptInteraction.access.takeAction, {
+        attemptId,
+        clientRequestId: "faculty-action",
+        actionKey: "vital_signs",
+      }),
+    ).rejects.toThrow("Learner role required");
+    await expect(act("action-2", "administer_naloxone")).rejects.toThrow(
+      "Unknown Clinical Action",
+    );
+
+    await t.run((ctx) =>
+      ctx.db.patch(attemptId, {
+        status: "ended",
+        endedAt: Date.now(),
+        endReason: "learner_ended",
+      }),
+    );
+    expect(await act("action-3", "vital_signs")).toEqual({ status: "ended" });
+    // A late retry of an already recorded action still confirms it.
+    expect(await act("action-1", "hand_hygiene")).toEqual({ status: "recorded" });
+    expect(await actions()).toEqual([
+      [2, "hand_hygiene", "Hand hygiene recorded."],
+    ]);
+  });
+});

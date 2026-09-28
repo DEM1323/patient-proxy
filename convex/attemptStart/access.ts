@@ -82,9 +82,17 @@ export const ownAttempt = query({
           kind: attemptEventKindValidator,
           occurredAt: v.number(),
           text: v.optional(v.string()),
+          action: v.optional(
+            v.object({
+              key: v.string(),
+              label: v.string(),
+              observation: v.string(),
+            }),
+          ),
         }),
       ),
       exchange: v.union(v.null(), openExchangeValidator),
+      clinicalActions: v.array(v.object({ key: v.string(), label: v.string() })),
     }),
   ),
   handler: (ctx, { attemptId }) => getOwnAttempt(ctx, attemptId),

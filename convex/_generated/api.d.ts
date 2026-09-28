@@ -9,6 +9,7 @@
  */
 
 import type * as attemptInteraction_access from "../attemptInteraction/access.js";
+import type * as attemptInteraction_clinicalActions from "../attemptInteraction/clinicalActions.js";
 import type * as attemptInteraction_gemini from "../attemptInteraction/gemini.js";
 import type * as attemptInteraction_generation from "../attemptInteraction/generation.js";
 import type * as attemptInteraction_model from "../attemptInteraction/model.js";
@@ -34,6 +35,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "attemptInteraction/access": typeof attemptInteraction_access;
+  "attemptInteraction/clinicalActions": typeof attemptInteraction_clinicalActions;
   "attemptInteraction/gemini": typeof attemptInteraction_gemini;
   "attemptInteraction/generation": typeof attemptInteraction_generation;
   "attemptInteraction/model": typeof attemptInteraction_model;
