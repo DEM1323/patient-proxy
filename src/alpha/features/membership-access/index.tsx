@@ -24,6 +24,15 @@ type AdmissionState =
   | { userId: string; status: "error" }
   | null;
 
+const reviewLink = (
+  <Link
+    to="/review"
+    className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+  >
+    Review Ended Attempts
+  </Link>
+);
+
 export function MembershipAccessPage() {
   return (
     <MembershipGate>
@@ -48,6 +57,8 @@ export function MembershipAccessPage() {
                 </Link>
               </div>
             ),
+            faculty: reviewLink,
+            institutionalAdmin: reviewLink,
           }}
         />
       )}

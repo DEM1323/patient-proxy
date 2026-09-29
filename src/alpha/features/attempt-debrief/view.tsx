@@ -244,7 +244,15 @@ function FeedbackView({
   );
 }
 
-function FeedbackSections({ sections }: { sections: Sections }) {
+// Shared with attempt-review, so reviewers see the feedback as rendered here;
+// only the empty-criteria sentence is worded for the reader.
+export function FeedbackSections({
+  noCriteriaText = "Your instructors have not set Communication Criteria for this Scenario yet.",
+  sections,
+}: {
+  noCriteriaText?: string;
+  sections: Sections;
+}) {
   return (
     <div className="mt-4 space-y-6 text-slate-800">
       <FeedbackList title="Encounter summary" items={sections.summary} />
@@ -271,10 +279,7 @@ function FeedbackSections({ sections }: { sections: Sections }) {
       <div>
         <h3 className="font-semibold text-slate-950">Communication Criteria</h3>
         {sections.criteria === null ? (
-          <p className="mt-2 leading-7 text-slate-600">
-            Your instructors have not set Communication Criteria for this
-            Scenario yet.
-          </p>
+          <p className="mt-2 leading-7 text-slate-600">{noCriteriaText}</p>
         ) : (
           <ul className="mt-2 space-y-3">
             {sections.criteria.map((criterion) => (

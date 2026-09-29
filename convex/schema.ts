@@ -82,7 +82,10 @@ export default defineSchema({
     endReason: v.optional(
       v.union(v.literal("learner_ended"), v.literal("learner_restarted")),
     ),
-  }).index("by_learner_status", ["learnerMembershipId", "status"]),
+  })
+    .index("by_learner_status", ["learnerMembershipId", "status"])
+    // Institutional Admin review spans the Pilot Institution.
+    .index("by_institution_status", ["institutionId", "status"]),
   attemptEvents: defineTable({
     institutionId: v.id("pilotInstitutions"),
     attemptId: v.id("attempts"),

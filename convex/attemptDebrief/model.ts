@@ -62,6 +62,80 @@ export async function startFeedback(
   await scheduleFeedback(ctx, { feedbackId, generation: 1 });
 }
 
+export type DebriefStage = "none" | "reflecting" | "complete";
+
+// Reflection progress only; never reads feedback.
+export async function debriefStage(
+  ctx: Pick<QueryCtx, "db">,
+  attempt: Doc<"attempts">,
+): Promise<DebriefStage> {
+  if (unavailableReason(attempt)) {
+    return "none";
+  }
+  for (const prompt of promptOrder) {
+    if ((await reflectionsFor(ctx, attempt._id, prompt)).length === 0) {
+      return "reflecting";
+    }
+  }
+  return "complete";
+}
+
+export type DebriefRecord =
+  | { status: "none" }
+  | {
+      status: "recorded";
+      prompts: {
+        key: ReflectionPromptKey;
+        text: string | null;
+        responses: {
+          response: "answer" | "skip";
+          text: string | null;
+          submittedAt: number;
+        }[];
+      }[];
+      feedback:
+        | { status: "not_started" | "pending" | "failed" }
+        | { status: "completed"; sections: FeedbackSections };
+    };
+
+/**
+ * The shared learning record for an authorized reviewer: every Learner
+ * Reflection and the Formative Feedback. The reveal gate applies to the
+ * Learner's own Debrief, not to review. Callers authorize first.
+ */
+export async function getDebriefRecord(
+  ctx: Pick<QueryCtx, "db">,
+  attempt: Doc<"attempts">,
+): Promise<DebriefRecord> {
+  if (unavailableReason(attempt)) {
+    return { status: "none" };
+  }
+  const feedback = await findFeedback(ctx, attempt._id);
+  const texts = await resolvePrompts(ctx, attempt, feedback);
+  const prompts = [];
+  for (const key of promptOrder) {
+    const responses = await reflectionsFor(ctx, attempt._id, key);
+    prompts.push({
+      key,
+      text: responses[0]?.promptText ?? texts?.[key] ?? null,
+      responses: responses.map(({ response, text, submittedAt }) => ({
+        response,
+        text: text ?? null,
+        submittedAt,
+      })),
+    });
+  }
+  return {
+    status: "recorded",
+    prompts,
+    feedback: !feedback
+      ? { status: "not_started" }
+      : feedback.status === "completed" && feedback.sections
+        ? { status: "completed", sections: feedback.sections }
+        : { status: feedback.status === "failed" ? "failed" : "pending" },
+  };
+}
+
 export async function getOwnDebrief(
   ctx: ReadContext,
   rawAttemptId: string,

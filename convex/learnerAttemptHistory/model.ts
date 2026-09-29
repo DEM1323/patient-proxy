@@ -1,5 +1,6 @@
 import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { debriefStage, type DebriefStage } from "../attemptDebrief/model";
 import { requireRole } from "../membershipAccess/authorization";
 
 export type AttemptHistoryEntry = {
@@ -11,7 +12,7 @@ export type AttemptHistoryEntry = {
   endReason: "learner_ended" | "learner_restarted";
   // Where the Learner is in the Attempt Debrief. Says nothing about the
   // feedback's content; "none" for restarted Attempts, which have no Debrief.
-  debrief: "none" | "reflecting" | "complete";
+  debrief: DebriefStage;
 };
 
 /**
@@ -39,31 +40,14 @@ export async function listOwnEndedAttempts(
     if (!version) {
       throw new Error("Attempt Scenario Version is missing");
     }
-    const endReason = attempt.endReason ?? "learner_ended";
-    let debrief: AttemptHistoryEntry["debrief"] = "none";
-    if (endReason === "learner_ended") {
-      const answered = await Promise.all(
-        (["interpretation", "planning"] as const).map(async (prompt) =>
-          Boolean(
-            await ctx.db
-              .query("learnerReflections")
-              .withIndex("by_attempt_prompt", (query) =>
-                query.eq("attemptId", attempt._id).eq("prompt", prompt),
-              )
-              .first(),
-          ),
-        ),
-      );
-      debrief = answered.every(Boolean) ? "complete" : "reflecting";
-    }
     entries.push({
       id: attempt._id,
       scenarioTitle: version.title,
       scenarioVersion: version.version,
       startedAt: attempt.startedAt,
       endedAt: attempt.endedAt ?? attempt.startedAt,
-      endReason,
-      debrief,
+      endReason: attempt.endReason ?? "learner_ended",
+      debrief: await debriefStage(ctx, attempt),
     });
   }
   return entries.sort((a, b) => b.endedAt - a.endedAt);
