@@ -4,6 +4,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { AttemptDebrief } from "../attempt-debrief";
 import { MembershipGate } from "../membership-access";
 import { AccessLoadingView } from "../membership-access/view";
 import {
@@ -306,6 +307,7 @@ function Attempt({ attemptId }: { attemptId: string }) {
       attempt={attempt}
       composer={composer}
       ending={ending}
+      debrief={<AttemptDebrief attemptId={attemptId} />}
     />
   );
 }

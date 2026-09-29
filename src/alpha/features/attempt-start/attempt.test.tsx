@@ -29,6 +29,9 @@ vi.mock("../membership-access", () => ({
     }),
 }));
 
+// The Attempt Debrief has its own tests.
+vi.mock("../attempt-debrief", () => ({ AttemptDebrief: () => null }));
+
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
   useNavigate: () => vi.fn(),

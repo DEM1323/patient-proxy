@@ -1,7 +1,14 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  feedbackSectionsValidator,
+  feedbackStatusValidator,
+  reflectionPromptKeyValidator,
+  reflectionResponseValidator,
+} from "./attemptDebrief/validators";
+import {
   clinicalTruthValidator,
+  debriefContentValidator,
   learnerBriefValidator,
 } from "./attemptStart/scenarioContent";
 import {
@@ -39,6 +46,8 @@ export default defineSchema({
     title: v.string(),
     learnerBrief: learnerBriefValidator,
     clinicalTruth: clinicalTruthValidator,
+    // Instructor-authored Communication Criteria and Reflection Prompts.
+    debrief: v.optional(debriefContentValidator),
     createdAt: v.number(),
   }).index("by_scenario_version", ["scenarioId", "version"]),
   learningGroups: defineTable({
@@ -105,4 +114,30 @@ export default defineSchema({
   })
     .index("by_attempt_client_request", ["attemptId", "clientRequestId"])
     .index("by_attempt_learner_sequence", ["attemptId", "learnerSequence"]),
+  // One recoverable Formative Feedback result per learner-ended Attempt. Only
+  // the generation matching `generation` may commit sections.
+  formativeFeedback: defineTable({
+    institutionId: v.id("pilotInstitutions"),
+    attemptId: v.id("attempts"),
+    status: feedbackStatusValidator,
+    generation: v.number(),
+    sections: v.optional(feedbackSectionsValidator),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_attempt", ["attemptId"]),
+  // Append-only: a later response adds a row and never replaces an earlier
+  // one. The prompt text is stored as shown, so the record stands alone.
+  learnerReflections: defineTable({
+    institutionId: v.id("pilotInstitutions"),
+    attemptId: v.id("attempts"),
+    learnerMembershipId: v.id("memberships"),
+    prompt: reflectionPromptKeyValidator,
+    promptText: v.string(),
+    response: reflectionResponseValidator,
+    text: v.optional(v.string()),
+    clientRequestId: v.string(),
+    submittedAt: v.number(),
+  })
+    .index("by_attempt_prompt", ["attemptId", "prompt"])
+    .index("by_attempt_client_request", ["attemptId", "clientRequestId"]),
 });

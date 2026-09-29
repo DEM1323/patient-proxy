@@ -47,7 +47,20 @@ export const clinicalTruthValidator = v.object({
   clinicalActions: v.optional(clinicalActionsValidator),
 });
 
+// Author-controlled Attempt Debrief content. Instructors supply it; the
+// platform never invents Communication Criteria. Without authored Reflection
+// Prompts, the platform's generic defaults are used.
+export const debriefContentValidator = v.object({
+  communicationCriteria: v.array(
+    v.object({ key: v.string(), label: v.string(), description: v.string() }),
+  ),
+  reflectionPrompts: v.optional(
+    v.object({ interpretation: v.string(), planning: v.string() }),
+  ),
+});
+
 export type LearnerBrief = Infer<typeof learnerBriefValidator>;
+export type DebriefContent = Infer<typeof debriefContentValidator>;
 export type ClinicalTruth = Infer<typeof clinicalTruthValidator>;
 export type ClinicalActions = Infer<typeof clinicalActionsValidator>;
 

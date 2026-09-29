@@ -1,5 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { startFeedback } from "../attemptDebrief/model";
 import { endAttempt, findOwnAttempt } from "../attemptStart/model";
 import { requireRole } from "../membershipAccess/authorization";
 
@@ -52,6 +53,10 @@ export async function endOwnAttempt(
   if (!meetsEndingMinimum(events)) {
     return { status: "too_early" };
   }
-  await endAttempt(ctx, attempt, "learner_ended", Date.now());
+  const now = Date.now();
+  await endAttempt(ctx, attempt, "learner_ended", now);
+  // Formative Feedback generation starts with the ending, but stays hidden
+  // until the Learner reflects (#14).
+  await startFeedback(ctx, (await ctx.db.get(attempt._id))!, now);
   return { status: "ended", endReason: "learner_ended" };
 }
