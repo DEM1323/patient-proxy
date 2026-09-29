@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { meetsEndingMinimum } from "../attemptEnding/model";
 import {
   abandonOpenExchanges,
   getOpenExchange,
@@ -13,6 +14,7 @@ import type { MembershipView } from "../membershipAccess/model";
 import type { LearnerBrief } from "./scenarioContent";
 
 type ReadContext = Pick<QueryCtx, "auth" | "db">;
+export type EndReason = NonNullable<Doc<"attempts">["endReason"]>;
 
 export type AvailableScenarioSummary = {
   scenarioId: Id<"scenarios">;
@@ -42,6 +44,10 @@ export type AttemptView = {
   status: "active" | "ended";
   startedAt: number;
   endedAt: number | null;
+  // Why interaction stopped; never a performance outcome.
+  endReason: EndReason | null;
+  // The Active Attempt has reached the minimum interaction for ending.
+  canEnd: boolean;
   scenario: {
     title: string;
     patientName: string;
@@ -139,13 +145,8 @@ export async function startAttempt(
         activeAttemptId: activeAttempt._id,
       };
     }
-    await ctx.db.patch(activeAttempt._id, {
-      status: "ended",
-      endedAt: now,
-      endReason: "learner_restarted",
-    });
-    await abandonOpenExchanges(ctx, activeAttempt._id, now);
-    await appendAttemptEvent(ctx, activeAttempt, "attempt_ended", now);
+    // Restart is exempt from the minimum-interaction guardrail (#13).
+    await endAttempt(ctx, activeAttempt, "learner_restarted", now);
   }
 
   const attemptId = await ctx.db.insert("attempts", {
@@ -194,6 +195,8 @@ export async function getOwnAttempt(
     status: attempt.status,
     startedAt: attempt.startedAt,
     endedAt: attempt.endedAt ?? null,
+    endReason: attempt.endReason ?? null,
+    canEnd: attempt.status === "active" && meetsEndingMinimum(events),
     scenario: {
       title: version.title,
       patientName: version.learnerBrief.patientName,
@@ -308,6 +311,19 @@ async function findActiveAttempt(ctx: ReadContext, learner: MembershipView) {
       query.eq("learnerMembershipId", learner.id).eq("status", "active"),
     )
     .unique();
+}
+
+// The one terminal transition for every ending reason. Open exchanges are
+// abandoned so a late patient reply appends nothing.
+export async function endAttempt(
+  ctx: MutationCtx,
+  attempt: Doc<"attempts">,
+  endReason: EndReason,
+  now: number,
+) {
+  await ctx.db.patch(attempt._id, { status: "ended", endedAt: now, endReason });
+  await abandonOpenExchanges(ctx, attempt._id, now);
+  await appendAttemptEvent(ctx, attempt, "attempt_ended", now);
 }
 
 // The only writer of Attempt timeline sequence numbers.

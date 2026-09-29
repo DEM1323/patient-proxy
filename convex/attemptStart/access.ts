@@ -70,6 +70,12 @@ export const ownAttempt = query({
       status: v.union(v.literal("active"), v.literal("ended")),
       startedAt: v.number(),
       endedAt: v.union(v.null(), v.number()),
+      endReason: v.union(
+        v.null(),
+        v.literal("learner_ended"),
+        v.literal("learner_restarted"),
+      ),
+      canEnd: v.boolean(),
       scenario: v.object({
         title: v.string(),
         patientName: v.string(),

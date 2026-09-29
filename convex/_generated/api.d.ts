@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as attemptEnding_access from "../attemptEnding/access.js";
+import type * as attemptEnding_model from "../attemptEnding/model.js";
 import type * as attemptInteraction_access from "../attemptInteraction/access.js";
 import type * as attemptInteraction_clinicalActions from "../attemptInteraction/clinicalActions.js";
 import type * as attemptInteraction_gemini from "../attemptInteraction/gemini.js";
@@ -34,6 +36,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "attemptEnding/access": typeof attemptEnding_access;
+  "attemptEnding/model": typeof attemptEnding_model;
   "attemptInteraction/access": typeof attemptInteraction_access;
   "attemptInteraction/clinicalActions": typeof attemptInteraction_clinicalActions;
   "attemptInteraction/gemini": typeof attemptInteraction_gemini;
