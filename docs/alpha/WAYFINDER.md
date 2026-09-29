@@ -1,12 +1,13 @@
 # Alpha current status
 
-- **Branch:** `codex/attempt-debrief`, created from `alpha` at `9a57587`. User confirmed this alpha as the development baseline; the earlier PACU schema/indexes are not being restored.
-- **Current task:** [Complete the Attempt Debrief (#14)](https://github.com/DEM1323/patient-proxy/issues/14), implemented, demonstrated, and committed, with a PR open against `alpha`. Grok reviewed the diff before commit and found no blocking defects. Its optional polish: the two suggestions are free strings, so an invented fact there isn't rejected, and "performed incorrectly" is forbidden in the prompt but not in the performance-word check. See the #14 brief and the user's 2026-09-29 rulings in [HANDOFF.md](HANDOFF.md).
+- **Branch:** `codex/attempt-history`, created from `alpha` at `d3de4d0`. User confirmed this alpha as the development baseline; the earlier PACU schema/indexes are not being restored.
+- **Current task:** [Revisit an Ended Attempt (#15)](https://github.com/DEM1323/patient-proxy/issues/15); not started. See the #15 brief in [HANDOFF.md](HANDOFF.md).
 - **Completed** (details in each PR; no production deployment):
   - [#9](https://github.com/DEM1323/patient-proxy/issues/9) merged as `49535a8`.
   - [#10](https://github.com/DEM1323/patient-proxy/issues/10) merged through [PR #18](https://github.com/DEM1323/patient-proxy/pull/18) as `7c85223`.
   - [#11](https://github.com/DEM1323/patient-proxy/issues/11) merged through [PR #19](https://github.com/DEM1323/patient-proxy/pull/19) as `58148fc`.
   - [#13](https://github.com/DEM1323/patient-proxy/issues/13) merged through [PR #20](https://github.com/DEM1323/patient-proxy/pull/20) as `9a57587`.
+  - [#14](https://github.com/DEM1323/patient-proxy/issues/14) merged through [PR #21](https://github.com/DEM1323/patient-proxy/pull/21) as `d3de4d0` (base `9dfafbf` plus the instructor-guidance follow-up `e537730`). Grok's optional polish on #14: uncited suggestions, "performed incorrectly" missing from the word check, and generated prompts not checked for restating the feedback.
 
   Grok found no blocking defects in any of them. Dev serves Scenario Version 2 with the Clinical Actions.
 - **#14 design:**
@@ -47,6 +48,6 @@
   - From #9: Start has no request-level retry idempotency, and reload does not recheck availability.
 - **Operator step:** No UI manages Learning Groups, Scenario availability, or authored Debrief content yet. `npx convex run attemptStart/pilotProvisioning:provision` idempotently publishes Initial PACU Assessment and enrolls current Learner and Faculty Memberships. The Convex watcher is not running; push backend changes with `npx convex dev --once`. A Vite server (not started by Claude) is serving port 5173.
 - **Blockers:** None. The free-tier Gemini key regularly hits 503 "high demand"; a billing-enabled key would likely be more reliable. Open questions: how instructors will author Communication Criteria and Reflection Prompts (no authoring UI yet), Learning Group administration, and whether removing availability after Start should end the Active Attempt. The unchanged lock still reports 22 audit findings. The Vercel check fails on `alpha` and the PRs (probably the legacy Vercel project).
-- **Next action:** Get Grok's review of the guidance follow-up commit on PR #21 (instructor `feedbackGuidance` and AI-generated Reflection Prompts, chosen by the user on 2026-09-29), then merge PR #21 into `alpha` with a merge commit once the user confirms. Keep `convex/_generated` files that differ only in line endings out of commits. Then #15 (Revisit an Ended Attempt). `GOOGLE_GEMINI_API_KEY` is set on dev (free tier; keep it out of `.env.local` and `VITE_`).
+- **Next action:** Implement #15 on this branch: a Learner-owned history of Ended Attempts linking to their read-only records and Debriefs, with no download and no resumable Active Attempt. Keep `convex/_generated` files that differ only in line endings out of commits. `GOOGLE_GEMINI_API_KEY` is set on dev (free tier; keep it out of `.env.local` and `VITE_`).
 
 Read [AGENTS.md](../../AGENTS.md), this note, and the working diff when switching tools. Product boundaries remain in [CONTEXT.md](../../CONTEXT.md); startup commands are in [DEPLOYMENT.md](DEPLOYMENT.md). Historical decisions remain in the [alpha map](https://github.com/DEM1323/patient-proxy/issues/2), linked issues, and Git history (`d664d1b:docs/alpha/WAYFINDER.md`).
