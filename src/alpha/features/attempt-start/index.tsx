@@ -11,6 +11,8 @@ import {
   type ActionPanelProps,
   AttemptView,
   type ComposerProps,
+  endingMinimum,
+  type EndingProps,
   LearnerBriefView,
   LearnerRoleRequiredView,
   ScenarioListView,
@@ -136,6 +138,7 @@ function Attempt({ attemptId }: { attemptId: string }) {
   const send = useMutation(api.attemptInteraction.access.send);
   const retry = useMutation(api.attemptInteraction.access.retry);
   const takeAction = useMutation(api.attemptInteraction.access.takeAction);
+  const end = useMutation(api.attemptEnding.access.end);
   const [draft, setDraft] = useState("");
   // A message whose send has not been acknowledged keeps its request id, so
   // sending the same text again cannot record it twice.
@@ -153,6 +156,9 @@ function Attempt({ attemptId }: { attemptId: string }) {
   } | null>(null);
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
+  const [endSubmitting, setEndSubmitting] = useState(false);
+  const [endNotice, setEndNotice] = useState<string | null>(null);
 
   if (attempt === undefined) {
     return <AccessLoadingView message="Restoring your Attempt" />;
@@ -257,11 +263,49 @@ function Attempt({ attemptId }: { attemptId: string }) {
       }
     },
   };
+  const ending: EndingProps = {
+    confirming: confirmingEnd,
+    submitting: endSubmitting,
+    notice: endNotice,
+    onRequestEnd: () => {
+      setEndNotice(null);
+      setConfirmingEnd(true);
+    },
+    onCancelEnd: () => {
+      setEndNotice(null);
+      setConfirmingEnd(false);
+    },
+    onConfirmEnd: () => {
+      setEndSubmitting(true);
+      setEndNotice(null);
+      end({ attemptId, confirmed: true })
+        .then((result) => {
+          if (result.status === "ended") {
+            setConfirmingEnd(false);
+          } else {
+            setConfirmingEnd(false);
+            setEndNotice(
+              result.status === "too_early"
+                ? endingMinimum
+                : "This Attempt is not available.",
+            );
+          }
+        })
+        .catch(() => {
+          // Ending is idempotent, so confirming again is a safe retry.
+          setEndNotice(
+            "Ending could not be confirmed. Check your connection and select End Attempt again.",
+          );
+        })
+        .finally(() => setEndSubmitting(false));
+    },
+  };
   return (
     <AttemptView
       actionPanel={actionPanel}
       attempt={attempt}
       composer={composer}
+      ending={ending}
     />
   );
 }

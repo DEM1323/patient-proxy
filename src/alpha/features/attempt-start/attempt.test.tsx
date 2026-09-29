@@ -10,6 +10,7 @@ const testState = vi.hoisted(() => ({
   send: vi.fn(),
   retry: vi.fn(),
   takeAction: vi.fn(),
+  end: vi.fn(),
 }));
 
 vi.mock("../membership-access", () => ({
@@ -39,6 +40,7 @@ vi.mock("convex/react", () => ({
     ({
       "attemptInteraction/access:retry": testState.retry,
       "attemptInteraction/access:takeAction": testState.takeAction,
+      "attemptEnding/access:end": testState.end,
     })[getFunctionName(reference)] ?? testState.send,
 }));
 
@@ -48,6 +50,8 @@ function attempt(overrides: Record<string, unknown> = {}) {
     status: "active",
     startedAt: 1,
     endedAt: null,
+    endReason: null,
+    canEnd: false,
     scenario: {
       title: "Initial PACU Assessment",
       patientName: "Elena Ruiz",
@@ -87,6 +91,7 @@ describe("Attempt conversation", () => {
     testState.send.mockReset();
     testState.retry.mockReset();
     testState.takeAction.mockReset();
+    testState.end.mockReset();
   });
 
   it("shows recorded messages and sends a new message with a request id", async () => {
@@ -225,5 +230,84 @@ describe("Attempt conversation", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(screen.queryByRole("button", { name: /send|retry|resume/i })).toBeNull();
     expect(screen.queryByRole("button", { name: "Obtain all vital signs" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "End Attempt" })).toBeNull();
+  });
+});
+
+describe("Ending the Attempt", () => {
+  afterEach(() => {
+    cleanup();
+    testState.end.mockReset();
+  });
+
+  const endButton = () => screen.getByRole("button", { name: "End Attempt" });
+
+  it("explains the minimum interaction before ending is allowed", () => {
+    testState.attempt = attempt({ canEnd: false });
+    render(<AttemptPage attemptId="attempt-id" />);
+
+    expect((endButton() as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen.getByText(
+        "You can end after three messages, or after one message and one Clinical Action.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("requires explicit confirmation and can be cancelled", async () => {
+    testState.attempt = attempt({ canEnd: true });
+    testState.end.mockResolvedValue({ status: "ended", endReason: "learner_ended" });
+    render(<AttemptPage attemptId="attempt-id" />);
+
+    fireEvent.click(endButton());
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog.textContent).toMatch(/not a pass, a fail, or a grade/);
+    expect(testState.end).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Keep going" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep going" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(document.activeElement).toBe(endButton());
+
+    fireEvent.click(endButton());
+    fireEvent.click(endButton());
+    await waitFor(() =>
+      expect(testState.end).toHaveBeenCalledWith({
+        attemptId: "attempt-id",
+        confirmed: true,
+      }),
+    );
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  });
+
+  it("lets the Learner confirm again after a lost response", async () => {
+    testState.attempt = attempt({ canEnd: true });
+    testState.end
+      .mockRejectedValueOnce(new Error("Connection lost"))
+      .mockResolvedValueOnce({ status: "ended", endReason: "learner_ended" });
+    render(<AttemptPage attemptId="attempt-id" />);
+
+    fireEvent.click(endButton());
+    fireEvent.click(endButton());
+    expect((await screen.findByRole("alert")).textContent).toMatch(
+      /could not be confirmed/,
+    );
+    // The confirmation stays open so the same command can be retried.
+    fireEvent.click(endButton());
+    await waitFor(() => expect(testState.end).toHaveBeenCalledTimes(2));
+  });
+
+  it("states why an Ended Attempt stopped without a performance claim", () => {
+    testState.attempt = attempt({
+      status: "ended",
+      endedAt: 4,
+      endReason: "learner_ended",
+    });
+    render(<AttemptPage attemptId="attempt-id" />);
+
+    expect(screen.getByText(/You ended this Attempt\. It can no longer change\./)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/passed|failed|score|grade/i);
   });
 });

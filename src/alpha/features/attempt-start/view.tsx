@@ -247,14 +247,29 @@ const lifecycleLabels = {
 
 export const maxMessageLength = 2000;
 
+export type EndingProps = {
+  confirming: boolean;
+  onRequestEnd: () => void;
+  // Also retries after a lost response; ending is idempotent.
+  onConfirmEnd: () => void;
+  onCancelEnd: () => void;
+  submitting: boolean;
+  notice: string | null;
+};
+
+export const endingMinimum =
+  "You can end after three messages, or after one message and one Clinical Action.";
+
 export function AttemptView({
   actionPanel,
   attempt,
   composer,
+  ending,
 }: {
   actionPanel: ActionPanelProps;
   attempt: OwnAttempt;
   composer: ComposerProps;
+  ending: EndingProps;
 }) {
   const active = attempt.status === "active";
   const patientName = attempt.scenario.patientName;
@@ -280,7 +295,12 @@ export function AttemptView({
         </p>
       ) : (
         <p className="mt-6 rounded-lg border border-slate-200 bg-white px-5 py-4 leading-7 text-slate-700">
-          This Attempt has ended and can no longer change.
+          {attempt.endReason === "learner_ended"
+            ? "You ended this Attempt. "
+            : attempt.endReason === "learner_restarted"
+              ? "This Attempt ended when you started a new one. "
+              : ""}
+          It can no longer change.
         </p>
       )}
 
@@ -363,12 +383,106 @@ export function AttemptView({
         <ActionPanel actions={attempt.clinicalActions} panel={actionPanel} />
       )}
 
+      {active && <EndPanel canEnd={attempt.canEnd} ending={ending} />}
+
       {!active && (
         <Link to="/scenarios" className={`mt-8 inline-block ${backLink}`}>
           View Available Scenarios
         </Link>
       )}
     </main>
+  );
+}
+
+function EndPanel({
+  canEnd,
+  ending,
+}: {
+  canEnd: boolean;
+  ending: EndingProps;
+}) {
+  const endButton = useRef<HTMLButtonElement>(null);
+  const keepGoingButton = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(ending.confirming);
+
+  // The confirmation replaces the End button, so move focus explicitly: into
+  // the confirmation (its least destructive action), and back on cancel.
+  useEffect(() => {
+    if (ending.confirming) {
+      keepGoingButton.current?.focus();
+    } else if (wasConfirming.current) {
+      endButton.current?.focus();
+    }
+    wasConfirming.current = ending.confirming;
+  }, [ending.confirming]);
+
+  return (
+    <section
+      aria-labelledby="end-attempt-title"
+      className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+    >
+      <h2 id="end-attempt-title" className="text-lg font-semibold text-slate-950">
+        End the Attempt
+      </h2>
+      {ending.confirming ? (
+        <div
+          role="alertdialog"
+          aria-labelledby="confirm-end-title"
+          aria-describedby="confirm-end-description"
+          className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-5"
+        >
+          <p id="confirm-end-title" className="font-semibold text-slate-950">
+            End this Attempt?
+          </p>
+          <p id="confirm-end-description" className="mt-2 leading-7 text-slate-700">
+            You will not be able to send messages or take Clinical Actions
+            afterward. Ending records only that you stopped; it is not a pass,
+            a fail, or a grade.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              className={primaryButton}
+              disabled={ending.submitting}
+              onClick={ending.onConfirmEnd}
+            >
+              {ending.submitting ? "Ending…" : "End Attempt"}
+            </button>
+            <button
+              ref={keepGoingButton}
+              type="button"
+              className={secondaryButton}
+              disabled={ending.submitting}
+              onClick={ending.onCancelEnd}
+            >
+              Keep going
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <p className="text-sm leading-6 text-slate-600">
+            {canEnd
+              ? "End when you are ready. Missing actions do not prevent ending."
+              : endingMinimum}
+          </p>
+          <button
+            ref={endButton}
+            type="button"
+            className={`mt-3 ${secondaryButton}`}
+            disabled={!canEnd}
+            onClick={ending.onRequestEnd}
+          >
+            End Attempt
+          </button>
+        </div>
+      )}
+      {ending.notice && (
+        <p role="alert" className="mt-4 font-medium text-rose-700">
+          {ending.notice}
+        </p>
+      )}
+    </section>
   );
 }
 
