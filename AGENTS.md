@@ -4,12 +4,13 @@ This is the authoritative shared guide for Codex, Claude Code, and Cursor. Claud
 
 ## Outcome and scope
 
-An approved Learner completes Elena Ruiz's PACU encounter, receives useful evidence-linked Formative Feedback, and authorized Faculty reviews the saved Ended Attempt. Finish environment setup before feature development.
+The alpha represents an already-provisioned UMass Boston Patient Proxy portal. An Institutional Admin adds Members with any of the four additive roles, manages participation, Learning Groups, and Scenario availability inside Patient Proxy. An approved Learner completes Elena Ruiz's PACU encounter, receives useful evidence-linked Formative Feedback, and authorized Faculty reviews the saved Ended Attempt within current scope. Finish environment setup before feature development.
 
 - Use the existing Vite, TanStack Router, React, Convex, and WorkOS stack. The alpha lives in `src/alpha/` and `convex/`; the retained Next.js/Supabase prototype is legacy.
 - Deliver one demonstrable feature at a time, from UI through persistence and authorization. Choose routine technical details as needed; add abstractions or tests for concrete requirements and risks.
 - GitHub issues provide requirements and historical decisions, not a mandatory ticket sequence. No wayfinding ceremony, claim-first write, or new planning document is required to begin authorized work.
 - Preserve established product requirements and access boundaries in [CONTEXT.md](CONTEXT.md). Consult the relevant issue and domain references when changing behavior.
+- Institution self-service is in alpha scope as of 2026-09-29. Institution creation UI and Scenario authoring UI remain outside this expansion; provisioning supplies UMass Boston and its first Institutional Admin. The selected architecture is a private Convex database Pilot Roster, WorkOS authentication, and Convex-enforced Membership and scope. This is an approved target, not a claim that migration or self-service is implemented.
 
 ## Start, switch tools, and hand off
 
@@ -32,11 +33,11 @@ An approved Learner completes Elena Ruiz's PACU encounter, receives useful evide
 - Keep local configuration in ignored `.env.local`. Only public configuration may use `VITE_`. Never print or commit tokens, API keys, the private Pilot Roster, or real patient data.
 - WorkOS authenticates; Convex authorizes. Derive identity, Membership, roles, and Pilot Institution scope on the backend. Never trust browser role or institution claims.
 - Membership requires a verified exact identity on the private Pilot Roster and is bound to the stable WorkOS user ID. Roles are additive without inheritance; institution-owned data carries `institutionId`.
-- Keep WorkOS/Gemini API keys and `PILOT_ROSTER_JSON` in the protected Convex deployment. Use synthetic clinical data only. Preserve Learner ownership, hidden Clinical Truth, and dynamic Faculty review scope.
+- Keep WorkOS/Gemini API keys in the protected Convex deployment. Until the database-roster migration is implemented and verified, `PILOT_ROSTER_JSON` remains the current protected admission source; never fetch or print it into a tool transcript. After cutover, private Convex roster entries govern pending admission and Membership records govern current roles and status, with no environment-roster fallback. Use synthetic clinical data only. Preserve Learner ownership, hidden Clinical Truth, and dynamic Faculty review scope.
 
 ## References as needed
 
-- [Grok / Claude feature handoff map](docs/alpha/HANDOFF.md) for the remaining alpha route and review prompts; keep current progress in `WAYFINDER.md`.
+- [Implementation handoff](docs/alpha/HANDOFF.md) for the pending review PR, institution self-service slices, and copyable implementation/review prompts; keep current progress in `WAYFINDER.md`.
 - [Domain vocabulary and product boundaries](CONTEXT.md); [domain documentation conventions](docs/agents/domain.md).
 - [Issue tracker](docs/agents/issue-tracker.md); [triage labels](docs/agents/triage-labels.md) when triaging.
 - [Alpha decisions and feature references](https://github.com/DEM1323/patient-proxy/issues/2); historical detail remains in Git history.
