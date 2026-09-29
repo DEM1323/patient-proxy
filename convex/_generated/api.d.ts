@@ -27,6 +27,8 @@ import type * as attemptStart_model from "../attemptStart/model.js";
 import type * as attemptStart_pilotProvisioning from "../attemptStart/pilotProvisioning.js";
 import type * as attemptStart_scenarioContent from "../attemptStart/scenarioContent.js";
 import type * as health from "../health.js";
+import type * as learnerAttemptHistory_access from "../learnerAttemptHistory/access.js";
+import type * as learnerAttemptHistory_model from "../learnerAttemptHistory/model.js";
 import type * as membershipAccess_access from "../membershipAccess/access.js";
 import type * as membershipAccess_authorization from "../membershipAccess/authorization.js";
 import type * as membershipAccess_model from "../membershipAccess/model.js";
@@ -60,6 +62,8 @@ declare const fullApi: ApiFromModules<{
   "attemptStart/pilotProvisioning": typeof attemptStart_pilotProvisioning;
   "attemptStart/scenarioContent": typeof attemptStart_scenarioContent;
   health: typeof health;
+  "learnerAttemptHistory/access": typeof learnerAttemptHistory_access;
+  "learnerAttemptHistory/model": typeof learnerAttemptHistory_model;
   "membershipAccess/access": typeof membershipAccess_access;
   "membershipAccess/authorization": typeof membershipAccess_authorization;
   "membershipAccess/model": typeof membershipAccess_model;

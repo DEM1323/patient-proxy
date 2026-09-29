@@ -49,7 +49,8 @@ export function AttemptPage({ attemptId }: { attemptId: string }) {
   );
 }
 
-function LearnerGate({ children }: { children: ReactNode }) {
+// Also used by learner-attempt-history; the backend still enforces the role.
+export function LearnerGate({ children }: { children: ReactNode }) {
   return (
     <MembershipGate>
       {({ membership }) =>

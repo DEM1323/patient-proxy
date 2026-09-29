@@ -33,12 +33,20 @@ export function MembershipAccessPage() {
           onSignOut={signOut}
           journeyActions={{
             learner: (
-              <Link
-                to="/scenarios"
-                className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                Open scenario list
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/scenarios"
+                  className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Open scenario list
+                </Link>
+                <Link
+                  to="/attempts"
+                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Your Ended Attempts
+                </Link>
+              </div>
             ),
           }}
         />

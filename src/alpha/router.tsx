@@ -12,6 +12,7 @@ import {
   LearnerBriefPage,
   ScenarioListPage,
 } from "./features/attempt-start";
+import { AttemptHistoryPage } from "./features/learner-attempt-history";
 import {
   CallbackPage,
   LoginPage,
@@ -81,6 +82,12 @@ const learnerBriefRoute = createRoute({
   },
 });
 
+const attemptHistoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/attempts",
+  component: AttemptHistoryPage,
+});
+
 const attemptRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/attempts/$attemptId",
@@ -97,6 +104,7 @@ const routeTree = rootRoute.addChildren([
   callbackRoute,
   scenarioListRoute,
   learnerBriefRoute,
+  attemptHistoryRoute,
   attemptRoute,
 ]);
 
