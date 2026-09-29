@@ -55,6 +55,45 @@ export function DebriefView({
     ) : null;
   }
 
+  if (debrief.status === "preparing") {
+    // The AI is writing this Attempt's Reflection Prompts from the
+    // instructors' guidance.
+    return (
+      <section aria-labelledby="debrief-title" className={sectionClass}>
+        <h2 id="debrief-title" className="text-lg font-semibold text-slate-950">
+          Attempt Debrief
+        </h2>
+        <div aria-live="polite">
+          {!debrief.failed && (
+            <p className="mt-2 italic text-slate-600">
+              Preparing your reflection questions…
+            </p>
+          )}
+        </div>
+        {debrief.failed && (
+          <div role="alert" className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-5 py-4">
+            <p className="font-medium text-rose-800">
+              Your reflection questions could not be prepared yet.
+            </p>
+            <button
+              type="button"
+              className={`mt-3 ${secondaryButton}`}
+              disabled={props.submitting}
+              onClick={props.onRetryFeedback}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {props.notice && (
+          <p role="alert" className="mt-4 font-medium text-rose-700">
+            {props.notice}
+          </p>
+        )}
+      </section>
+    );
+  }
+
   const revealed = debrief.status === "revealed";
   return (
     <>

@@ -8,7 +8,9 @@ import {
 const context: FeedbackContext = {
   patientName: "Elena Ruiz",
   setting: "Post-anesthesia care unit (PACU)",
+  feedbackGuidance: null,
   communicationCriteria: [],
+  generateReflectionPrompts: false,
   timeline: [
     { sequence: 2, kind: "learner_message", text: "Hi Elena, I'm your nurse." },
     { sequence: 3, kind: "patient_message", text: "Mm... where am I?" },
@@ -44,23 +46,59 @@ function output(overrides: Record<string, unknown> = {}) {
 describe("Formative Feedback validation", () => {
   it("accepts five evidence-linked sections and marks criteria as not authored", () => {
     expect(parseFeedback(output(), context)).toEqual({
-      summary: [
-        { text: "You introduced yourself and recorded vital signs.", evidence: [2, 4] },
-      ],
-      strengths: [{ text: "You introduced yourself by role.", evidence: [2] }],
-      priorities: [
-        {
-          text: "Escalation of concern about her breathing was not observed in this Attempt.",
-          evidence: [],
-          observed: false,
-        },
-      ],
-      criteria: null,
-      suggestions: [
-        "Answer Elena's question about where she is.",
-        "Say aloud what concerns you about her breathing.",
-      ],
+      sections: {
+        summary: [
+          { text: "You introduced yourself and recorded vital signs.", evidence: [2, 4] },
+        ],
+        strengths: [{ text: "You introduced yourself by role.", evidence: [2] }],
+        priorities: [
+          {
+            text: "Escalation of concern about her breathing was not observed in this Attempt.",
+            evidence: [],
+            observed: false,
+          },
+        ],
+        criteria: null,
+        suggestions: [
+          "Answer Elena's question about where she is.",
+          "Say aloud what concerns you about her breathing.",
+        ],
+      },
+      reflectionPrompts: null,
     });
+  });
+
+  it("follows instructor guidance and requires generated Reflection Prompts when asked", () => {
+    const guided = {
+      ...context,
+      feedbackGuidance: "Focus on how the student explains care to a frightened patient.",
+      generateReflectionPrompts: true,
+    };
+    const prompt = buildFeedbackPrompt(guided);
+    expect(prompt.systemInstruction).toContain(
+      "Instructor guidance for this feedback. Follow it unless it conflicts with the evidence rules below",
+    );
+    expect(prompt.systemInstruction).toContain(guided.feedbackGuidance);
+    expect(prompt.systemInstruction).toContain('"reflectionPrompts"');
+
+    const reflectionPrompts = {
+      interpretation: "What did Elena's questions tell you about her state?",
+      planning: "How will you explain your actions next time?",
+    };
+    expect(parseFeedback(output({ reflectionPrompts }), guided)?.reflectionPrompts).toEqual(
+      reflectionPrompts,
+    );
+    for (const invalid of [
+      undefined,
+      { interpretation: "Only one prompt?" },
+      { interpretation: "Did you pass?", planning: "What next?" },
+    ]) {
+      expect(parseFeedback(output({ reflectionPrompts: invalid }), guided)).toBeNull();
+    }
+    // Without guidance, the prompt asks for no prompts and ignores any returned.
+    expect(buildFeedbackPrompt(context).systemInstruction).not.toContain("reflectionPrompts");
+    expect(buildFeedbackPrompt(context).systemInstruction).not.toContain("Instructor guidance");
+    expect(parseFeedback(output({ reflectionPrompts }), context)?.reflectionPrompts).toBeNull();
   });
 
   it("rejects malformed output, unrecorded evidence, and missing sections", () => {
@@ -113,7 +151,7 @@ describe("Formative Feedback validation", () => {
         evidence: [],
       },
     ];
-    expect(parseFeedback(output({ criteria }), withCriteria)?.criteria).toEqual([
+    expect(parseFeedback(output({ criteria }), withCriteria)?.sections.criteria).toEqual([
       { ...criteria[0], label: "Therapeutic contact" },
       { ...criteria[1], label: "Escalation" },
     ]);

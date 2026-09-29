@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import {
   feedbackSectionsValidator,
   feedbackStatusValidator,
+  generatedPromptsValidator,
   reflectionPromptKeyValidator,
   reflectionResponseValidator,
 } from "./attemptDebrief/validators";
@@ -122,6 +123,9 @@ export default defineSchema({
     status: feedbackStatusValidator,
     generation: v.number(),
     sections: v.optional(feedbackSectionsValidator),
+    // Reflection Prompts the AI wrote from the instructors' feedback guidance;
+    // shown before the reveal. Absent when prompts are authored or default.
+    reflectionPrompts: v.optional(generatedPromptsValidator),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_attempt", ["attemptId"]),

@@ -1,11 +1,15 @@
 import type { DebriefContent } from "../attemptStart/scenarioContent";
 import type { PatientPrompt } from "../attemptInteraction/patientPrompt";
-import type { FeedbackSections } from "./validators";
+import type { FeedbackSections, GeneratedPrompts } from "./validators";
 
 export type FeedbackContext = {
   patientName: string;
   setting: string;
-  communicationCriteria: DebriefContent["communicationCriteria"];
+  // Instructor-authored guidelines for the feedback AI.
+  feedbackGuidance: string | null;
+  communicationCriteria: NonNullable<DebriefContent["communicationCriteria"]>;
+  // True when the AI writes the Reflection Prompts from the guidance.
+  generateReflectionPrompts: boolean;
   // Recorded interaction only, in timeline order. Hidden Clinical Truth is
   // never part of the feedback context.
   timeline: (
@@ -28,9 +32,22 @@ export function buildFeedbackPrompt(context: FeedbackContext): PatientPrompt {
         )
         .join("\n")
     : "(none authored; return \"criteria\": [])";
+  const guidance = context.feedbackGuidance
+    ? `
+Instructor guidance for this feedback. Follow it unless it conflicts with the evidence rules below, which always take precedence:
+${context.feedbackGuidance}
+`
+    : "";
+  const promptField = context.generateReflectionPrompts
+    ? `,
+  "reflectionPrompts": {"interpretation": string, "planning": string}
+      // two questions, following the instructor guidance, that the student answers BEFORE seeing this feedback:
+      // one about interpreting what happened in this Attempt, one about planning another Attempt.
+      // They must not reveal or hint at your feedback.`
+    : "";
 
   const systemInstruction = `You write Formative Feedback on a nursing student's communication practice with ${context.patientName}, a fictional Simulated Patient (${context.setting}). This is synthetic educational feedback, not clinical guidance.
-
+${guidance}
 Evidence rules:
 - Use only the numbered timeline events you are given. Cite event numbers for every claim. Never describe anything that is not in the timeline.
 - Give feedback on communication only. Clinical Actions may be mentioned only as recorded facts; never judge whether an action was correct, well-timed, or missing.
@@ -49,7 +66,7 @@ Return only JSON with exactly this shape:
   "criteria": [{"key": string, "rating": "demonstrated" | "partially_demonstrated" | "not_yet_demonstrated",
                 "rationale": string, "evidence": [event numbers]}],
       // one entry per criterion above, in the same order; "not_yet_demonstrated" means not observed
-  "suggestions": [string, string]                                    // exactly two specific suggestions for another Attempt
+  "suggestions": [string, string]                                    // exactly two specific suggestions for another Attempt${promptField}
 }`;
 
   const timeline = context.timeline
@@ -75,14 +92,18 @@ Return only JSON with exactly this shape:
 }
 
 /**
- * Returns validated sections, or null when the output is malformed, cites
- * evidence that was not recorded, misses a required section, or makes a
- * performance claim. A null result becomes a recoverable failure.
+ * Returns validated sections (and generated Reflection Prompts when
+ * requested), or null when the output is malformed, cites evidence that was
+ * not recorded, misses a required part, or makes a performance claim. A null
+ * result becomes a recoverable failure.
  */
 export function parseFeedback(
   raw: string,
   context: FeedbackContext,
-): FeedbackSections | null {
+): {
+  sections: FeedbackSections;
+  reflectionPrompts: GeneratedPrompts | null;
+} | null {
   let data: unknown;
   try {
     data = JSON.parse(raw);
@@ -186,15 +207,28 @@ export function parseFeedback(
   const suggestions = data.suggestions.map(text);
   if (suggestions.some((suggestion) => suggestion === null)) return null;
 
+  let reflectionPrompts: GeneratedPrompts | null = null;
+  if (context.generateReflectionPrompts) {
+    const prompts = data.reflectionPrompts;
+    if (!isRecord(prompts)) return null;
+    const interpretation = text(prompts.interpretation);
+    const planning = text(prompts.planning);
+    if (!interpretation || !planning) return null;
+    reflectionPrompts = { interpretation, planning };
+  }
+
   if (texts.some((sentence) => performanceClaim.test(sentence))) {
     return null;
   }
   return {
-    summary,
-    strengths,
-    priorities,
-    criteria,
-    suggestions: suggestions as string[],
+    sections: {
+      summary,
+      strengths,
+      priorities,
+      criteria,
+      suggestions: suggestions as string[],
+    },
+    reflectionPrompts,
   };
 }
 

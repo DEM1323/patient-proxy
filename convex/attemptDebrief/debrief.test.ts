@@ -341,6 +341,82 @@ describe("Complete the Attempt Debrief", () => {
     });
   });
 
+  it("has the AI write Reflection Prompts from instructor guidance before any reflection", async () => {
+    const { t, asLearner, attemptId, endWithEvidence, reflect, debrief, runScheduled } =
+      await setup();
+    const feedbackGuidance =
+      "Focus on how the student explains care to a frightened patient.";
+    await t.run(async (ctx) => {
+      const attempt = (await ctx.db.get(attemptId))!;
+      await ctx.db.patch(attempt.scenarioVersionId, { debrief: { feedbackGuidance } });
+    });
+    const reflectionPrompts = {
+      interpretation: "What did Elena's questions tell you about how she felt?",
+      planning: "How will you explain your actions to her next time?",
+    };
+    completer.completeFeedback
+      .mockRejectedValueOnce(new Error("Request timed out"))
+      .mockResolvedValueOnce(feedbackJson({ reflectionPrompts }));
+
+    await endWithEvidence();
+    expect(await debrief()).toEqual({ status: "preparing", failed: false });
+    // There is nothing to answer until the prompts exist.
+    expect(await reflect("planning", "skip")).toEqual({ status: "not_available" });
+
+    await runScheduled();
+    expect(await debrief()).toEqual({ status: "preparing", failed: true });
+    await asLearner.mutation(api.attemptDebrief.access.retryFeedbackGeneration, { attemptId });
+    await runScheduled();
+
+    const [, retriedCall] = completer.completeFeedback.mock.calls;
+    expect(retriedCall[0].systemInstruction).toContain(feedbackGuidance);
+    expect(retriedCall[0].systemInstruction).toContain('"reflectionPrompts"');
+    expect(await debrief()).toMatchObject({
+      status: "reflecting",
+      feedback: null,
+      prompts: [
+        { key: "interpretation", text: reflectionPrompts.interpretation },
+        { key: "planning", text: reflectionPrompts.planning },
+      ],
+    });
+
+    await reflect("interpretation", "answer", "She was scared and confused.");
+    await reflect("planning", "skip");
+    expect(await debrief()).toMatchObject({
+      status: "revealed",
+      feedback: { status: "completed" },
+    });
+    const stored = await t.run((ctx) => ctx.db.query("learnerReflections").collect());
+    expect(stored.map(({ promptText }) => promptText)).toEqual([
+      reflectionPrompts.interpretation,
+      reflectionPrompts.planning,
+    ]);
+  });
+
+  it("prefers fixed instructor prompts over generated ones while still following guidance", async () => {
+    const { t, attemptId, endWithEvidence, debrief, runScheduled } = await setup();
+    await t.run(async (ctx) => {
+      const attempt = (await ctx.db.get(attemptId))!;
+      await ctx.db.patch(attempt.scenarioVersionId, {
+        debrief: {
+          feedbackGuidance: "Be brief and encouraging.",
+          reflectionPrompts: { interpretation: "Fixed interpretation?", planning: "Fixed planning?" },
+        },
+      });
+    });
+    completer.completeFeedback.mockResolvedValue(feedbackJson());
+
+    await endWithEvidence();
+    expect(await debrief()).toMatchObject({
+      status: "reflecting",
+      prompts: [{ text: "Fixed interpretation?" }, { text: "Fixed planning?" }],
+    });
+    await runScheduled();
+    const [call] = completer.completeFeedback.mock.calls;
+    expect(call[0].systemInstruction).toContain("Be brief and encouraging.");
+    expect(call[0].systemInstruction).not.toContain('"reflectionPrompts"');
+  });
+
   it("offers no Debrief for Active or restarted Attempts", async () => {
     const { asLearner, scenarioId, attemptId, reflect, debrief, feedbackRows } = await setup();
     expect(await debrief()).toEqual({ status: "not_available", reason: "active" });

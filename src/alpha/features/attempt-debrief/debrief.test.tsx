@@ -126,6 +126,21 @@ describe("Attempt Debrief", () => {
     );
   });
 
+  it("waits for generated Reflection Prompts and offers a retry if they fail", async () => {
+    testState.debrief = { status: "preparing", failed: false };
+    const { rerender } = render(<AttemptDebrief attemptId="attempt-id" />);
+    expect(screen.getByText("Preparing your reflection questions…")).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+
+    testState.debrief = { status: "preparing", failed: true };
+    testState.retryFeedback.mockResolvedValue({ status: "pending" });
+    rerender(<AttemptDebrief attemptId="attempt-id" />);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() =>
+      expect(testState.retryFeedback).toHaveBeenCalledWith({ attemptId: "attempt-id" }),
+    );
+  });
+
   it("explains that a restarted Attempt has no Debrief", () => {
     testState.debrief = { status: "not_available", reason: "restarted" };
     render(<AttemptDebrief attemptId="attempt-id" />);

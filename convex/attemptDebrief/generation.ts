@@ -16,7 +16,10 @@ import {
   loadFeedbackContext,
   markFeedbackFailed,
 } from "./model";
-import { feedbackSectionsValidator } from "./validators";
+import {
+  feedbackSectionsValidator,
+  generatedPromptsValidator,
+} from "./validators";
 
 const targetArgs = {
   feedbackId: v.id("formativeFeedback"),
@@ -34,13 +37,13 @@ export const generate = internalAction({
     if (!context) {
       return null;
     }
-    let sections = null;
+    let parsed = null;
     try {
-      sections = parseFeedback(
+      parsed = parseFeedback(
         await completeFeedback(buildFeedbackPrompt(context)),
         context,
       );
-      if (!sections) {
+      if (!parsed) {
         console.warn("Formative Feedback was malformed or unsupported by evidence");
       }
     } catch (error) {
@@ -51,10 +54,13 @@ export const generate = internalAction({
         error instanceof Error ? error.message : "unknown error",
       );
     }
-    if (sections) {
+    if (parsed) {
       await ctx.runMutation(internal.attemptDebrief.generation.commit, {
         ...target,
-        sections,
+        sections: parsed.sections,
+        ...(parsed.reflectionPrompts
+          ? { reflectionPrompts: parsed.reflectionPrompts }
+          : {}),
       });
     } else {
       await ctx.runMutation(
@@ -87,9 +93,11 @@ export const context = internalQuery({
     v.object({
       patientName: v.string(),
       setting: v.string(),
+      feedbackGuidance: v.union(v.null(), v.string()),
       communicationCriteria: v.array(
         v.object({ key: v.string(), label: v.string(), description: v.string() }),
       ),
+      generateReflectionPrompts: v.boolean(),
       timeline: v.array(timelineEventValidator),
     }),
   ),
@@ -97,7 +105,11 @@ export const context = internalQuery({
 });
 
 export const commit = internalMutation({
-  args: { ...targetArgs, sections: feedbackSectionsValidator },
+  args: {
+    ...targetArgs,
+    sections: feedbackSectionsValidator,
+    reflectionPrompts: v.optional(generatedPromptsValidator),
+  },
   returns: v.null(),
   handler: async (ctx, input) => {
     await commitFeedback(ctx, input);

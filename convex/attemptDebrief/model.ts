@@ -7,6 +7,7 @@ import type { FeedbackContext } from "./feedbackPrompt";
 import type {
   DebriefView,
   FeedbackSections,
+  GeneratedPrompts,
   ReflectResult,
   ReflectionPromptKey,
   RetryFeedbackResult,
@@ -75,7 +76,15 @@ export async function getOwnDebrief(
     return { status: "not_available", reason: unavailable };
   }
 
-  const texts = await promptTexts(ctx, attempt);
+  const feedback = await findFeedback(ctx, attempt._id);
+  const texts = await resolvePrompts(ctx, attempt, feedback);
+  if (!texts) {
+    // The AI is still writing the prompts from the instructors' guidance.
+    return {
+      status: "preparing",
+      failed: !feedback || feedback.status === "failed",
+    };
+  }
   const prompts = [];
   for (const key of promptOrder) {
     const responses = await reflectionsFor(ctx, attempt._id, key);
@@ -94,7 +103,6 @@ export async function getOwnDebrief(
   if (!revealed) {
     return { status: "reflecting", prompts, feedback: null };
   }
-  const feedback = await findFeedback(ctx, attempt._id);
   return {
     status: "revealed",
     prompts,
@@ -146,6 +154,11 @@ export async function submitReflection(
   if (replay) {
     return { status: "recorded" };
   }
+  const texts = await resolvePrompts(ctx, attempt);
+  if (!texts) {
+    // Generated prompts are not ready; there is nothing to answer yet.
+    return { status: "not_available" };
+  }
 
   const earlier = await reflectionsFor(ctx, attempt._id, input.prompt);
   let text: string | undefined;
@@ -166,8 +179,7 @@ export async function submitReflection(
     attemptId: attempt._id,
     learnerMembershipId: learner.id,
     prompt: input.prompt,
-    promptText:
-      earlier[0]?.promptText ?? (await promptTexts(ctx, attempt))[input.prompt],
+    promptText: earlier[0]?.promptText ?? texts[input.prompt],
     response: input.response,
     ...(text === undefined ? {} : { text }),
     clientRequestId: input.clientRequestId,
@@ -263,7 +275,9 @@ export async function loadFeedbackContext(
   return {
     patientName: version.learnerBrief.patientName,
     setting: version.learnerBrief.setting,
+    feedbackGuidance: version.debrief?.feedbackGuidance ?? null,
     communicationCriteria: version.debrief?.communicationCriteria ?? [],
+    generateReflectionPrompts: promptSource(version) === "generated",
     timeline,
   };
 }
@@ -272,13 +286,19 @@ export async function loadFeedbackContext(
 // never modified by feedback.
 export async function commitFeedback(
   ctx: MutationCtx,
-  input: FeedbackTarget & { sections: FeedbackSections },
+  input: FeedbackTarget & {
+    sections: FeedbackSections;
+    reflectionPrompts?: GeneratedPrompts;
+  },
 ) {
   const current = await currentGeneration(ctx, input);
   if (current) {
     await ctx.db.patch(current.feedback._id, {
       status: "completed",
       sections: input.sections,
+      ...(input.reflectionPrompts
+        ? { reflectionPrompts: input.reflectionPrompts }
+        : {}),
       updatedAt: Date.now(),
     });
   }
@@ -338,9 +358,38 @@ function unavailableReason(attempt: Doc<"attempts">) {
     : null;
 }
 
-async function promptTexts(ctx: Pick<QueryCtx, "db">, attempt: Doc<"attempts">) {
+// Fixed authored prompts first; with only feedback guidance, the AI writes
+// them alongside the feedback; otherwise the platform defaults apply.
+function promptSource(version: Doc<"scenarioVersions">) {
+  if (version.debrief?.reflectionPrompts) {
+    return "authored" as const;
+  }
+  return version.debrief?.feedbackGuidance
+    ? ("generated" as const)
+    : ("default" as const);
+}
+
+// The prompts to show, or null while generated prompts are not ready.
+async function resolvePrompts(
+  ctx: Pick<QueryCtx, "db">,
+  attempt: Doc<"attempts">,
+  feedback?: Doc<"formativeFeedback"> | null,
+): Promise<Record<ReflectionPromptKey, string> | null> {
   const version = await ctx.db.get(attempt.scenarioVersionId);
-  return version?.debrief?.reflectionPrompts ?? defaultReflectionPrompts;
+  if (!version) {
+    throw new Error("Attempt Scenario Version is missing");
+  }
+  switch (promptSource(version)) {
+    case "authored":
+      return version.debrief!.reflectionPrompts!;
+    case "generated": {
+      const row =
+        feedback === undefined ? await findFeedback(ctx, attempt._id) : feedback;
+      return row?.reflectionPrompts ?? null;
+    }
+    default:
+      return defaultReflectionPrompts;
+  }
 }
 
 async function reflectionsFor(

@@ -57,6 +57,11 @@ export const feedbackSectionsValidator = v.object({
   suggestions: v.array(v.string()),
 });
 
+export const generatedPromptsValidator = v.object({
+  interpretation: v.string(),
+  planning: v.string(),
+});
+
 export const reflectResultValidator = v.union(
   v.object({ status: v.literal("recorded") }),
   v.object({ status: v.literal("already_responded") }),
@@ -77,6 +82,9 @@ export const debriefViewValidator = v.union(
     status: v.literal("not_available"),
     reason: v.union(v.literal("active"), v.literal("restarted")),
   }),
+  // The AI is writing Reflection Prompts from the instructors' guidance.
+  // `failed` offers a retry; nothing about feedback is exposed.
+  v.object({ status: v.literal("preparing"), failed: v.boolean() }),
   v.object({
     // "revealed" once each prompt has an explicit answer or skip.
     status: v.union(v.literal("reflecting"), v.literal("revealed")),
@@ -109,6 +117,7 @@ export const debriefViewValidator = v.union(
 
 export type ReflectionPromptKey = Infer<typeof reflectionPromptKeyValidator>;
 export type FeedbackSections = Infer<typeof feedbackSectionsValidator>;
+export type GeneratedPrompts = Infer<typeof generatedPromptsValidator>;
 export type DebriefView = Infer<typeof debriefViewValidator>;
 export type ReflectResult = Infer<typeof reflectResultValidator>;
 export type RetryFeedbackResult = Infer<typeof retryFeedbackResultValidator>;
