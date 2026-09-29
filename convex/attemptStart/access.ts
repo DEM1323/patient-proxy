@@ -61,6 +61,21 @@ export const start = mutation({
   handler: startAttempt,
 });
 
+// One recorded timeline entry, shared with attempt-review.
+export const timelineEntryValidator = v.object({
+  sequence: v.number(),
+  kind: attemptEventKindValidator,
+  occurredAt: v.number(),
+  text: v.optional(v.string()),
+  action: v.optional(
+    v.object({
+      key: v.string(),
+      label: v.string(),
+      observation: v.string(),
+    }),
+  ),
+});
+
 export const ownAttempt = query({
   args: { attemptId: v.string() },
   returns: v.union(
@@ -82,21 +97,7 @@ export const ownAttempt = query({
         setting: v.string(),
         version: v.number(),
       }),
-      timeline: v.array(
-        v.object({
-          sequence: v.number(),
-          kind: attemptEventKindValidator,
-          occurredAt: v.number(),
-          text: v.optional(v.string()),
-          action: v.optional(
-            v.object({
-              key: v.string(),
-              label: v.string(),
-              observation: v.string(),
-            }),
-          ),
-        }),
-      ),
+      timeline: v.array(timelineEntryValidator),
       exchange: v.union(v.null(), openExchangeValidator),
       clinicalActions: v.array(v.object({ key: v.string(), label: v.string() })),
     }),

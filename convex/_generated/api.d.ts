@@ -22,6 +22,8 @@ import type * as attemptInteraction_generation from "../attemptInteraction/gener
 import type * as attemptInteraction_model from "../attemptInteraction/model.js";
 import type * as attemptInteraction_patientPrompt from "../attemptInteraction/patientPrompt.js";
 import type * as attemptInteraction_validators from "../attemptInteraction/validators.js";
+import type * as attemptReview_access from "../attemptReview/access.js";
+import type * as attemptReview_model from "../attemptReview/model.js";
 import type * as attemptStart_access from "../attemptStart/access.js";
 import type * as attemptStart_model from "../attemptStart/model.js";
 import type * as attemptStart_pilotProvisioning from "../attemptStart/pilotProvisioning.js";
@@ -57,6 +59,8 @@ declare const fullApi: ApiFromModules<{
   "attemptInteraction/model": typeof attemptInteraction_model;
   "attemptInteraction/patientPrompt": typeof attemptInteraction_patientPrompt;
   "attemptInteraction/validators": typeof attemptInteraction_validators;
+  "attemptReview/access": typeof attemptReview_access;
+  "attemptReview/model": typeof attemptReview_model;
   "attemptStart/access": typeof attemptStart_access;
   "attemptStart/model": typeof attemptStart_model;
   "attemptStart/pilotProvisioning": typeof attemptStart_pilotProvisioning;

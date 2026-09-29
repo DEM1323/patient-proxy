@@ -13,6 +13,7 @@ import {
   ScenarioListPage,
 } from "./features/attempt-start";
 import { AttemptHistoryPage } from "./features/learner-attempt-history";
+import { ReviewDetailPage, ReviewListPage } from "./features/attempt-review";
 import {
   CallbackPage,
   LoginPage,
@@ -97,6 +98,21 @@ const attemptRoute = createRoute({
   },
 });
 
+const reviewListRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/review",
+  component: ReviewListPage,
+});
+
+const reviewDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/review/$attemptId",
+  component: function ReviewDetailRoute() {
+    const { attemptId } = reviewDetailRoute.useParams();
+    return <ReviewDetailPage attemptId={attemptId} />;
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   deploymentCheckRoute,
@@ -106,6 +122,8 @@ const routeTree = rootRoute.addChildren([
   learnerBriefRoute,
   attemptHistoryRoute,
   attemptRoute,
+  reviewListRoute,
+  reviewDetailRoute,
 ]);
 
 export const router = createRouter({ routeTree });

@@ -314,40 +314,11 @@ export function AttemptView({
         <h2 id="conversation-title" className="text-lg font-semibold text-slate-950">
           Conversation with {patientName}
         </h2>
-        <ol className="mt-4 space-y-4">
-          {attempt.timeline.map((event) => (
-            <li
-              key={event.sequence}
-              id={`event-${event.sequence}`}
-              className="scroll-mt-6"
-            >
-              {event.kind === "learner_message" ||
-              event.kind === "patient_message" ? (
-                <Message
-                  speaker={event.kind === "learner_message" ? "You" : patientName}
-                  fromLearner={event.kind === "learner_message"}
-                  text={event.text ?? ""}
-                  occurredAt={event.occurredAt}
-                />
-              ) : event.kind === "clinical_action" ? (
-                event.action && (
-                  <ActionEntry
-                    label={event.action.label}
-                    observation={event.action.observation}
-                    occurredAt={event.occurredAt}
-                  />
-                )
-              ) : (
-                <p className="text-center text-sm text-slate-500">
-                  {lifecycleLabels[event.kind]} ·{" "}
-                  <time dateTime={new Date(event.occurredAt).toISOString()}>
-                    {formatTime(event.occurredAt)}
-                  </time>
-                </p>
-              )}
-            </li>
-          ))}
-        </ol>
+        <AttemptTimeline
+          timeline={attempt.timeline}
+          patientName={patientName}
+          learnerLabel="You"
+        />
         <div aria-live="polite">
           {exchange?.status === "pending" && (
             <p className="mt-4 max-w-[80%] rounded-2xl rounded-bl-sm bg-slate-100 px-4 py-3 italic text-slate-600">
@@ -400,6 +371,58 @@ export function AttemptView({
         </Link>
       )}
     </main>
+  );
+}
+
+/**
+ * The recorded timeline, in sequence order. Each entry has an `event-N`
+ * anchor that Formative Feedback evidence links to. Shared with
+ * attempt-review, where the Learner is named rather than "You".
+ */
+export function AttemptTimeline({
+  learnerLabel,
+  patientName,
+  timeline,
+}: {
+  learnerLabel: string;
+  patientName: string;
+  timeline: OwnAttempt["timeline"];
+}) {
+  return (
+    <ol className="mt-4 space-y-4">
+      {timeline.map((event) => (
+        <li
+          key={event.sequence}
+          id={`event-${event.sequence}`}
+          className="scroll-mt-6"
+        >
+          {event.kind === "learner_message" ||
+          event.kind === "patient_message" ? (
+            <Message
+              speaker={event.kind === "learner_message" ? learnerLabel : patientName}
+              fromLearner={event.kind === "learner_message"}
+              text={event.text ?? ""}
+              occurredAt={event.occurredAt}
+            />
+          ) : event.kind === "clinical_action" ? (
+            event.action && (
+              <ActionEntry
+                label={event.action.label}
+                observation={event.action.observation}
+                occurredAt={event.occurredAt}
+              />
+            )
+          ) : (
+            <p className="text-center text-sm text-slate-500">
+              {lifecycleLabels[event.kind]} ·{" "}
+              <time dateTime={new Date(event.occurredAt).toISOString()}>
+                {formatTime(event.occurredAt)}
+              </time>
+            </p>
+          )}
+        </li>
+      ))}
+    </ol>
   );
 }
 

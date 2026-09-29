@@ -173,10 +173,15 @@ export async function getOwnAttempt(
 ): Promise<AttemptView | null> {
   const learner = await requireRole(ctx, "learner");
   const attempt = await findOwnAttempt(ctx, learner, rawAttemptId);
-  if (!attempt) {
-    return null;
-  }
+  return attempt ? await buildAttemptView(ctx, attempt) : null;
+}
 
+// The recorded Attempt as shown to an authorized reader. Callers authorize
+// first; attempt-review reuses it for Faculty and Institutional Admin.
+export async function buildAttemptView(
+  ctx: Pick<QueryCtx, "db">,
+  attempt: Doc<"attempts">,
+): Promise<AttemptView> {
   const version = await ctx.db.get(attempt.scenarioVersionId);
   if (!version) {
     throw new Error("Attempt Scenario Version is missing");
