@@ -47,7 +47,26 @@ export const clinicalTruthValidator = v.object({
   clinicalActions: v.optional(clinicalActionsValidator),
 });
 
+// Author-controlled Attempt Debrief content: the guidelines the feedback AI
+// follows. Instructors supply it; the platform never invents it.
+// Reflection Prompts come from, in order: fixed authored prompts, prompts the
+// AI writes from the feedback guidance, or the platform's generic defaults.
+export const debriefContentValidator = v.object({
+  // Free-form instructions for the feedback AI (tone, focus, what to look for).
+  feedbackGuidance: v.optional(v.string()),
+  // Rated in the feedback's Communication Criteria section.
+  communicationCriteria: v.optional(
+    v.array(
+      v.object({ key: v.string(), label: v.string(), description: v.string() }),
+    ),
+  ),
+  reflectionPrompts: v.optional(
+    v.object({ interpretation: v.string(), planning: v.string() }),
+  ),
+});
+
 export type LearnerBrief = Infer<typeof learnerBriefValidator>;
+export type DebriefContent = Infer<typeof debriefContentValidator>;
 export type ClinicalTruth = Infer<typeof clinicalTruthValidator>;
 export type ClinicalActions = Infer<typeof clinicalActionsValidator>;
 

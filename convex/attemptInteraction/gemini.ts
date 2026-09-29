@@ -8,33 +8,62 @@ import type { PatientPrompt } from "./patientPrompt";
 // Preferred model first. gemini-2.5-flash is closed to new API keys, and the
 // free tier's gemini-3.8-flash quota is too small for practice sessions.
 export const patientModels = ["gemini-3.5-flash", "gemini-3.1-flash-lite"];
-const requestTimeoutMs = 12_000;
 const attemptsPerModel = 2;
 const overloadBackoffMs = 1_000;
+
+// Worst case for feedback: two 30-second requests per model plus backoff,
+// which stays within the feedback deadline.
+export const feedbackRequestTimeoutMs = 30_000;
 
 /**
  * Calls Gemini from protected backend code only. The key lives in the Convex
  * deployment environment and never reaches the browser.
  */
 export async function completePatientReply(prompt: PatientPrompt) {
+  return await complete(prompt, {
+    // A short in-character reply does not need thinking, which otherwise
+    // spends the output budget and adds latency.
+    generationConfig: {
+      temperature: 0.6,
+      maxOutputTokens: 300,
+      thinkingConfig: { thinkingBudget: 0 },
+    } as GenerationConfig,
+    timeoutMs: 12_000,
+  });
+}
+
+// Formative Feedback as JSON; the caller validates its structure and evidence.
+export async function completeFeedback(prompt: PatientPrompt) {
+  return await complete(prompt, {
+    generationConfig: {
+      temperature: 0.3,
+      maxOutputTokens: 2_000,
+      responseMimeType: "application/json",
+      thinkingConfig: { thinkingBudget: 0 },
+    } as GenerationConfig,
+    timeoutMs: feedbackRequestTimeoutMs,
+  });
+}
+
+async function complete(
+  prompt: PatientPrompt,
+  options: { generationConfig: GenerationConfig; timeoutMs: number },
+) {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
   }
   const client = new GoogleGenerativeAI(apiKey);
-  const generationConfig = {
-    temperature: 0.6,
-    maxOutputTokens: 300,
-    // A short in-character reply does not need thinking, which otherwise
-    // spends the output budget and adds latency.
-    thinkingConfig: { thinkingBudget: 0 },
-  } as GenerationConfig;
   return await withModelFallback(
     async (model) => {
       const result = await client
         .getGenerativeModel(
-          { model, systemInstruction: prompt.systemInstruction, generationConfig },
-          { timeout: requestTimeoutMs },
+          {
+            model,
+            systemInstruction: prompt.systemInstruction,
+            generationConfig: options.generationConfig,
+          },
+          { timeout: options.timeoutMs },
         )
         .generateContent({ contents: prompt.contents });
       // Throws when the response was blocked or has no candidate.

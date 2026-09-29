@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -15,9 +15,9 @@ type OwnAttempt = NonNullable<
   FunctionReturnType<typeof api.attemptStart.access.ownAttempt>
 >;
 
-const primaryButton =
+export const primaryButton =
   "inline-flex rounded-md bg-primary px-5 py-3 font-semibold text-white shadow-sm hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
-const secondaryButton =
+export const secondaryButton =
   "inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 const backLink =
   "text-sm font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -264,11 +264,14 @@ export function AttemptView({
   actionPanel,
   attempt,
   composer,
+  debrief,
   ending,
 }: {
   actionPanel: ActionPanelProps;
   attempt: OwnAttempt;
   composer: ComposerProps;
+  // The Attempt Debrief for an Ended Attempt, owned by attempt-debrief.
+  debrief?: ReactNode;
   ending: EndingProps;
 }) {
   const active = attempt.status === "active";
@@ -313,7 +316,11 @@ export function AttemptView({
         </h2>
         <ol className="mt-4 space-y-4">
           {attempt.timeline.map((event) => (
-            <li key={event.sequence}>
+            <li
+              key={event.sequence}
+              id={`event-${event.sequence}`}
+              className="scroll-mt-6"
+            >
               {event.kind === "learner_message" ||
               event.kind === "patient_message" ? (
                 <Message
@@ -384,6 +391,8 @@ export function AttemptView({
       )}
 
       {active && <EndPanel canEnd={attempt.canEnd} ending={ending} />}
+
+      {!active && debrief}
 
       {!active && (
         <Link to="/scenarios" className={`mt-8 inline-block ${backLink}`}>

@@ -8,6 +8,11 @@
  * @module
  */
 
+import type * as attemptDebrief_access from "../attemptDebrief/access.js";
+import type * as attemptDebrief_feedbackPrompt from "../attemptDebrief/feedbackPrompt.js";
+import type * as attemptDebrief_generation from "../attemptDebrief/generation.js";
+import type * as attemptDebrief_model from "../attemptDebrief/model.js";
+import type * as attemptDebrief_validators from "../attemptDebrief/validators.js";
 import type * as attemptEnding_access from "../attemptEnding/access.js";
 import type * as attemptEnding_model from "../attemptEnding/model.js";
 import type * as attemptInteraction_access from "../attemptInteraction/access.js";
@@ -36,6 +41,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "attemptDebrief/access": typeof attemptDebrief_access;
+  "attemptDebrief/feedbackPrompt": typeof attemptDebrief_feedbackPrompt;
+  "attemptDebrief/generation": typeof attemptDebrief_generation;
+  "attemptDebrief/model": typeof attemptDebrief_model;
+  "attemptDebrief/validators": typeof attemptDebrief_validators;
   "attemptEnding/access": typeof attemptEnding_access;
   "attemptEnding/model": typeof attemptEnding_model;
   "attemptInteraction/access": typeof attemptInteraction_access;
