@@ -95,11 +95,11 @@ export const bindPilotRosterEntry = internalMutation({
     emailVerified: v.boolean(),
   },
   returns: admissionResultValidator,
-  handler: (ctx, input) => {
-    const rawRoster = process.env.PILOT_ROSTER_JSON?.trim();
-    if (!rawRoster) {
-      throw new Error("PILOT_ROSTER_JSON is not configured");
-    }
-    return admitWorkosUser(ctx, { ...input, rawRoster });
-  },
+  // The environment roster is passed along but only read before the
+  // database-roster cutover; afterwards admission ignores it entirely.
+  handler: (ctx, input) =>
+    admitWorkosUser(ctx, {
+      ...input,
+      rawRoster: process.env.PILOT_ROSTER_JSON?.trim() || undefined,
+    }),
 });

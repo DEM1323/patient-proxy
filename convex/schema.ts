@@ -16,9 +16,39 @@ import {
   attemptEventKindValidator,
   exchangeStatusValidator,
 } from "./attemptInteraction/validators";
+import {
+  auditEventFields,
+  rosterEntryStatusValidator,
+} from "./institutionAdmin/validators";
 import { membershipRoleValidator } from "./membershipAccess/roles";
 
 export default defineSchema({
+  // Records the one-time cutover from PILOT_ROSTER_JSON to the database
+  // Pilot Roster. Once present, admission never reads the environment roster.
+  rosterAuthority: defineTable({
+    key: v.literal("admission"),
+    source: v.literal("database"),
+    cutoverAt: v.number(),
+  }).index("by_key", ["key"]),
+  // The private Pilot Roster: one entry per exact normalized identity, across
+  // institutions. Pending entries govern first admission; bound entries keep
+  // binding history. Current roles live on the Membership.
+  rosterEntries: defineTable({
+    institutionId: v.id("pilotInstitutions"),
+    email: v.string(),
+    roles: v.array(membershipRoleValidator),
+    status: rosterEntryStatusValidator,
+    membershipId: v.optional(v.id("memberships")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_institution_status", ["institutionId", "status"]),
+  // Private, institution-scoped record of roster and role changes.
+  auditEvents: defineTable(auditEventFields).index("by_institution_time", [
+    "institutionId",
+    "occurredAt",
+  ]),
   pilotInstitutions: defineTable({
     key: v.string(),
     name: v.string(),

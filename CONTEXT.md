@@ -5,7 +5,7 @@ Patient Proxy supports supervised clinical communication practice with Simulated
 ## Language
 
 **Pilot Institution**:
-The single organization sponsoring and governing participation in the alpha.
+The single organization sponsoring and governing participation in the alpha. The alpha represents an already-provisioned UMass Boston institution portal.
 _Avoid_: Tenant, customer, school
 
 **Membership**:
@@ -29,7 +29,7 @@ A role held by a Member who administers participation within the Pilot Instituti
 _Avoid_: Admin, administrator, user
 
 **Pilot Roster**:
-The private list of identities approved for Membership in the alpha, including each identity's assigned roles.
+The private list of exact identities approved for Membership in the alpha, including initial roles for pending admission. Once an identity is bound, its Membership governs current roles and participation status; changing pending approvals does not rewrite existing Memberships.
 _Avoid_: Domain allowlist, user list
 
 **Learning Group**:
@@ -99,6 +99,20 @@ _Avoid_: Private journal, Faculty feedback, assessment
 ## Established alpha product boundaries
 
 These requirements carry forward the decisions recorded in the [alpha map](https://github.com/DEM1323/patient-proxy/issues/2) and the earlier `docs/alpha/WAYFINDER.md` in Git history. They describe intended behavior, not a claim that every feature is implemented.
+
+### Institution self-service expansion (approved 2026-09-29)
+
+- The alpha includes administration within the pre-provisioned UMass Boston Pilot Institution. An Institutional Admin lists Members, pre-approves exact identities, assigns any additive combination of Learner, Faculty, Author, and Institutional Admin, changes roles, and deactivates/reactivates participation without deleting learning records.
+- Institutional Admins manage Learning Groups and their Memberships in Patient Proxy. Faculty within their authorized groups, and Institutional Admins within the institution, can make Published Scenarios available to Learning Groups. These controls establish participation and dynamic Faculty review scope; filters only narrow an already-authorized view.
+- The private Pilot Roster will live in Convex database tables. WorkOS continues to authenticate, including server-verified email for first admission; Convex binds the stable WorkOS user ID and enforces Membership, additive roles, status, ownership, and institution/group scope on every applicable operation. WorkOS organization membership, invitation acceptance, browser claims, and email domains do not independently grant application authorization.
+- Pending roster entries govern initial approval. Bound Memberships govern current roles and status. Preserve existing bindings, Membership IDs, roles, and saved records during migration; never silently reconcile existing roles from old roster values. Preserve binding history on deactivation so a consumed identity cannot be claimed again.
+- Navigation exposes each assigned role's implemented journeys. The Members and Learning Groups pages are institution-scoped; authorized review stays in the existing review journey. Institutional Admin does not inherit Learner, Faculty, or Author permissions.
+- Provisioning supplies the institution and its explicitly designated first Institutional Admin. Institution creation, institution switching, and a platform-operator administration UI are outside this expansion. Routine Member, group, and availability administration must be possible inside Patient Proxy once the expanded route is complete.
+- Assigning and recognizing the Author role is included; building Scenario authoring is a separate scope decision. Invitation email delivery, SSO/SCIM provisioning, billing, LMS/LTI, advanced analytics, and production deployment are not included in this expansion.
+
+The self-service decision supersedes the older blanket exclusion in the original alpha map. At the time of this documentation update, admission still reads protected `PILOT_ROSTER_JSON`; the database migration and self-service UI are pending. See [current status](docs/alpha/WAYFINDER.md) and the [implementation handoff](docs/alpha/HANDOFF.md) for observed behavior, acceptance examples, and sequencing.
+
+### Learning journey boundaries
 
 - Elena Ruiz's curated PACU encounter lasts approximately 8–12 minutes and supports pre-licensure nursing Learners. Use synthetic data only. Clinical Actions reveal authored, deterministic Scenario Observations; generated dialogue does not alter Clinical Truth.
 - WorkOS Google sign-in authenticates, with a path to institutional OIDC/SAML. Convex enforces exact-identity Pilot Roster admission, stable WorkOS user binding, additive roles, and Pilot Institution isolation. Authentication alone grants no Membership.

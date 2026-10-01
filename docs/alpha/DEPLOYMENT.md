@@ -1,5 +1,11 @@
 # Alpha Deployment Spine
 
+## Current runtime and approved expansion
+
+The alpha represents a pre-provisioned UMass Boston institution portal. The 2026-09-29 decision adds institution self-service with a **private Convex database Pilot Roster**, WorkOS authentication, and Convex-enforced Membership and scope. **That migration is not implemented yet:** the setup and environment-roster format below describe the current runtime. Do not remove or change the existing roster merely because the documentation now describes its replacement.
+
+Provisioning supplies the institution and first Institutional Admin once. No institution-creation UI or platform-operator portal is required. After the self-service slices are complete, ordinary Member, Learning Group, and Scenario-availability changes happen inside Patient Proxy. See [HANDOFF.md](HANDOFF.md) for the first implementation slice and migration safeguards.
+
 ## Prerequisites
 
 - Node.js 22 or newer
@@ -51,10 +57,11 @@ The alpha sign-in flow uses Google. Development allows
 `http://localhost:5173/callback` with CORS from `http://localhost:5173`;
 production allows
 `https://patient-proxy-alpha.dem1323.workers.dev/callback` with CORS from the
-hosted application origin. WorkOS API keys and `PILOT_ROSTER_JSON` exist only
-as protected Convex deployment environment variables. The private roster is
-present in development and production with distinct Learner and Faculty
-identities; their emails are intentionally not documented.
+hosted application origin. WorkOS API keys and the current `PILOT_ROSTER_JSON`
+exist only as protected Convex deployment environment variables. Roster values
+and Member identities are intentionally not documented; their presence does
+not prove those identities have signed in and acquired Memberships. Consult
+the current-status note for demonstrations, not assumptions about live roles.
 
 The client-only AuthKit integration currently sets `devMode` because the
 `workers.dev` alpha does not have a custom WorkOS authentication API domain.
@@ -63,7 +70,7 @@ storage so it survives the callback reload. Before handling production-grade
 data, configure a custom authentication domain and remove `devMode` so WorkOS
 can use its secure HTTP-only cookie mode.
 
-`PILOT_ROSTER_JSON` uses this versioned shape. Emails are normalized only by
+Until cutover, `PILOT_ROSTER_JSON` uses this versioned shape. Emails are normalized only by
 trimming whitespace and lowercasing; domains and aliases do not grant access.
 
 ```json
@@ -83,6 +90,23 @@ Allowed additive roles are `learner`, `faculty`, `author`, and
 `institutionalAdmin`. The alpha rejects duplicate emails, duplicate or unknown
 roles, malformed entries, and institution keys other than `umb`. Never commit
 the real roster or pass it through a `VITE_` variable.
+
+## Database-roster cutover
+
+Implemented on `codex/institution-members` and run on the development deployment on 2026-10-01 with the owner's approval. Production has not been migrated. Operator commands (deployment admin key only):
+
+```powershell
+npx convex run institutionAdmin/operator:cutOverToDatabaseRoster
+npx convex run institutionAdmin/operator:bootstrapInstitutionalAdmin '{"membershipId":"<designated Membership id>"}'
+```
+
+The safeguards below govern both commands.
+
+- Implement a protected, idempotent migration that reads the environment value inside Convex. Validate with the current normalization rules and import pending entries plus binding records for every existing Membership, including those absent from the old roster. Keep Membership IDs, WorkOS bindings, current roles, institution, and learning records intact. Log only aggregate counts and safe error categories; no roster entries, emails, raw JSON, or secrets.
+- Coordinate the shared development deployment before syncing. Prevent new admissions from racing the import/cutover, then switch to one database authority and verify retries. After cutover, do not fall back to the old environment roster on a missing, revoked, or inactive entry. Rollback must preserve new approvals and revocations; enabling the stale roster is not a safe rollback.
+- Bootstrap Institutional Admin on one explicitly designated, already-admitted UMass Boston Membership using a restricted operator operation, preserving its other roles and auditing the change. Do not guess the identity, promote every Member, or let the first browser caller claim administration. Ask the owner only if the intended identity cannot be established from existing authorized context. This setup operation is not a new institution-creation feature.
+- Demonstrate approved and denied sign-in plus refresh against the database path. Mark migration complete in WAYFINDER only after observed verification. Retire the environment secret in a separately recorded cleanup after cutover verification; production migration/configuration remains a separate deployment task.
+- The existing `attemptStart/pilotProvisioning:provision` enrolls current Learner/Faculty Memberships and recreates PACU availability. It is transitional: before group/availability self-service ships, separate content provisioning from participation changes so rerunning setup cannot silently restore removed scope.
 
 For a controlled smoke test, verify an approved Learner, an unapproved identity,
 and a Member with additive roles. Confirm the denied identity receives contact

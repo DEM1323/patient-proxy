@@ -58,7 +58,29 @@ export function MembershipAccessPage() {
               </div>
             ),
             faculty: reviewLink,
-            institutionalAdmin: reviewLink,
+            // Same destinations as the header (navigation.tsx).
+            institutionalAdmin: (
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/admin/members"
+                  className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Manage Members
+                </Link>
+                <Link
+                  to="/review"
+                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Review Ended Attempts
+                </Link>
+              </div>
+            ),
+            // Recognized role; authoring is not built, so no dead link.
+            author: (
+              <p className="text-sm font-semibold text-slate-600">
+                Authoring isn&apos;t available in this alpha yet.
+              </p>
+            ),
           }}
         />
       )}
