@@ -39,9 +39,9 @@ const journeyDetails: Record<
   },
   institutionalAdmin: {
     eyebrow: "Institutional Admin journey",
-    title: "Oversee the pilot",
+    title: "Manage your institution",
     description:
-      "Review institution-wide participation without inheriting Learner or Faculty permissions.",
+      "Add Members, and review Ended Attempts institution-wide, without inheriting Learner, Faculty, or Author permissions.",
     accent: "border-emerald-200 bg-emerald-50",
   },
 };

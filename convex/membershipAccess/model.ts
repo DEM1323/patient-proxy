@@ -4,6 +4,11 @@ import {
   pilotInstitutionNames,
   type PilotInstitutionKey,
 } from "./pilotInstitutions";
+import {
+  databaseRosterIsAuthoritative,
+  findRosterEntry,
+  recordAudit,
+} from "../institutionAdmin/roster";
 import { normalizeRosterEmail, parsePilotRoster } from "./roster";
 import type { MembershipRole } from "./roles";
 
@@ -53,9 +58,11 @@ export async function admitWorkosUser(
     workosUserId: string;
     email: string;
     emailVerified: boolean;
-    rawRoster: string;
+    // The environment roster; read only before the database-roster cutover.
+    rawRoster?: string;
   },
 ): Promise<AdmissionResult> {
+  // An existing binding wins, even if the WorkOS email later changes.
   const existingMembership = await findMembershipByWorkosUserId(
     ctx,
     input.workosUserId,
@@ -71,6 +78,13 @@ export async function admitWorkosUser(
     return { status: "denied", reason: "email_not_verified" };
   }
 
+  if (await databaseRosterIsAuthoritative(ctx)) {
+    // No fallback to the environment roster after cutover.
+    return await admitFromDatabaseRoster(ctx, input);
+  }
+  if (!input.rawRoster) {
+    throw new Error("PILOT_ROSTER_JSON is not configured");
+  }
   const roster = parsePilotRoster(input.rawRoster);
   const rosterEmail = normalizeRosterEmail(input.email);
   const rosterEntry = roster.entries.find((entry) => entry.email === rosterEmail);
@@ -106,6 +120,57 @@ export async function admitWorkosUser(
       },
       roles: rosterEntry.roles,
     },
+  };
+}
+
+/**
+ * First admission against the database Pilot Roster: a pending entry for the
+ * exact server-verified identity binds to one new Membership, in the same
+ * transaction that consumes the entry. Convex serializes concurrent
+ * admissions and revocations, so exactly one outcome wins.
+ */
+async function admitFromDatabaseRoster(
+  ctx: MutationCtx,
+  input: { workosUserId: string; email: string },
+): Promise<AdmissionResult> {
+  const email = normalizeRosterEmail(input.email);
+  const entry = await findRosterEntry(ctx, email);
+  if (!entry || entry.status === "revoked") {
+    return { status: "denied", reason: "not_on_roster" };
+  }
+  const alreadyBound = await ctx.db
+    .query("memberships")
+    .withIndex("by_roster_email", (query) => query.eq("rosterEmail", email))
+    .first();
+  if (entry.status === "bound" || alreadyBound) {
+    return { status: "denied", reason: "roster_entry_already_bound" };
+  }
+
+  const now = Date.now();
+  const membershipId = await ctx.db.insert("memberships", {
+    workosUserId: input.workosUserId,
+    rosterEmail: email,
+    institutionId: entry.institutionId,
+    roles: entry.roles,
+    createdAt: now,
+  });
+  await ctx.db.patch(entry._id, {
+    status: "bound",
+    membershipId,
+    updatedAt: now,
+  });
+  await recordAudit(ctx, {
+    institutionId: entry.institutionId,
+    actor: { kind: "admission" },
+    action: "identity_bound",
+    rosterEntryId: entry._id,
+    membershipId,
+    before: { status: "pending" },
+    after: { status: "bound", roles: entry.roles },
+  });
+  return {
+    status: "admitted",
+    membership: await toMembershipView(ctx, (await ctx.db.get(membershipId))!),
   };
 }
 

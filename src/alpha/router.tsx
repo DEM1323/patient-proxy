@@ -14,6 +14,9 @@ import {
 } from "./features/attempt-start";
 import { AttemptHistoryPage } from "./features/learner-attempt-history";
 import { ReviewDetailPage, ReviewListPage } from "./features/attempt-review";
+import { MembersPage } from "./features/institution-admin";
+import { RoleNavigation } from "./features/membership-access/navigation";
+import { isMembershipAccessConfigured } from "./env";
 import {
   CallbackPage,
   LoginPage,
@@ -30,13 +33,16 @@ const rootRoute = createRootRoute({
           <Link to="/" className="text-lg font-semibold tracking-tight text-primary">
             Patient Proxy
           </Link>
-          <Link
-            to="/deployment-check"
-            className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            activeProps={{ className: "bg-slate-100 text-primary" }}
-          >
-            Deployment check
-          </Link>
+          <div className="flex flex-wrap items-center justify-end gap-1">
+            {isMembershipAccessConfigured && <RoleNavigation />}
+            <Link
+              to="/deployment-check"
+              className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              activeProps={{ className: "bg-slate-100 text-primary" }}
+            >
+              Deployment check
+            </Link>
+          </div>
         </nav>
       </header>
       <Outlet />
@@ -113,6 +119,12 @@ const reviewDetailRoute = createRoute({
   },
 });
 
+const membersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/members",
+  component: MembersPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   deploymentCheckRoute,
@@ -124,6 +136,7 @@ const routeTree = rootRoute.addChildren([
   attemptRoute,
   reviewListRoute,
   reviewDetailRoute,
+  membersRoute,
 ]);
 
 export const router = createRouter({ routeTree });

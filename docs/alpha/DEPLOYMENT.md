@@ -91,7 +91,16 @@ Allowed additive roles are `learner`, `faculty`, `author`, and
 roles, malformed entries, and institution keys other than `umb`. Never commit
 the real roster or pass it through a `VITE_` variable.
 
-## Database-roster cutover (planned, not yet executable)
+## Database-roster cutover
+
+Implemented on `codex/institution-members` and run on the development deployment on 2026-10-01 with the owner's approval. Production has not been migrated. Operator commands (deployment admin key only):
+
+```powershell
+npx convex run institutionAdmin/operator:cutOverToDatabaseRoster
+npx convex run institutionAdmin/operator:bootstrapInstitutionalAdmin '{"membershipId":"<designated Membership id>"}'
+```
+
+The safeguards below govern both commands.
 
 - Implement a protected, idempotent migration that reads the environment value inside Convex. Validate with the current normalization rules and import pending entries plus binding records for every existing Membership, including those absent from the old roster. Keep Membership IDs, WorkOS bindings, current roles, institution, and learning records intact. Log only aggregate counts and safe error categories; no roster entries, emails, raw JSON, or secrets.
 - Coordinate the shared development deployment before syncing. Prevent new admissions from racing the import/cutover, then switch to one database authority and verify retries. After cutover, do not fall back to the old environment roster on a missing, revoked, or inactive entry. Rollback must preserve new approvals and revocations; enabling the stale roster is not a safe rollback.
