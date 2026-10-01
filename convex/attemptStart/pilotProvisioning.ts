@@ -7,20 +7,26 @@ import { initialPacuAssessment } from "./scenarioContent";
 const pilotLearningGroup = { key: "pacu-pilot", name: "PACU Pilot" };
 
 /**
- * Operator command for the alpha, which has no authoring or group
- * administration UI. It idempotently publishes Initial PACU Assessment (a new
- * Scenario Version whenever the authored content has changed), makes
- * it available to the pilot Learning Group, and enrolls every current Learner
- * and Faculty Membership. Rerun after admitting new Members.
+ * Operator command for the alpha, which has no authoring UI:
  *
  *   npx convex run attemptStart/pilotProvisioning:provision
+ *
+ * Content is idempotent on every run: it publishes Initial PACU Assessment (a
+ * new Scenario Version whenever the authored content has changed).
+ *
+ * Participation is bootstrapped only once, when the "PACU Pilot" Learning
+ * Group does not exist yet: it creates the group, makes the Scenario available
+ * to it, and enrolls the current Learner and Faculty Memberships. After that,
+ * Learning Groups, enrollment, and availability are managed in Patient Proxy,
+ * so a rerun never re-enrolls a removed Member or restores removed
+ * availability.
  */
 export const provision = internalMutation({
   args: {},
   returns: v.object({
     scenarioVersion: v.number(),
+    participation: v.union(v.literal("bootstrapped"), v.literal("already_managed")),
     enrolledMemberships: v.number(),
-    learningGroupSize: v.number(),
   }),
   handler: async (ctx) => {
     const institution = await ensurePilotInstitution(ctx, "umb");
@@ -28,22 +34,29 @@ export const provision = internalMutation({
       ctx,
       institution._id,
     );
-    const learningGroupId = await ensureLearningGroup(ctx, institution._id);
-
-    const existingAvailability = await ctx.db
-      .query("scenarioAvailabilities")
-      .withIndex("by_group_scenario", (query) =>
-        query.eq("learningGroupId", learningGroupId).eq("scenarioId", scenarioId),
+    const existingGroup = await ctx.db
+      .query("learningGroups")
+      .withIndex("by_institution_key", (query) =>
+        query.eq("institutionId", institution._id).eq("key", pilotLearningGroup.key),
       )
-      .first();
-    if (!existingAvailability) {
-      await ctx.db.insert("scenarioAvailabilities", {
-        institutionId: institution._id,
-        learningGroupId,
-        scenarioId,
-      });
+      .unique();
+    if (existingGroup) {
+      return {
+        scenarioVersion: version,
+        participation: "already_managed" as const,
+        enrolledMemberships: 0,
+      };
     }
 
+    const learningGroupId = await ctx.db.insert("learningGroups", {
+      institutionId: institution._id,
+      ...pilotLearningGroup,
+    });
+    await ctx.db.insert("scenarioAvailabilities", {
+      institutionId: institution._id,
+      learningGroupId,
+      scenarioId,
+    });
     const memberships = await ctx.db
       .query("memberships")
       .withIndex("by_institution_id", (query) =>
@@ -51,24 +64,11 @@ export const provision = internalMutation({
       )
       .collect();
     let enrolledMemberships = 0;
-    let learningGroupSize = 0;
     for (const membership of memberships) {
       if (
-        !membership.roles.includes("learner") &&
-        !membership.roles.includes("faculty")
+        membership.roles.includes("learner") ||
+        membership.roles.includes("faculty")
       ) {
-        continue;
-      }
-      learningGroupSize += 1;
-      const existingMember = await ctx.db
-        .query("learningGroupMembers")
-        .withIndex("by_group_membership", (query) =>
-          query
-            .eq("learningGroupId", learningGroupId)
-            .eq("membershipId", membership._id),
-        )
-        .first();
-      if (!existingMember) {
         await ctx.db.insert("learningGroupMembers", {
           institutionId: institution._id,
           learningGroupId,
@@ -77,8 +77,11 @@ export const provision = internalMutation({
         enrolledMemberships += 1;
       }
     }
-
-    return { scenarioVersion: version, enrolledMemberships, learningGroupSize };
+    return {
+      scenarioVersion: version,
+      participation: "bootstrapped" as const,
+      enrolledMemberships,
+    };
   },
 });
 
@@ -152,23 +155,4 @@ function canonicalJson(value: unknown): string {
       .join(",")}}`;
   }
   return JSON.stringify(value);
-}
-
-async function ensureLearningGroup(
-  ctx: MutationCtx,
-  institutionId: Id<"pilotInstitutions">,
-) {
-  const existing = await ctx.db
-    .query("learningGroups")
-    .withIndex("by_institution_key", (query) =>
-      query.eq("institutionId", institutionId).eq("key", pilotLearningGroup.key),
-    )
-    .unique();
-  return (
-    existing?._id ??
-    (await ctx.db.insert("learningGroups", {
-      institutionId,
-      ...pilotLearningGroup,
-    }))
-  );
 }

@@ -370,6 +370,11 @@ const actionLabels: Record<AuditLog[number]["action"], string> = {
   member_deactivated: "Member deactivated",
   member_reactivated: "Member reactivated",
   institutional_admin_recovered: "Institutional Admin recovered by operator",
+  learning_group_created: "Learning Group created",
+  group_member_added: "Added to Learning Group",
+  group_member_removed: "Removed from Learning Group",
+  scenario_made_available: "Scenario made available",
+  scenario_availability_removed: "Scenario availability removed",
 };
 
 function describeState(state: AuditLog[number]["before"]) {
@@ -414,6 +419,8 @@ function AuditLogView({ entries }: { entries: AuditLog | undefined }) {
                 </time>
                 <span className="font-semibold text-slate-900">{actionLabels[entry.action]}</span>
                 {entry.targetEmail && <> · {entry.targetEmail}</>}
+                {entry.scenarioTitle && <> · {entry.scenarioTitle}</>}
+                {entry.groupName && <> · {entry.groupName}</>}
                 {(before || after) && (
                   <>
                     {" "}

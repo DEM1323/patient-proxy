@@ -38,6 +38,8 @@ import type * as institutionAdmin_roster from "../institutionAdmin/roster.js";
 import type * as institutionAdmin_validators from "../institutionAdmin/validators.js";
 import type * as learnerAttemptHistory_access from "../learnerAttemptHistory/access.js";
 import type * as learnerAttemptHistory_model from "../learnerAttemptHistory/model.js";
+import type * as learningGroups_access from "../learningGroups/access.js";
+import type * as learningGroups_model from "../learningGroups/model.js";
 import type * as membershipAccess_access from "../membershipAccess/access.js";
 import type * as membershipAccess_authorization from "../membershipAccess/authorization.js";
 import type * as membershipAccess_model from "../membershipAccess/model.js";
@@ -82,6 +84,8 @@ declare const fullApi: ApiFromModules<{
   "institutionAdmin/validators": typeof institutionAdmin_validators;
   "learnerAttemptHistory/access": typeof learnerAttemptHistory_access;
   "learnerAttemptHistory/model": typeof learnerAttemptHistory_model;
+  "learningGroups/access": typeof learningGroups_access;
+  "learningGroups/model": typeof learningGroups_model;
   "membershipAccess/access": typeof membershipAccess_access;
   "membershipAccess/authorization": typeof membershipAccess_authorization;
   "membershipAccess/model": typeof membershipAccess_model;

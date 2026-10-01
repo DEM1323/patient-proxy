@@ -15,6 +15,7 @@ import {
 import { AttemptHistoryPage } from "./features/learner-attempt-history";
 import { ReviewDetailPage, ReviewListPage } from "./features/attempt-review";
 import { MembersPage } from "./features/institution-admin";
+import { LearningGroupsPage } from "./features/learning-groups";
 import { RoleNavigation } from "./features/membership-access/navigation";
 import { isMembershipAccessConfigured } from "./env";
 import {
@@ -125,6 +126,12 @@ const membersRoute = createRoute({
   component: MembersPage,
 });
 
+const learningGroupsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/groups",
+  component: LearningGroupsPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   deploymentCheckRoute,
@@ -137,6 +144,7 @@ const routeTree = rootRoute.addChildren([
   reviewListRoute,
   reviewDetailRoute,
   membersRoute,
+  learningGroupsRoute,
 ]);
 
 export const router = createRouter({ routeTree });
