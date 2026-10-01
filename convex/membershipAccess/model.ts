@@ -10,7 +10,7 @@ import {
   recordAudit,
 } from "../institutionAdmin/roster";
 import { normalizeRosterEmail, parsePilotRoster } from "./roster";
-import type { MembershipRole } from "./roles";
+import type { MembershipRole, MembershipStatus } from "./roles";
 
 export type MembershipView = {
   id: Id<"memberships">;
@@ -20,6 +20,9 @@ export type MembershipView = {
     name: string;
   };
   roles: MembershipRole[];
+  // An inactive Member is still known (never treated as unregistered) but
+  // cannot read or act.
+  status: MembershipStatus;
 };
 
 export type AdmissionResult =
@@ -119,6 +122,7 @@ export async function admitWorkosUser(
         name: institution.name,
       },
       roles: rosterEntry.roles,
+      status: "active",
     },
   };
 }
@@ -223,5 +227,6 @@ async function toMembershipView(
       name: institution.name,
     },
     roles: membership.roles,
+    status: membership.status ?? "active",
   };
 }

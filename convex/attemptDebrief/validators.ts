@@ -80,7 +80,11 @@ export const debriefViewValidator = v.union(
   v.null(),
   v.object({
     status: v.literal("not_available"),
-    reason: v.union(v.literal("active"), v.literal("restarted")),
+    reason: v.union(
+      v.literal("active"),
+      v.literal("restarted"),
+      v.literal("suspended"),
+    ),
   }),
   // The AI is writing Reflection Prompts from the instructors' guidance.
   // `failed` offers a retry; nothing about feedback is exposed.

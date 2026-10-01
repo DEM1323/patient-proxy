@@ -15,6 +15,7 @@ import type * as attemptDebrief_model from "../attemptDebrief/model.js";
 import type * as attemptDebrief_validators from "../attemptDebrief/validators.js";
 import type * as attemptEnding_access from "../attemptEnding/access.js";
 import type * as attemptEnding_model from "../attemptEnding/model.js";
+import type * as attemptEnding_validators from "../attemptEnding/validators.js";
 import type * as attemptInteraction_access from "../attemptInteraction/access.js";
 import type * as attemptInteraction_clinicalActions from "../attemptInteraction/clinicalActions.js";
 import type * as attemptInteraction_gemini from "../attemptInteraction/gemini.js";
@@ -30,6 +31,7 @@ import type * as attemptStart_pilotProvisioning from "../attemptStart/pilotProvi
 import type * as attemptStart_scenarioContent from "../attemptStart/scenarioContent.js";
 import type * as health from "../health.js";
 import type * as institutionAdmin_access from "../institutionAdmin/access.js";
+import type * as institutionAdmin_lifecycle from "../institutionAdmin/lifecycle.js";
 import type * as institutionAdmin_model from "../institutionAdmin/model.js";
 import type * as institutionAdmin_operator from "../institutionAdmin/operator.js";
 import type * as institutionAdmin_roster from "../institutionAdmin/roster.js";
@@ -57,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   "attemptDebrief/validators": typeof attemptDebrief_validators;
   "attemptEnding/access": typeof attemptEnding_access;
   "attemptEnding/model": typeof attemptEnding_model;
+  "attemptEnding/validators": typeof attemptEnding_validators;
   "attemptInteraction/access": typeof attemptInteraction_access;
   "attemptInteraction/clinicalActions": typeof attemptInteraction_clinicalActions;
   "attemptInteraction/gemini": typeof attemptInteraction_gemini;
@@ -72,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   "attemptStart/scenarioContent": typeof attemptStart_scenarioContent;
   health: typeof health;
   "institutionAdmin/access": typeof institutionAdmin_access;
+  "institutionAdmin/lifecycle": typeof institutionAdmin_lifecycle;
   "institutionAdmin/model": typeof institutionAdmin_model;
   "institutionAdmin/operator": typeof institutionAdmin_operator;
   "institutionAdmin/roster": typeof institutionAdmin_roster;

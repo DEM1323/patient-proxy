@@ -423,13 +423,20 @@ async function currentGeneration(
   return { attempt, feedback };
 }
 
+// Only a deliberate learner ending gets a Debrief (Attempts ended before
+// end reasons existed count as learner-ended).
 function unavailableReason(attempt: Doc<"attempts">) {
   if (attempt.status === "active") {
     return "active" as const;
   }
-  return attempt.endReason === "learner_restarted"
-    ? ("restarted" as const)
-    : null;
+  switch (attempt.endReason) {
+    case "learner_restarted":
+      return "restarted" as const;
+    case "access_suspended":
+      return "suspended" as const;
+    default:
+      return null;
+  }
 }
 
 // Fixed authored prompts first; with only feedback guidance, the AI writes

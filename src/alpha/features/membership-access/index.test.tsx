@@ -10,6 +10,7 @@ const testState = vi.hoisted(() => ({
     id: string;
     institution: { id: string; key: string; name: string };
     roles: ["learner"];
+    status?: "active" | "inactive";
   },
   enterPilot: vi.fn(),
 }));
@@ -40,6 +41,20 @@ describe("Membership admission gate", () => {
     cleanup();
     testState.membership = null;
     testState.enterPilot.mockReset();
+  });
+
+  it("shows a deactivated Member their status instead of re-admitting them", () => {
+    testState.membership = {
+      id: "membership-id",
+      institution: { id: "institution-id", key: "umb", name: "UMB Pilot Institution" },
+      roles: ["learner"],
+      status: "inactive",
+    };
+    render(<MembershipAccessPage />);
+
+    expect(screen.getByText("Your Pilot Membership is currently deactivated.")).toBeTruthy();
+    expect(screen.queryByText("Open scenario list")).toBeNull();
+    expect(testState.enterPilot).not.toHaveBeenCalled();
   });
 
   it("enters once under StrictMode and reacts by showing the Learner home", async () => {

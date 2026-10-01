@@ -98,6 +98,8 @@ Implemented on `codex/institution-members` and run on the development deployment
 ```powershell
 npx convex run institutionAdmin/operator:cutOverToDatabaseRoster
 npx convex run institutionAdmin/operator:bootstrapInstitutionalAdmin '{"membershipId":"<designated Membership id>"}'
+# Recovery only, when an institution's administration is unusable:
+npx convex run institutionAdmin/operator:recoverInstitutionalAdmin '{"membershipId":"<designated Membership id>"}'
 ```
 
 The safeguards below govern both commands.

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
+import { endReasonValidator } from "../attemptEnding/validators";
 import { listOwnEndedAttempts } from "./model";
 
 // Detail stays on attemptStart's ownAttempt and attemptDebrief's ownDebrief,
@@ -13,10 +14,7 @@ export const ownEndedAttempts = query({
       scenarioVersion: v.number(),
       startedAt: v.number(),
       endedAt: v.number(),
-      endReason: v.union(
-        v.literal("learner_ended"),
-        v.literal("learner_restarted"),
-      ),
+      endReason: endReasonValidator,
       debrief: v.union(
         v.literal("none"),
         v.literal("reflecting"),

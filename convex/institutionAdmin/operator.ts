@@ -169,3 +169,48 @@ export const bootstrapInstitutionalAdmin = internalMutation({
     return { status: "granted" as const };
   },
 });
+
+/**
+ * Restricted, audited operator recovery (deployment admin key only), for an
+ * institution whose administration is unusable, e.g. its only Institutional
+ * Admin lost access:
+ *
+ *   npx convex run institutionAdmin/operator:recoverInstitutionalAdmin '{"membershipId":"..."}'
+ *
+ * Reactivates the explicitly designated Membership and adds the role,
+ * preserving its other roles. There is no browser path to this command.
+ */
+export const recoverInstitutionalAdmin = internalMutation({
+  args: { membershipId: v.id("memberships") },
+  returns: v.object({ status: v.union(v.literal("recovered"), v.literal("unchanged")) }),
+  handler: async (ctx, { membershipId }) => {
+    const membership = await ctx.db.get(membershipId);
+    if (!membership) {
+      throw new Error("Membership not found");
+    }
+    const wasActive = (membership.status ?? "active") === "active";
+    if (wasActive && membership.roles.includes("institutionalAdmin")) {
+      return { status: "unchanged" as const };
+    }
+    const roles = membership.roles.includes("institutionalAdmin")
+      ? membership.roles
+      : [...membership.roles, "institutionalAdmin" as const];
+    await ctx.db.patch(membershipId, {
+      roles,
+      status: "active",
+      statusChangedAt: Date.now(),
+    });
+    await recordAudit(ctx, {
+      institutionId: membership.institutionId,
+      actor: { kind: "operator" },
+      action: "institutional_admin_recovered",
+      membershipId,
+      before: {
+        roles: membership.roles,
+        membershipStatus: wasActive ? "active" : "inactive",
+      },
+      after: { roles, membershipStatus: "active" },
+    });
+    return { status: "recovered" as const };
+  },
+});

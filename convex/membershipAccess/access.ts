@@ -14,7 +14,7 @@ import {
   type AdmissionResult,
   type MembershipView,
 } from "./model";
-import { membershipRoleValidator } from "./roles";
+import { membershipRoleValidator, membershipStatusValidator } from "./roles";
 
 const membershipViewValidator = v.object({
   id: v.id("memberships"),
@@ -24,6 +24,7 @@ const membershipViewValidator = v.object({
     name: v.string(),
   }),
   roles: v.array(membershipRoleValidator),
+  status: membershipStatusValidator,
 });
 
 const admissionResultValidator = v.union(

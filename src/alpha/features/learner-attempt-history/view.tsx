@@ -60,7 +60,11 @@ export function AttemptHistoryView({ attempts }: { attempts: Entry[] }) {
                   {new Date(attempt.endedAt).toLocaleString()}
                 </time>
               </p>
-              <p className="mt-3 text-slate-700">{debriefLabels[attempt.debrief]}</p>
+              <p className="mt-3 text-slate-700">
+                {attempt.debrief === "none" && attempt.endReason === "access_suspended"
+                  ? "No Debrief: this Attempt ended when your access was changed."
+                  : debriefLabels[attempt.debrief]}
+              </p>
               {attempt.debrief !== "none" && (
                 <Link
                   to="/attempts/$attemptId"

@@ -6,12 +6,9 @@ import {
   reflectionPromptKeyValidator,
   reflectionResponseValidator,
 } from "../attemptDebrief/validators";
+import { endReasonValidator } from "../attemptEnding/validators";
 import { getReviewDetail, listReviewableAttempts } from "./model";
 
-const endReasonValidator = v.union(
-  v.literal("learner_ended"),
-  v.literal("learner_restarted"),
-);
 
 // Scope is recomputed on every read from current Learning Group membership
 // and Scenario availability (Faculty) or the Pilot Institution

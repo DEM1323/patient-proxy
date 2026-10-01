@@ -10,6 +10,7 @@ export type MembershipSummary = {
   id: string;
   institution: { id: string; key: string; name: string };
   roles: MembershipRole[];
+  status: "active" | "inactive";
 };
 
 const journeyDetails: Record<
@@ -140,6 +141,34 @@ export function SignInView({ onSignIn }: { onSignIn: () => void }) {
           formal assessment.
         </p>
       </aside>
+    </main>
+  );
+}
+
+// A known Member whose participation an Institutional Admin deactivated.
+// Their records are kept; they are not asked to sign up again.
+export function MembershipDeactivatedView({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-3xl items-center px-5 py-16">
+      <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+        <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-600">
+          Membership deactivated
+        </p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+          Your Pilot Membership is currently deactivated.
+        </h1>
+        <p className="mt-4 max-w-xl leading-7 text-slate-700">
+          Your saved Attempts and reflections are kept. Contact your
+          institution&apos;s Institutional Admin if you expected to have access.
+        </p>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="mt-7 rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          Sign out
+        </button>
+      </section>
     </main>
   );
 }

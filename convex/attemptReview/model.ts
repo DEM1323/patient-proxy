@@ -6,7 +6,11 @@ import {
   type DebriefRecord,
   type DebriefStage,
 } from "../attemptDebrief/model";
-import { buildAttemptView, type AttemptView } from "../attemptStart/model";
+import {
+  buildAttemptView,
+  type AttemptView,
+  type EndReason,
+} from "../attemptStart/model";
 import { requireMembership } from "../membershipAccess/authorization";
 import type { MembershipView } from "../membershipAccess/model";
 
@@ -18,7 +22,7 @@ export type ReviewListEntry = {
   scenarioTitle: string;
   scenarioVersion: number;
   endedAt: number;
-  endReason: "learner_ended" | "learner_restarted";
+  endReason: EndReason;
   debrief: DebriefStage;
 };
 

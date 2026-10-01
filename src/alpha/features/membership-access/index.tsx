@@ -7,6 +7,7 @@ import {
   AccessDeniedView,
   AccessErrorView,
   AccessLoadingView,
+  MembershipDeactivatedView,
   MembershipHome,
   SignInView,
   type MembershipSummary,
@@ -146,6 +147,14 @@ export function MembershipGate({
   }
   if (convexLoading || !isAuthenticated || membership === undefined) {
     return <AccessLoadingView />;
+  }
+  if (membership?.status === "inactive") {
+    // Known but deactivated: never treated as unregistered or re-admitted.
+    return (
+      <MembershipDeactivatedView
+        onSignOut={() => signOut({ returnTo: window.location.origin })}
+      />
+    );
   }
   if (membership) {
     return children({

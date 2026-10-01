@@ -16,11 +16,15 @@ import {
   attemptEventKindValidator,
   exchangeStatusValidator,
 } from "./attemptInteraction/validators";
+import { endReasonValidator } from "./attemptEnding/validators";
 import {
   auditEventFields,
   rosterEntryStatusValidator,
 } from "./institutionAdmin/validators";
-import { membershipRoleValidator } from "./membershipAccess/roles";
+import {
+  membershipRoleValidator,
+  membershipStatusValidator,
+} from "./membershipAccess/roles";
 
 export default defineSchema({
   // Records the one-time cutover from PILOT_ROSTER_JSON to the database
@@ -59,6 +63,10 @@ export default defineSchema({
     institutionId: v.id("pilotInstitutions"),
     roles: v.array(membershipRoleValidator),
     createdAt: v.number(),
+    // Participation status; absent means active. A deactivated Membership
+    // keeps its binding and records but cannot read or act.
+    status: v.optional(membershipStatusValidator),
+    statusChangedAt: v.optional(v.number()),
   })
     .index("by_workos_user_id", ["workosUserId"])
     .index("by_roster_email", ["rosterEmail"])
@@ -106,12 +114,8 @@ export default defineSchema({
     status: v.union(v.literal("active"), v.literal("ended")),
     startedAt: v.number(),
     endedAt: v.optional(v.number()),
-    // learner_restarted: ended by confirming Start again, so later slices can
-    // skip the ending guardrail and Formative Feedback for it. learner_ended is
-    // the deliberate ending owned by issue #13.
-    endReason: v.optional(
-      v.union(v.literal("learner_ended"), v.literal("learner_restarted")),
-    ),
+    // See attemptEnding/validators.ts for the meaning of each reason.
+    endReason: v.optional(endReasonValidator),
   })
     .index("by_learner_status", ["learnerMembershipId", "status"])
     // Institutional Admin review spans the Pilot Institution.
