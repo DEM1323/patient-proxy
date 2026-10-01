@@ -17,6 +17,11 @@ export async function requireMembership(ctx: MembershipReadContext) {
   if (!membership) {
     throw new Error("Pilot Membership required");
   }
+  // Every role check passes through here, so a deactivated Member can
+  // neither read nor act, even with a valid WorkOS session.
+  if (membership.status !== "active") {
+    throw new Error("Pilot Membership is deactivated");
+  }
   return membership;
 }
 

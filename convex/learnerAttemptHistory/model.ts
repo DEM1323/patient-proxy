@@ -1,6 +1,7 @@
 import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { debriefStage, type DebriefStage } from "../attemptDebrief/model";
+import type { EndReason } from "../attemptStart/model";
 import { requireRole } from "../membershipAccess/authorization";
 
 export type AttemptHistoryEntry = {
@@ -9,7 +10,7 @@ export type AttemptHistoryEntry = {
   scenarioVersion: number;
   startedAt: number;
   endedAt: number;
-  endReason: "learner_ended" | "learner_restarted";
+  endReason: EndReason;
   // Where the Learner is in the Attempt Debrief. Says nothing about the
   // feedback's content; "none" for restarted Attempts, which have no Debrief.
   debrief: DebriefStage;

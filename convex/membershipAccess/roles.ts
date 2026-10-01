@@ -16,6 +16,13 @@ export const membershipRoleValidator = v.union(
   v.literal("institutionalAdmin"),
 );
 
+export const membershipStatusValidator = v.union(
+  v.literal("active"),
+  v.literal("inactive"),
+);
+
+export type MembershipStatus = "active" | "inactive";
+
 export function isMembershipRole(value: unknown): value is MembershipRole {
   return membershipRoles.some((role) => role === value);
 }

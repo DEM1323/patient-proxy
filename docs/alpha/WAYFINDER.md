@@ -1,42 +1,52 @@
 # Alpha current status
 
-- **Branch / work to preserve:** `codex/institution-members`, from merged `alpha` at `e1095ca` (PR #23, #16 Faculty review, merged 2026-09-29 with a merge commit). The documentation expansion is committed as `e1d6709`. The "Add a Member" slice is implemented, committed, and open as a PR against `alpha`. Grok's review found one blocking defect, fixed before commit: a missing or blank `PILOT_ROSTER_JSON` was treated as an empty roster, so cutover could commit and permanently drop env-only pending identities. Cutover now refuses before any write when the roster is missing, blank, or invalid, with errors that contain no roster values (this also covers Grok's duplicate-email polish point). A repeat run now reports `already_cut_over` with `cutoverAt` instead of zero counts. A regression test covers unset, blank, malformed, and duplicate rosters with no writes. The admin tests, typecheck, and lint were rerun; the fix is pushed to dev, where the repeat run returned `already_cut_over` with the original time. Four generated-file line-ending changes and untracked `.claude/` are unrelated; do not stage, reset, or discard them.
-- **Current task:** Institution self-service slice 1, **Add a Member** (see [HANDOFF.md](HANDOFF.md)). The alpha represents the pre-provisioned UMass Boston portal; the owner-approved architecture is a private Convex database Pilot Roster, WorkOS authentication, and Convex-enforced Membership and scope.
-- **Slice 1 design:**
-  - **Schema:** `rosterAuthority` (one-time cutover marker), `rosterEntries` (one per exact normalized identity: `pending`, `bound`, or `revoked`; bound entries keep binding history), and private `auditEvents`.
-  - **Admission** (`convex/membershipAccess/model.ts`): an existing WorkOS binding always wins. After cutover, a pending entry for the server-verified email binds to one new Membership in the same transaction, with no fallback to `PILOT_ROSTER_JSON`. Before cutover, the environment path is unchanged.
-  - **Operator commands** (`convex/institutionAdmin/operator.ts`, internal, admin key only):
-    - `cutOverToDatabaseRoster` imports the environment roster inside Convex and switches admission atomically. It adds a bound entry for every existing Membership (including Members absent from the roster), never rewrites current roles, and imports unbound identities as pending. It is idempotent and returns counts only.
-    - `bootstrapInstitutionalAdmin` grants the role to one explicitly designated Membership, preserving its other roles, and refuses once the institution has an Institutional Admin.
-  - **Admin API** (`convex/institutionAdmin/access.ts`): `members` (Members plus pending approvals in the caller's institution), `preapprove` (exact identity with any nonempty combination of the four roles; a same-roles retry is a no-op; other institutions' identities return a non-disclosing `unavailable`), and `revoke` (pending only; a bound identity returns `already_member`). Every operation requires the caller's current Institutional Admin role and derives the institution from that Membership. Changes are audited with actor provenance and before/after values; audits never contain emails.
-  - **UI:**
-    - `/admin/members` (`src/alpha/features/institution-admin/`) behind an Institutional Admin gate, with a "Pre-approve identity" form that says no invitation is sent.
-    - A role-aware header (`membership-access/navigation.tsx`) shows each implemented destination once.
-    - The home page has "Manage Members" for Institutional Admin and a no-link note for Author.
-- **Demonstrated behavior (2026-10-01):** Before the review fix: lint, 117 tests across 24 files (103 existing + 14 new), and build pass. With the fix there are 118 tests (15 new). The backend tests cover the handoff's acceptance cases:
-  - migration, idempotency, and no role reconciliation or fallback
-  - bootstrap
-  - all-role pre-approval and retry
-  - concurrent first-sign-in binding with the stable ID
-  - unverified, lookalike, and second-account denial
-  - revoke and the bind race
-  - institution isolation and non-admin or anonymous denial
-  - no approvals before cutover
+- **Branch / work to preserve:** `codex/member-lifecycle`, from merged `alpha` at `9e87e6c`. Slice 2 is implemented, demonstrated, committed, and open as a PR against `alpha`. Grok reviewed it before commit and found no blocking defects; it corrected the `last_admin` disclosure (see Inherited limits). Four generated-file line-ending changes and untracked `.claude/` are unrelated; do not stage, reset, or discard them.
+- **Completed self-service so far:** slice 1, **Add a Member**, merged through [PR #24](https://github.com/DEM1323/patient-proxy/pull/24) as `9e87e6c`: the database Pilot Roster, first-sign-in binding, `/admin/members` pre-approve and revoke, the operator cutover and bootstrap, private audit, and the role-aware header. Grok's one blocker (a missing roster treated as empty) was fixed before merge. Dev `adorable-echidna-264` is cut over, and the owner's Membership is its Institutional Admin (Learner plus Institutional Admin). The original route #9–#16 is merged (PR #23 as `e1095ca`).
+- **Current task:** Institution self-service slice 2, **Manage participation** (see [HANDOFF.md](HANDOFF.md)).
+- **Slice 2 design:**
+  - **Membership status:** `status` (`active` or `inactive`; absent means active) plus `statusChangedAt`. `requireMembership`, which every role check passes through, refuses an inactive Membership ("Pilot Membership is deactivated"), so a valid WorkOS session reads and does nothing. `currentMembership` and admission still return the same Membership with `status: "inactive"`, so it is never treated as unregistered or re-admitted. The gate shows "Your Pilot Membership is currently deactivated", and the header hides links.
+  - **Commands** (`convex/institutionAdmin/lifecycle.ts`): `setRoles`, `deactivate`, `reactivate`, `setPendingApprovalRoles`, and the `auditLog` query. They require the caller's active Institutional Admin role, same-institution targets only, and never the caller's own roles or status (`self_change`).
+  - **Last-admin protection:** no change may leave the institution without an active Institutional Admin. When two admins change each other at once, Convex re-runs the loser, which is then refused because it is no longer an admin. A `last_admin` status remains as spare defense.
+  - **Ending Attempts:** removing Learner or deactivating ends any Active Attempt once with the new end reason `access_suspended`, through the common `endAttempt`, which abandons open exchanges so late replies append nothing. No Formative Feedback is generated for it, and its Debrief, history, and review copy say so. Feedback already pending for an earlier learner-ended Attempt still completes. Reactivation never resumes. Records, bindings, and group associations are kept.
+  - **End reasons:** the validator is shared in `convex/attemptEnding/validators.ts`.
+  - **Operator recovery:** `recoverInstitutionalAdmin` (internal, admin key only, audited) reactivates a designated Membership and grants the role.
+  - **UI:** `/admin/members` adds:
+    - Edit roles for Members and pending approvals
+    - Deactivate with a confirmation stating that the Active Attempt ends and records are kept, plus Reactivate
+    - "(you)" with no controls on your own row
+    - "Deactivated" badges
+    - Recent changes: the 100 newest audit events with actor and target
+- **Demonstrated behavior (2026-10-01):** Lint, 130 tests across 25 files (118 existing + 12 new), and build pass; pushed to dev. The 8 backend lifecycle tests cover:
+  - immediate role enforcement with audit
+  - self-change, unchanged, invalid, and foreign cases
+  - the concurrent two-admin invariant
+  - a deactivated Member denied despite a session while the binding, records, and review stay; reactivation without resume
+  - Learner removal suspending the Active Attempt with no late reply
+  - earlier pending feedback completing after deactivation
+  - pending-role edits
+  - audit-log privacy, including inactive admins being refused
+  - operator recovery
 
-  The 5 frontend tests cover navigation dedup, the Members page, and the gate. On dev `adorable-echidna-264`, with the owner's approval:
-  - Cutover ran: 1 bound, 1 pending, 1 already present, one `roster_migrated` audit with counts only.
-  - The owner's existing Membership was designated first Institutional Admin and now holds Learner plus Institutional Admin (audited).
-  - In the browser, the existing session's header showed Home, Scenarios, Your Attempts, Review, and Members, and Home showed both journeys.
-  - `/admin/members` pre-approved a synthetic identity with all four roles; it persisted across a reload and was then revoked.
-  - Audits recorded the bootstrap, the pre-approval, and the revocation.
-- **Not yet demonstrated live:** first sign-in of a newly pre-approved identity, and a denied sign-in on the database path, need a second Google account (owner interaction). Group enrollment still uses the transitional provisioning command.
-- **Blockers:** None for review. Vercel fails on PRs (Vercel project "patient-proxy"; the repo root still has the legacy Next.js config; logs need Vercel CLI auth and were not inspected). Gemini free-tier 503s and 22 dependency audit findings remain inherited.
-- **Next action:** Merge the slice 1 PR into `alpha` with a merge commit once the owner confirms. A live admission demo needs the owner to sign in with a pre-approved second account. Slice 2 (manage participation) follows. Keep generated line-ending files (`api.d.ts` excepted) and `.claude/` out of commits.
+  The frontend tests cover the deactivated gate, the Members controls, the confirmation, pending edits, and the log. In the browser on dev:
+  - Your own row shows "(you)" with no controls.
+  - Recent changes listed slice 1's migration, bootstrap, pre-approval, and revocation with actors.
+  - A synthetic identity was pre-approved as Learner, edited to Learner plus Faculty, and revoked, each logged.
+- **Live two-account demo (2026-10-01):** the owner's admin session in Chrome, plus a second Google account in a private window driven and observed by the owner.
+  - **Slice 1 first sign-in:** the owner pre-approved the second identity as Faculty on `/admin/members`. Its first sign-in bound one new Membership (`identity_bound`, actor sign-in).
+  - **Faculty review (#16), first time live:** with the owner's approval, the transitional provisioning command enrolled the new Faculty Member in PACU Pilot. Its `/review` then listed the Ended Attempts of the group's Learner (the owner's Learner account).
+  - **Role change:** the admin added Learner (Faculty becomes Learner plus Faculty). Without a refresh, the Faculty window's header showed Home, Scenarios, Your Attempts, and Review, and Your Attempts showed that account's own history.
+  - **Deactivation:** that account started an Attempt (`js799y…`). The admin deactivated the Member through the confirmation. The private window switched live to "Your Pilot Membership is currently deactivated" and stayed there after a refresh. Dev data showed the Membership inactive with roles kept, the Attempt ended once as `access_suspended`, and no feedback row.
+  - **Reactivation:** the window returned to the normal home page. Your Attempts listed the suspended Attempt with "No Debrief: this Attempt ended when your access was changed". Opening it showed it read-only with no resume. A new Attempt started fresh, and the suspended one stayed ended.
+  - **Audit:** Recent changes recorded first sign-in, roles changed, deactivated, and reactivated, each with its actor.
+- **Not yet demonstrated live:** the concurrent two-admin case and `last_admin`, operator recovery, a denied sign-in on the database path, and removing only the Learner role during an Active Attempt (all test-covered). Group enrollment still uses the transitional provisioning command.
+- **Blockers:** None for review. Vercel fails on PRs (legacy Next.js project; cause not inspected). Gemini free-tier 503s and 22 dependency audit findings remain inherited.
+- **Next action:** Merge the slice 2 PR into `alpha` with a merge commit once the owner confirms. Then slice 3 (Learning Groups and Scenario availability), which must first separate content provisioning from participation provisioning. Keep generated line-ending files (except `api.d.ts`) and `.claude/` out of commits.
 
 ## Inherited limits to retain
 
-- Slice 1: `unavailable` for another institution's identity reveals that the identity is held elsewhere, though not where. Pending roles change only by revoking and re-approving until slice 2.
-- #16: authorized review identifies Learners by roster email; live Faculty review remains pending.
+- Slice 2: `last_admin` never fires in a consistent run. The caller is always another active admin, and self-changes return `self_change` first. When two admins change each other at once, Convex re-runs the loser, which then fails the Institutional Admin role check, so exactly one change applies and an active admin always remains. The status is spare defense if the checks are reordered. A suspended Attempt's end message is the same for role removal and deactivation.
+- Slice 1: `unavailable` for another institution's identity reveals that the identity is held elsewhere, though not where.
+- #16: authorized review identifies Learners by roster email. Live Faculty review was shown on 2026-10-01; scope removal (group or availability) is still test-covered only.
 - #15: automatic 90/30-day retention deletion is deferred; history makes no deletion claim.
 - #14: citations are checked for event existence, not semantic accuracy; suggestions can be uncited; "performed incorrectly" is not in the word check; generated prompts are not checked for restating feedback; reflections do not inform feedback; the serving model is not logged.
 - #13: the ending minimum counts every recorded Learner message.

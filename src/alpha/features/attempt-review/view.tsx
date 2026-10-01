@@ -17,7 +17,7 @@ const sectionClass =
   "mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm";
 
 const stageLabels: Record<Entry["debrief"], string> = {
-  none: "No Debrief (ended by starting again)",
+  none: "No Debrief",
   reflecting: "Reflection in progress",
   complete: "Reflection questions answered",
 };
@@ -107,7 +107,9 @@ export function ReviewDetailView({ review }: { review: Detail }) {
       <p className="mt-6 rounded-lg border border-slate-200 bg-white px-5 py-4 leading-7 text-slate-700">
         {attempt.endReason === "learner_restarted"
           ? "This Attempt ended when the Learner started a new one."
-          : "The Learner ended this Attempt."}{" "}
+          : attempt.endReason === "access_suspended"
+            ? "This Attempt ended when the Learner's access was suspended."
+            : "The Learner ended this Attempt."}{" "}
         It can no longer change.
       </p>
 
@@ -124,8 +126,8 @@ export function ReviewDetailView({ review }: { review: Detail }) {
 
       {debrief.status === "none" ? (
         <p className={`${sectionClass} leading-7 text-slate-700`}>
-          This Attempt has no Debrief because it ended when the Learner started
-          a new one.
+          This Attempt has no Debrief: only Attempts the Learner ends
+          deliberately have one.
         </p>
       ) : (
         <>

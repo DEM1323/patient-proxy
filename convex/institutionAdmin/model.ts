@@ -2,7 +2,11 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireRole } from "../membershipAccess/authorization";
 import { normalizeRosterEmail } from "../membershipAccess/roster";
-import { isMembershipRole, type MembershipRole } from "../membershipAccess/roles";
+import {
+  isMembershipRole,
+  type MembershipRole,
+  type MembershipStatus,
+} from "../membershipAccess/roles";
 import {
   databaseRosterIsAuthoritative,
   findRosterEntry,
@@ -29,6 +33,9 @@ export type MembersView = {
     email: string;
     roles: MembershipRole[];
     admittedAt: number;
+    status: MembershipStatus;
+    // The viewing admin's own Membership, which they cannot change.
+    isYou: boolean;
   }[];
   pending: {
     id: Id<"rosterEntries">;
@@ -67,6 +74,8 @@ export async function getMembers(ctx: ReadContext): Promise<MembersView> {
         email: membership.rosterEmail,
         roles: sortRoles(membership.roles),
         admittedAt: membership.createdAt,
+        status: membership.status ?? "active",
+        isYou: membership._id === admin.id,
       }))
       .sort((a, b) => a.email.localeCompare(b.email)),
     pending: pending
@@ -180,7 +189,7 @@ export async function revokePreapproval(
 }
 
 // A nonempty set of the four roles, each once; null otherwise.
-function validRoles(roles: string[]): MembershipRole[] | null {
+export function validRoles(roles: string[]): MembershipRole[] | null {
   if (
     roles.length === 0 ||
     new Set(roles).size !== roles.length ||
@@ -191,11 +200,11 @@ function validRoles(roles: string[]): MembershipRole[] | null {
   return sortRoles(roles as MembershipRole[]);
 }
 
-function sortRoles(roles: MembershipRole[]) {
+export function sortRoles(roles: MembershipRole[]) {
   return [...roles].sort((a, b) => roleOrder.indexOf(a) - roleOrder.indexOf(b));
 }
 
-function sameRoles(a: MembershipRole[], b: MembershipRole[]) {
+export function sameRoles(a: MembershipRole[], b: MembershipRole[]) {
   const sortedA = sortRoles(a);
   const sortedB = sortRoles(b);
   return sortedA.length === sortedB.length && sortedA.every((role, i) => role === sortedB[i]);

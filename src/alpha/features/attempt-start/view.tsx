@@ -302,7 +302,9 @@ export function AttemptView({
             ? "You ended this Attempt. "
             : attempt.endReason === "learner_restarted"
               ? "This Attempt ended when you started a new one. "
-              : ""}
+              : attempt.endReason === "access_suspended"
+                ? "This Attempt ended when your access was changed by an Institutional Admin. "
+                : ""}
           It can no longer change.
         </p>
       )}

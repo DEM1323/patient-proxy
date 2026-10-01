@@ -45,14 +45,16 @@ export function DebriefView({
   props: DebriefProps;
 }) {
   if (debrief.status === "not_available") {
-    return debrief.reason === "restarted" ? (
+    return debrief.reason === "active" ? null : (
       <section className={sectionClass}>
         <h2 className="text-lg font-semibold text-slate-950">Attempt Debrief</h2>
         <p className="mt-2 leading-7 text-slate-700">
-          This Attempt ended when you started a new one, so it has no Debrief.
+          {debrief.reason === "restarted"
+            ? "This Attempt ended when you started a new one, so it has no Debrief."
+            : "This Attempt ended when your access was changed, so it has no Debrief."}
         </p>
       </section>
-    ) : null;
+    );
   }
 
   if (debrief.status === "preparing") {

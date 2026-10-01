@@ -54,7 +54,7 @@ export function RoleNavigation() {
     api.membershipAccess.access.currentMembership,
     isAuthenticated ? {} : "skip",
   );
-  if (!membership) {
+  if (!membership || membership.status !== "active") {
     return null;
   }
   return (

@@ -12,7 +12,7 @@ describe("role-aware Member home", () => {
   it("shows every assigned journey without role inheritance", () => {
     const dualRoleHome = renderToStaticMarkup(
       <MembershipHome
-        membership={{ id: "membership-id", institution, roles: ["learner", "faculty"] }}
+        membership={{ id: "membership-id", institution, roles: ["learner", "faculty"], status: "active" }}
         onSignOut={() => undefined}
       />,
     );
@@ -22,6 +22,7 @@ describe("role-aware Member home", () => {
           id: "institutional-admin-membership-id",
           institution,
           roles: ["institutionalAdmin"],
+          status: "active",
         }}
         onSignOut={() => undefined}
       />,

@@ -10,6 +10,7 @@ import {
   attemptEventKindValidator,
   openExchangeValidator,
 } from "../attemptInteraction/validators";
+import { endReasonValidator } from "../attemptEnding/validators";
 import { learnerBriefValidator } from "./scenarioContent";
 
 const estimatedMinutesValidator = v.object({ min: v.number(), max: v.number() });
@@ -85,11 +86,7 @@ export const ownAttempt = query({
       status: v.union(v.literal("active"), v.literal("ended")),
       startedAt: v.number(),
       endedAt: v.union(v.null(), v.number()),
-      endReason: v.union(
-        v.null(),
-        v.literal("learner_ended"),
-        v.literal("learner_restarted"),
-      ),
+      endReason: v.union(v.null(), endReasonValidator),
       canEnd: v.boolean(),
       scenario: v.object({
         title: v.string(),
