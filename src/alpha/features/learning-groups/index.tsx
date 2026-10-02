@@ -53,7 +53,12 @@ function LearningGroups() {
         ? { tone: "success", text: success }
         : status === "unchanged"
           ? { tone: "success", text: "Nothing needed to change." }
-          : { tone: "error", text: "That group, Member, or Scenario is no longer available to you." },
+          : status === "inactive"
+            ? {
+                tone: "error",
+                text: "That Member is deactivated. Reactivate them on the Members page before adding them to a group.",
+              }
+            : { tone: "error", text: "That group, Member, or Scenario is no longer available to you." },
     );
 
   const controls: GroupControls = {

@@ -310,7 +310,8 @@ describe("Manage learning and review scope", () => {
   });
 
   it("refuses deactivated callers despite a valid session", async () => {
-    const { ids, asAdmin, asFaculty, pilot, setAvailability } = await setup();
+    const { ids, asAdmin, asFaculty, view, pilot, createGroup, enroll, setAvailability } =
+      await setup();
     const pacu = (await pilot()).id;
     await asAdmin.mutation(api.institutionAdmin.access.deactivate, { membershipId: ids.faculty });
 
@@ -322,5 +323,19 @@ describe("Manage learning and review scope", () => {
     ).rejects.toThrow("Pilot Membership is deactivated");
     // A deactivated Member keeps their group association.
     expect((await pilot()).members.map(({ id }) => id)).toContain(ids.faculty);
+
+    // They are not offered for, and cannot be added to, another group.
+    const cohort = await createGroup("Second cohort");
+    expect((await view()).institutionMembers.map(({ id }) => id)).not.toContain(ids.faculty);
+    expect(await enroll(cohort, ids.faculty)).toEqual({ status: "inactive" });
+    await asAdmin.mutation(api.institutionAdmin.access.reactivate, { membershipId: ids.faculty });
+    expect(
+      (await view()).groups.find(({ id }) => id === cohort)!.members.map(({ id }) => id),
+    ).not.toContain(ids.faculty);
+    expect((await view()).institutionMembers.map(({ id }) => id)).toContain(ids.faculty);
+
+    // Removal still works for a deactivated Member.
+    await asAdmin.mutation(api.institutionAdmin.access.deactivate, { membershipId: ids.faculty });
+    expect(await enroll((await pilot()).id, ids.faculty, false)).toEqual({ status: "updated" });
   });
 });

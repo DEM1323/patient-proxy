@@ -54,7 +54,7 @@ export const createGroup = mutation({
 
 export const setMembership = mutation({
   args: { learningGroupId: v.string(), membershipId: v.string(), enrolled: v.boolean() },
-  returns: changeResultValidator,
+  returns: v.union(changeResultValidator, v.object({ status: v.literal("inactive") })),
   handler: setGroupMembership,
 });
 

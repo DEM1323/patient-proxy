@@ -30,7 +30,7 @@ export type LearningGroupsView = {
   }[];
   // Published Scenarios that can be made available.
   scenarios: { id: Id<"scenarios">; title: string }[];
-  // Enrollment candidates; Institutional Admins only.
+  // Active enrollment candidates; Institutional Admins only.
   institutionMembers: {
     id: Id<"memberships">;
     email: string;
@@ -107,6 +107,7 @@ export async function getLearningGroups(
           .collect()
       )
         .map(toMemberView)
+        .filter(({ status }) => status === "active")
         .sort((a, b) => a.email.localeCompare(b.email))
     : [];
 
@@ -168,11 +169,13 @@ export async function createLearningGroup(
 }
 
 // Enrolls or removes a Member. Removal revokes Faculty review through this
-// group immediately, but never ends an Active Attempt.
+// group immediately, but never ends an Active Attempt. A deactivated Member
+// can be removed but not enrolled, so reactivation never grants a group the
+// admin added while they were inactive.
 export async function setGroupMembership(
   ctx: MutationCtx,
   input: { learningGroupId: string; membershipId: string; enrolled: boolean },
-): Promise<{ status: "updated" | "unchanged" | "not_found" }> {
+): Promise<{ status: "updated" | "unchanged" | "not_found" | "inactive" }> {
   const admin = await requireRole(ctx, "institutionalAdmin");
   const group = await findGroup(ctx, admin, input.learningGroupId);
   const membershipId = ctx.db.normalizeId("memberships", input.membershipId);
@@ -188,6 +191,9 @@ export async function setGroupMembership(
     .first();
   if (Boolean(existing) === input.enrolled) {
     return { status: "unchanged" };
+  }
+  if (input.enrolled && membership.status === "inactive") {
+    return { status: "inactive" };
   }
   if (existing) {
     await ctx.db.delete(existing._id);
