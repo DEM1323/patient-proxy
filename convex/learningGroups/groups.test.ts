@@ -337,5 +337,6 @@ describe("Manage learning and review scope", () => {
     // Removal still works for a deactivated Member.
     await asAdmin.mutation(api.institutionAdmin.access.deactivate, { membershipId: ids.faculty });
     expect(await enroll((await pilot()).id, ids.faculty, false)).toEqual({ status: "updated" });
+    expect((await pilot()).members.map(({ id }) => id)).not.toContain(ids.faculty);
   });
 });
