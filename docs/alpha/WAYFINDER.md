@@ -1,8 +1,15 @@
 # Alpha current status
 
-- **Branch / work to preserve:** `codex/e2e-demo`, from `alpha` at `2d59aa4` (slice 3 merged through [PR #26](https://github.com/DEM1323/patient-proxy/pull/26)). This branch holds only this status update. Four generated-file line-ending changes and untracked `.claude/` are unrelated; do not stage, reset, or discard them.
+- **Branch / work to preserve:** `codex/retention-deletion`, from `alpha` at `52eb91e` (end-to-end demo record merged through [PR #27](https://github.com/DEM1323/patient-proxy/pull/27)). [PR #28](https://github.com/DEM1323/patient-proxy/pull/28) (`codex/active-group-candidates`) is open separately and keeps deactivated Members out of Learning Group enrollment. Four generated-file line-ending changes and untracked `.claude/` are unrelated; do not stage, reset, or discard them.
 - **Completed:** the original route #9–#16 (PR #23 as `e1095ca`) and institution self-service slices 1–3: **Add a Member** (PR #24, `9e87e6c`), **Manage participation** (PR #25, `efb1109`), and **Manage learning and review scope** (PR #26, `2d59aa4`). Grok found no blocking defects in any slice after fixes. Dev `adorable-echidna-264` is cut over to the database roster.
-- **Current task:** the expanded end-to-end demonstration in [HANDOFF.md](HANDOFF.md#verification-and-final-demonstration). It is complete on dev as of 2026-10-02.
+- **Current task:** automatic retention deletion, the policy approved in [issue #4](https://github.com/DEM1323/patient-proxy/issues/4) and deferred by #15. The owner selected it on 2026-10-02 after the end-to-end demonstration below.
+  - **Interpretation:** "completed" means Ended Attempt (any terminal reason), deleted 90 days after `endedAt`. "Incomplete" means Active Attempt, deleted 30 days after its latest recorded event (or start). Later reflections do not extend retention.
+  - **Implementation:**
+    - `convex/retention/model.ts` deletes the Attempt with its events, exchange requests, Formative Feedback, and Learner Reflections, 25 Attempts per run.
+    - `retention/purge.ts:run` reschedules itself while more remain, and `convex/crons.ts` runs it daily at 07:00 UTC.
+    - Two new `attempts` indexes support the purge. A `retentionRuns` table keeps only per-institution counts.
+    - The Learner Brief, Your Attempts, and Review now state the policy.
+  - **Verified:** lint passes; 143 tests across 28 files pass (3 new retention tests); the build passes. Pushed to dev, where a manual `retention/purge:run` deleted nothing, as expected: the oldest dev Attempt is from 2026-09-25. Audit events reference no Attempts, so nothing else needs deletion. Scheduled reply and feedback jobs look up their row first and stop if it's gone.
 - **Checks on merged `alpha` (2026-10-02):** lint passed, 140 tests across 27 files passed, and the build passed. `/deployment-check` reported the Convex backend Ready.
 - **Live demonstration (2026-10-02):** Claude drove the owner account (Learner plus Institutional Admin) in Chrome; the owner drove the outlook account in a separate browser and reported what it showed. Each step used Patient Proxy only, with no Convex console.
   - **Add Member:** the pending outlook approval was changed to Faculty plus Author. Its first sign-in admitted it with those roles; Home showed Faculty review and Author recognition. The audit recorded `pending → Faculty, Author · bound by Sign-in`. All four roles are now held across three Members.
@@ -14,16 +21,16 @@
   - **Deactivation:** deactivating outlook denied its still-valid WorkOS session after refresh, on both Home and Review. `/groups` kept its association, marked Deactivated. Reactivation, with no re-enrollment, restored the same session and the 7-Attempt review.
   - **Last admin:** the owner's own row offers no role or status controls ("Another Institutional Admin manages your own roles and status"). The `self_change` refusal and the concurrent two-admin case are covered in `convex/institutionAdmin/lifecycle.test.ts`; `last_admin` remains unreachable in a consistent run (see slice 2 limits below).
 - **Dev state left behind:** three active Members. Owner: Learner plus Institutional Admin, in both groups. Umb.edu: Learner plus Faculty, in PACU Pilot. Outlook: Faculty plus Author, in PACU Demo Cohort. PACU is available in both groups.
-- **Observed, not fixed:** a deactivated Member still appears in "Add a Member" candidates on `/groups` (harmless, since inactive Members cannot act). Not demonstrated live: Faculty deduplication across two granting groups, and a deactivated Faculty opening `/groups` (both test-covered).
+- **Not demonstrated live:** Faculty deduplication across two granting groups, and a deactivated Faculty opening `/groups` (both test-covered). Retention deletion has not run against expiring dev data; its live proof is the first dev purge after 2026-12-24.
 - **Blockers:** none. Vercel fails on PRs (legacy Next.js project; cause not inspected). Gemini free-tier 503s (none seen today) and 22 dependency audit findings remain inherited.
-- **Next action:** the approved alpha scope is demonstrated locally. Production deployment, legacy cutover, and automatic retention deletion need separate owner decisions. Keep generated line-ending files (except `api.d.ts`) and `.claude/` out of commits.
+- **Next action:** review and merge PR #28, then review the retention PR. Production deployment and legacy cutover still need separate owner decisions. Keep generated line-ending files (except `api.d.ts`) and `.claude/` out of commits.
 
 ## Inherited limits to retain
 
 - Slice 2: `last_admin` never fires in a consistent run. The caller is always another active admin, and self-changes return `self_change` first. When two admins change each other at once, Convex re-runs the loser, which then fails the Institutional Admin role check, so exactly one change applies and an active admin always remains. The status is spare defense if the checks are reordered. A suspended Attempt's end message is the same for role removal and deactivation.
 - Slice 1: `unavailable` for another institution's identity reveals that the identity is held elsewhere, though not where.
 - #16: authorized review identifies Learners by roster email. Live Faculty review and live scope removal (group and availability) were shown on 2026-10-01.
-- #15: automatic 90/30-day retention deletion is deferred; history makes no deletion claim.
+- #15: automatic deletion is implemented on `codex/retention-deletion` (see Current task). Run counts are stored but not shown in the UI. There is no per-Attempt notice of the deletion date, and no legal-hold or override path, per policy.
 - #14: citations are checked for event existence, not semantic accuracy; suggestions can be uncited; "performed incorrectly" is not in the word check; generated prompts are not checked for restating feedback; reflections do not inform feedback; the serving model is not logged.
 - #13: the ending minimum counts every recorded Learner message.
 - #11: actions are permitted while a reply is pending; another click after a lost response records another occurrence; the concluding observation repeats slightly.

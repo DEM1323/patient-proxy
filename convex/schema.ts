@@ -119,7 +119,10 @@ export default defineSchema({
   })
     .index("by_learner_status", ["learnerMembershipId", "status"])
     // Institutional Admin review spans the Pilot Institution.
-    .index("by_institution_status", ["institutionId", "status"]),
+    .index("by_institution_status", ["institutionId", "status"])
+    // Retention: Ended Attempts by end time, Active Attempts by start time.
+    .index("by_status_ended_at", ["status", "endedAt"])
+    .index("by_status_started_at", ["status", "startedAt"]),
   attemptEvents: defineTable({
     institutionId: v.id("pilotInstitutions"),
     attemptId: v.id("attempts"),
@@ -181,4 +184,12 @@ export default defineSchema({
   })
     .index("by_attempt_prompt", ["attemptId", "prompt"])
     .index("by_attempt_client_request", ["attemptId", "clientRequestId"]),
+  // Non-identifying counts from each retention purge, per institution. No
+  // Attempt, Learner, or content reference survives deletion.
+  retentionRuns: defineTable({
+    institutionId: v.id("pilotInstitutions"),
+    ranAt: v.number(),
+    endedAttemptsDeleted: v.number(),
+    activeAttemptsDeleted: v.number(),
+  }),
 });
