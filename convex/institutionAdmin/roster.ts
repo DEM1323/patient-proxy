@@ -30,6 +30,8 @@ export async function recordAudit(
     action: AuditAction;
     rosterEntryId?: Id<"rosterEntries">;
     membershipId?: Id<"memberships">;
+    learningGroupId?: Id<"learningGroups">;
+    scenarioId?: Id<"scenarios">;
     before?: Doc<"auditEvents">["before"];
     after?: Doc<"auditEvents">["after"];
     counts?: Doc<"auditEvents">["counts"];

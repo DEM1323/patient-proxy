@@ -24,6 +24,11 @@ export const auditActionValidator = v.union(
   v.literal("member_deactivated"),
   v.literal("member_reactivated"),
   v.literal("institutional_admin_recovered"),
+  v.literal("learning_group_created"),
+  v.literal("group_member_added"),
+  v.literal("group_member_removed"),
+  v.literal("scenario_made_available"),
+  v.literal("scenario_availability_removed"),
 );
 
 // Who made a change: an Institutional Admin, a restricted operator command
@@ -54,6 +59,8 @@ export const auditEventFields = {
   action: auditActionValidator,
   rosterEntryId: v.optional(v.id("rosterEntries")),
   membershipId: v.optional(v.id("memberships")),
+  learningGroupId: v.optional(v.id("learningGroups")),
+  scenarioId: v.optional(v.id("scenarios")),
   before: v.optional(auditStateValidator),
   after: v.optional(auditStateValidator),
   // Aggregate counts only; never roster values.

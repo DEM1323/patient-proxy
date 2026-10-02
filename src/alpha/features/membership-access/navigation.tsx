@@ -4,7 +4,7 @@ import { api } from "@/convex/_generated/api";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
 
 export type Destination = {
-  to: "/scenarios" | "/attempts" | "/review" | "/admin/members";
+  to: "/scenarios" | "/attempts" | "/review" | "/groups" | "/admin/members";
   label: string;
 };
 
@@ -13,11 +13,15 @@ const destinationsByRole: Record<MembershipRole, Destination[]> = {
     { to: "/scenarios", label: "Scenarios" },
     { to: "/attempts", label: "Your Attempts" },
   ],
-  faculty: [{ to: "/review", label: "Review" }],
+  faculty: [
+    { to: "/review", label: "Review" },
+    { to: "/groups", label: "Learning Groups" },
+  ],
   // Recognized, but authoring is not built; no dead link.
   author: [],
   institutionalAdmin: [
     { to: "/review", label: "Review" },
+    { to: "/groups", label: "Learning Groups" },
     { to: "/admin/members", label: "Members" },
   ],
 };

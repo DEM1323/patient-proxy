@@ -98,6 +98,8 @@ export const auditLog = query({
       actor: v.union(v.literal("member"), v.literal("operator"), v.literal("admission")),
       actorEmail: v.union(v.null(), v.string()),
       targetEmail: v.union(v.null(), v.string()),
+      groupName: v.union(v.null(), v.string()),
+      scenarioTitle: v.union(v.null(), v.string()),
       before: v.union(v.null(), auditStateValidator),
       after: v.union(v.null(), auditStateValidator),
       counts: v.union(v.null(), auditCountsValidator),

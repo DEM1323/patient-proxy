@@ -88,6 +88,7 @@ describe("Role-aware navigation", () => {
   it("lists each implemented destination once, with no inheritance or dead Author link", () => {
     expect(roleDestinations(["faculty", "institutionalAdmin"]).map(({ to }) => to)).toEqual([
       "/review",
+      "/groups",
       "/admin/members",
     ]);
     expect(roleDestinations(["institutionalAdmin"]).map(({ to }) => to)).not.toContain(
@@ -96,7 +97,7 @@ describe("Role-aware navigation", () => {
     expect(roleDestinations(["author"])).toEqual([]);
     expect(
       roleDestinations(["learner", "faculty", "author", "institutionalAdmin"]).map(({ to }) => to),
-    ).toEqual(["/scenarios", "/attempts", "/review", "/admin/members"]);
+    ).toEqual(["/scenarios", "/attempts", "/review", "/groups", "/admin/members"]);
   });
 });
 

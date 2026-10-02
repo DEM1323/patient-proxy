@@ -164,6 +164,8 @@ export type AuditEntry = {
   actor: "member" | "operator" | "admission";
   actorEmail: string | null;
   targetEmail: string | null;
+  groupName: string | null;
+  scenarioTitle: string | null;
   before: NonNullable<Doc<"auditEvents">["before"]> | null;
   after: NonNullable<Doc<"auditEvents">["after"]> | null;
   counts: NonNullable<Doc<"auditEvents">["counts"]> | null;
@@ -190,6 +192,14 @@ export async function listAuditEvents(ctx: ReadContext): Promise<AuditEntry[]> {
     const entry = rosterEntryId ? await ctx.db.get(rosterEntryId) : null;
     return entry && entry.institutionId === admin.institution.id ? entry.email : null;
   };
+  const nameOf = async (learningGroupId?: Id<"learningGroups">) => {
+    const group = learningGroupId ? await ctx.db.get(learningGroupId) : null;
+    return group && group.institutionId === admin.institution.id ? group.name : null;
+  };
+  const titleOf = async (scenarioId?: Id<"scenarios">) => {
+    const scenario = scenarioId ? await ctx.db.get(scenarioId) : null;
+    return scenario && scenario.institutionId === admin.institution.id ? scenario.title : null;
+  };
   const entries: AuditEntry[] = [];
   for (const event of events) {
     entries.push({
@@ -200,6 +210,8 @@ export async function listAuditEvents(ctx: ReadContext): Promise<AuditEntry[]> {
       actorEmail:
         event.actor.kind === "member" ? await emailOf(event.actor.membershipId) : null,
       targetEmail: await emailOf(event.membershipId, event.rosterEntryId),
+      groupName: await nameOf(event.learningGroupId),
+      scenarioTitle: await titleOf(event.scenarioId),
       before: event.before ?? null,
       after: event.after ?? null,
       counts: event.counts ?? null,

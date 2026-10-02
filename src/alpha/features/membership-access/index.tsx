@@ -58,7 +58,17 @@ export function MembershipAccessPage() {
                 </Link>
               </div>
             ),
-            faculty: reviewLink,
+            faculty: (
+              <div className="flex flex-wrap gap-3">
+                {reviewLink}
+                <Link
+                  to="/groups"
+                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Learning Groups
+                </Link>
+              </div>
+            ),
             // Same destinations as the header (navigation.tsx).
             institutionalAdmin: (
               <div className="flex flex-wrap gap-3">
@@ -73,6 +83,12 @@ export function MembershipAccessPage() {
                   className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   Review Ended Attempts
+                </Link>
+                <Link
+                  to="/groups"
+                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  Learning Groups
                 </Link>
               </div>
             ),

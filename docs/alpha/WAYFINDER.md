@@ -1,52 +1,48 @@
 # Alpha current status
 
-- **Branch / work to preserve:** `codex/member-lifecycle`, from merged `alpha` at `9e87e6c`. Slice 2 is implemented, demonstrated, committed, and open as a PR against `alpha`. Grok reviewed it before commit and found no blocking defects; it corrected the `last_admin` disclosure (see Inherited limits). Four generated-file line-ending changes and untracked `.claude/` are unrelated; do not stage, reset, or discard them.
-- **Completed self-service so far:** slice 1, **Add a Member**, merged through [PR #24](https://github.com/DEM1323/patient-proxy/pull/24) as `9e87e6c`: the database Pilot Roster, first-sign-in binding, `/admin/members` pre-approve and revoke, the operator cutover and bootstrap, private audit, and the role-aware header. Grok's one blocker (a missing roster treated as empty) was fixed before merge. Dev `adorable-echidna-264` is cut over, and the owner's Membership is its Institutional Admin (Learner plus Institutional Admin). The original route #9–#16 is merged (PR #23 as `e1095ca`).
-- **Current task:** Institution self-service slice 2, **Manage participation** (see [HANDOFF.md](HANDOFF.md)).
-- **Slice 2 design:**
-  - **Membership status:** `status` (`active` or `inactive`; absent means active) plus `statusChangedAt`. `requireMembership`, which every role check passes through, refuses an inactive Membership ("Pilot Membership is deactivated"), so a valid WorkOS session reads and does nothing. `currentMembership` and admission still return the same Membership with `status: "inactive"`, so it is never treated as unregistered or re-admitted. The gate shows "Your Pilot Membership is currently deactivated", and the header hides links.
-  - **Commands** (`convex/institutionAdmin/lifecycle.ts`): `setRoles`, `deactivate`, `reactivate`, `setPendingApprovalRoles`, and the `auditLog` query. They require the caller's active Institutional Admin role, same-institution targets only, and never the caller's own roles or status (`self_change`).
-  - **Last-admin protection:** no change may leave the institution without an active Institutional Admin. When two admins change each other at once, Convex re-runs the loser, which is then refused because it is no longer an admin. A `last_admin` status remains as spare defense.
-  - **Ending Attempts:** removing Learner or deactivating ends any Active Attempt once with the new end reason `access_suspended`, through the common `endAttempt`, which abandons open exchanges so late replies append nothing. No Formative Feedback is generated for it, and its Debrief, history, and review copy say so. Feedback already pending for an earlier learner-ended Attempt still completes. Reactivation never resumes. Records, bindings, and group associations are kept.
-  - **End reasons:** the validator is shared in `convex/attemptEnding/validators.ts`.
-  - **Operator recovery:** `recoverInstitutionalAdmin` (internal, admin key only, audited) reactivates a designated Membership and grants the role.
-  - **UI:** `/admin/members` adds:
-    - Edit roles for Members and pending approvals
-    - Deactivate with a confirmation stating that the Active Attempt ends and records are kept, plus Reactivate
-    - "(you)" with no controls on your own row
-    - "Deactivated" badges
-    - Recent changes: the 100 newest audit events with actor and target
-- **Demonstrated behavior (2026-10-01):** Lint, 130 tests across 25 files (118 existing + 12 new), and build pass; pushed to dev. The 8 backend lifecycle tests cover:
-  - immediate role enforcement with audit
-  - self-change, unchanged, invalid, and foreign cases
-  - the concurrent two-admin invariant
-  - a deactivated Member denied despite a session while the binding, records, and review stay; reactivation without resume
-  - Learner removal suspending the Active Attempt with no late reply
-  - earlier pending feedback completing after deactivation
-  - pending-role edits
-  - audit-log privacy, including inactive admins being refused
-  - operator recovery
+- **Branch / work to preserve:** `codex/learning-groups`, from merged `alpha` at `efb1109`. Slice 3 is implemented, demonstrated, committed, and open as a PR against `alpha`. Grok reviewed it before commit and found no blocking defects or polish items. It confirmed that provisioning can rerun the participation bootstrap only if the `pacu-pilot` group row is gone, which nothing in Patient Proxy does; that a just-removed Faculty member's concurrent toggle is re-run into `not_found`; and that duplicate group names are race-safe under Convex. Four generated-file line-ending changes and untracked `.claude/` are unrelated; do not stage, reset, or discard them.
+- **Completed self-service so far** (Grok found no blocking defects in either after fixes):
+  - Slice 1, **Add a Member**, merged through [PR #24](https://github.com/DEM1323/patient-proxy/pull/24) as `9e87e6c`: the database Pilot Roster, first-sign-in binding, pre-approve and revoke, operator cutover and bootstrap, private audit, and the role-aware header.
+  - Slice 2, **Manage participation**, merged through [PR #25](https://github.com/DEM1323/patient-proxy/pull/25) as `efb1109`: role changes, deactivate and reactivate (denied despite a session, binding and records kept), `access_suspended` endings without resume or feedback, last-admin protection, operator recovery, and the audit log.
 
-  The frontend tests cover the deactivated gate, the Members controls, the confirmation, pending edits, and the log. In the browser on dev:
-  - Your own row shows "(you)" with no controls.
-  - Recent changes listed slice 1's migration, bootstrap, pre-approval, and revocation with actors.
-  - A synthetic identity was pre-approved as Learner, edited to Learner plus Faculty, and revoked, each logged.
-- **Live two-account demo (2026-10-01):** the owner's admin session in Chrome, plus a second Google account in a private window driven and observed by the owner.
-  - **Slice 1 first sign-in:** the owner pre-approved the second identity as Faculty on `/admin/members`. Its first sign-in bound one new Membership (`identity_bound`, actor sign-in).
-  - **Faculty review (#16), first time live:** with the owner's approval, the transitional provisioning command enrolled the new Faculty Member in PACU Pilot. Its `/review` then listed the Ended Attempts of the group's Learner (the owner's Learner account).
-  - **Role change:** the admin added Learner (Faculty becomes Learner plus Faculty). Without a refresh, the Faculty window's header showed Home, Scenarios, Your Attempts, and Review, and Your Attempts showed that account's own history.
-  - **Deactivation:** that account started an Attempt (`js799y…`). The admin deactivated the Member through the confirmation. The private window switched live to "Your Pilot Membership is currently deactivated" and stayed there after a refresh. Dev data showed the Membership inactive with roles kept, the Attempt ended once as `access_suspended`, and no feedback row.
-  - **Reactivation:** the window returned to the normal home page. Your Attempts listed the suspended Attempt with "No Debrief: this Attempt ended when your access was changed". Opening it showed it read-only with no resume. A new Attempt started fresh, and the suspended one stayed ended.
-  - **Audit:** Recent changes recorded first sign-in, roles changed, deactivated, and reactivated, each with its actor.
-- **Not yet demonstrated live:** the concurrent two-admin case and `last_admin`, operator recovery, a denied sign-in on the database path, and removing only the Learner role during an Active Attempt (all test-covered). Group enrollment still uses the transitional provisioning command.
+  Dev `adorable-echidna-264` is cut over. Its Members are the owner (Learner plus Institutional Admin) and a second account (Learner plus Faculty), both in "PACU Pilot" with PACU available. The original route #9–#16 is merged (PR #23 as `e1095ca`).
+- **Current task:** Institution self-service slice 3, **Manage learning and review scope** (see [HANDOFF.md](HANDOFF.md) and the access policy in [issue #4](https://github.com/DEM1323/patient-proxy/issues/4#issuecomment-5272247623)).
+- **Slice 3 design:**
+  - **Provisioning split** (`convex/attemptStart/pilotProvisioning.ts`): content (publishing Scenario Versions) runs on every call. Participation (creating "PACU Pilot", PACU availability, enrolling current Learner and Faculty Members) runs only when that group doesn't exist yet, so a rerun returns `already_managed` and never re-enrolls a removed Member or restores removed availability.
+  - **Backend** (`convex/learningGroups/`):
+    - The `learningGroups` query gives Institutional Admins every group in the institution, plus enrollment candidates. Faculty get only the groups they currently belong to. Other roles are refused.
+    - `createGroup`, with `invalid_name` and case-insensitive `duplicate_name` results, and `setMembership` are Institutional Admin only.
+    - `setAvailability` is open to Institutional Admins for any group, and to Faculty only for their current groups (otherwise `not_found`, the same as a foreign group).
+    - All ids are checked against the caller's institution, inactive callers are refused, every change is idempotent, and each is audited with group and Scenario references. The audit log shows group names and Scenario titles.
+  - **Effects:** Faculty review and Learner starts follow group and availability changes immediately. Removal never ends an Active Attempt; it blocks future starts and revokes Faculty review through that group.
+  - **UI:**
+    - `/groups` (`src/alpha/features/learning-groups/`) for Faculty and Institutional Admin. Admins get "Create a Learning Group", Remove, and Add a Member. Each group has availability checkboxes; Faculty see only their groups and the checkboxes.
+    - "Learning Groups" was added to the header and home shortcuts for both roles.
+- **Demonstrated behavior (2026-10-01):** Lint, 140 tests across 27 files (130 existing + 10 new), and build pass; pushed to dev, where provisioning now returns `already_managed` with 0 enrolled. The 7 backend tests cover:
+  - provisioning never restoring removed scope
+  - Learner starts and Faculty review driven entirely by in-product group and availability changes
+  - one listing across two granting groups, revoked only when no group grants it
+  - Faculty limited to availability in their own groups
+  - Active Attempts surviving group or availability removal while new starts are blocked
+  - name validation and institution isolation
+  - deactivated callers refused while the group association is kept
+
+  The 3 frontend tests cover admin and Faculty controls and the role gate. Live two-account demo, with the owner observing the Faculty window:
+  - The admin's `/groups` showed PACU Pilot with both Members and PACU available.
+  - Removing the owner's Learner account from the group immediately emptied the owner's Scenarios list, while Institutional Admin review still listed all 8 Ended Attempts. The Faculty window's Review dropped the owner's Attempts live and kept its own.
+  - The Faculty window's Learning Groups showed only PACU Pilot, with availability but no Remove, Add, or Create controls.
+  - Faculty cleared and re-ticked PACU availability, each confirmed; Review and Scenarios emptied while it was cleared.
+  - The admin re-added the owner, which restored Scenarios.
+  - The audit recorded each change with the right actor.
+- **Not yet demonstrated live:** two granting groups, and a deactivated Faculty on `/groups` (both test-covered).
 - **Blockers:** None for review. Vercel fails on PRs (legacy Next.js project; cause not inspected). Gemini free-tier 503s and 22 dependency audit findings remain inherited.
-- **Next action:** Merge the slice 2 PR into `alpha` with a merge commit once the owner confirms. Then slice 3 (Learning Groups and Scenario availability), which must first separate content provisioning from participation provisioning. Keep generated line-ending files (except `api.d.ts`) and `.claude/` out of commits.
+- **Next action:** Merge the slice 3 PR into `alpha` with a merge commit once the owner confirms. That completes the approved self-service expansion; the expanded end-to-end demonstration in HANDOFF.md follows. Keep generated line-ending files (except `api.d.ts`) and `.claude/` out of commits.
 
 ## Inherited limits to retain
 
 - Slice 2: `last_admin` never fires in a consistent run. The caller is always another active admin, and self-changes return `self_change` first. When two admins change each other at once, Convex re-runs the loser, which then fails the Institutional Admin role check, so exactly one change applies and an active admin always remains. The status is spare defense if the checks are reordered. A suspended Attempt's end message is the same for role removal and deactivation.
 - Slice 1: `unavailable` for another institution's identity reveals that the identity is held elsewhere, though not where.
-- #16: authorized review identifies Learners by roster email. Live Faculty review was shown on 2026-10-01; scope removal (group or availability) is still test-covered only.
+- #16: authorized review identifies Learners by roster email. Live Faculty review and live scope removal (group and availability) were shown on 2026-10-01.
 - #15: automatic 90/30-day retention deletion is deferred; history makes no deletion claim.
 - #14: citations are checked for event existence, not semantic accuracy; suggestions can be uncited; "performed incorrectly" is not in the word check; generated prompts are not checked for restating feedback; reflections do not inform feedback; the serving model is not logged.
 - #13: the ending minimum counts every recorded Learner message.
