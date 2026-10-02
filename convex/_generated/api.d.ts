@@ -29,6 +29,7 @@ import type * as attemptStart_access from "../attemptStart/access.js";
 import type * as attemptStart_model from "../attemptStart/model.js";
 import type * as attemptStart_pilotProvisioning from "../attemptStart/pilotProvisioning.js";
 import type * as attemptStart_scenarioContent from "../attemptStart/scenarioContent.js";
+import type * as crons from "../crons.js";
 import type * as health from "../health.js";
 import type * as institutionAdmin_access from "../institutionAdmin/access.js";
 import type * as institutionAdmin_lifecycle from "../institutionAdmin/lifecycle.js";
@@ -46,6 +47,8 @@ import type * as membershipAccess_model from "../membershipAccess/model.js";
 import type * as membershipAccess_pilotInstitutions from "../membershipAccess/pilotInstitutions.js";
 import type * as membershipAccess_roles from "../membershipAccess/roles.js";
 import type * as membershipAccess_roster from "../membershipAccess/roster.js";
+import type * as retention_model from "../retention/model.js";
+import type * as retention_purge from "../retention/purge.js";
 
 import type {
   ApiFromModules,
@@ -75,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   "attemptStart/model": typeof attemptStart_model;
   "attemptStart/pilotProvisioning": typeof attemptStart_pilotProvisioning;
   "attemptStart/scenarioContent": typeof attemptStart_scenarioContent;
+  crons: typeof crons;
   health: typeof health;
   "institutionAdmin/access": typeof institutionAdmin_access;
   "institutionAdmin/lifecycle": typeof institutionAdmin_lifecycle;
@@ -92,6 +96,8 @@ declare const fullApi: ApiFromModules<{
   "membershipAccess/pilotInstitutions": typeof membershipAccess_pilotInstitutions;
   "membershipAccess/roles": typeof membershipAccess_roles;
   "membershipAccess/roster": typeof membershipAccess_roster;
+  "retention/model": typeof retention_model;
+  "retention/purge": typeof retention_purge;
 }>;
 
 /**

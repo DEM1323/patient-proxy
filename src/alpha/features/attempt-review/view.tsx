@@ -48,7 +48,8 @@ export function ReviewListView({ attempts }: { attempts: Entry[] }) {
         Ended Attempts you are currently authorized to review. Faculty access
         follows current Learning Group membership and Scenario availability
         and changes immediately when either changes. Institutional Admin
-        access covers every Ended Attempt in the Pilot Institution.
+        access covers every Ended Attempt in the Pilot Institution. Ended
+        Attempts are deleted automatically 90 days after they end.
       </p>
       {attempts.length === 0 ? (
         <p className="mt-8 rounded-lg border border-slate-200 bg-white px-5 py-4 text-slate-700">

@@ -141,6 +141,8 @@ export function LearnerBriefView({
         <p className="mt-6 border-t border-slate-200 pt-5 text-xs leading-5 text-slate-500">
           Synthetic patient for communication practice. An Attempt is one
           continuous run: once started it cannot be paused or resumed later.
+          An unfinished Attempt is deleted after 30 days without activity; an
+          Ended Attempt 90 days after it ends.
         </p>
       </section>
 

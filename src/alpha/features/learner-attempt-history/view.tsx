@@ -29,7 +29,8 @@ export function AttemptHistoryView({ attempts }: { attempts: Entry[] }) {
       </h1>
       <p className="mt-3 max-w-2xl leading-7 text-slate-600">
         Reopen an Ended Attempt to review its record and Attempt Debrief. Ended
-        Attempts cannot change or be resumed.
+        Attempts cannot change or be resumed. Each is deleted automatically,
+        with its Debrief, 90 days after it ended.
       </p>
       {attempts.length === 0 ? (
         <p className="mt-8 rounded-lg border border-slate-200 bg-white px-5 py-4 text-slate-700">
