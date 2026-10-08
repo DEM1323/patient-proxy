@@ -115,6 +115,7 @@ describe("Start the PACU Attempt", () => {
 
     const started = await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
     });
     expect(started.status).toBe("started");
     const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
@@ -169,6 +170,7 @@ describe("Start the PACU Attempt", () => {
     const { t, asLearner, scenarioId } = await setup();
     const first = await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
     });
     const firstId = (first as { attemptId: Id<"attempts"> }).attemptId;
 
@@ -176,12 +178,13 @@ describe("Start the PACU Attempt", () => {
       await asLearner.query(api.attemptStart.access.learnerBrief, { scenarioId }),
     ).toMatchObject({ activeAttemptId: firstId });
     expect(
-      await asLearner.mutation(api.attemptStart.access.start, { scenarioId }),
+      await asLearner.mutation(api.attemptStart.access.start, { scenarioId, clientRequestId: crypto.randomUUID() }),
     ).toEqual({ status: "active_attempt_exists", activeAttemptId: firstId });
     expect(await allAttempts(t)).toHaveLength(1);
 
     const second = await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
       endActiveAttemptId: firstId,
     });
     expect(second.status).toBe("started");
@@ -205,6 +208,99 @@ describe("Start the PACU Attempt", () => {
         { sequence: 2, kind: "attempt_ended" },
       ],
     });
+  });
+
+  it("replays a Start whose response was lost instead of asking to end its Attempt", async () => {
+    const { t, asLearner, asPeer, scenarioId } = await setup();
+    const request = { scenarioId, clientRequestId: "start-request-1" };
+    const first = await asLearner.mutation(api.attemptStart.access.start, request);
+    expect(first.status).toBe("started");
+    const attemptId = (first as { attemptId: Id<"attempts"> }).attemptId;
+
+    // The browser never saw `first`, so it sends the same request again.
+    expect(
+      await asLearner.mutation(api.attemptStart.access.start, request),
+    ).toEqual({ status: "started", attemptId });
+    expect(await allAttempts(t)).toHaveLength(1);
+
+    // A new request is a new Start, which still needs confirmed ending.
+    expect(
+      await asLearner.mutation(api.attemptStart.access.start, {
+        scenarioId,
+        clientRequestId: "start-request-2",
+      }),
+    ).toEqual({ status: "active_attempt_exists", activeAttemptId: attemptId });
+
+    // Request identities belong to one Learner.
+    const peerStart = await asPeer.mutation(api.attemptStart.access.start, request);
+    expect(peerStart.status).toBe("started");
+    expect(peerStart).not.toEqual({ status: "started", attemptId });
+    expect(await allAttempts(t)).toHaveLength(2);
+  });
+
+  it("replays a confirmed restart without ending the Attempt it created", async () => {
+    const { t, asLearner, scenarioId } = await setup();
+    const firstRequest = { scenarioId, clientRequestId: "start-first" };
+    const first = await asLearner.mutation(
+      api.attemptStart.access.start,
+      firstRequest,
+    );
+    const firstId = (first as { attemptId: Id<"attempts"> }).attemptId;
+    const restart = {
+      scenarioId,
+      clientRequestId: "start-restart",
+      endActiveAttemptId: firstId,
+    };
+    const second = await asLearner.mutation(api.attemptStart.access.start, restart);
+    const secondId = (second as { attemptId: Id<"attempts"> }).attemptId;
+
+    expect(
+      await asLearner.mutation(api.attemptStart.access.start, restart),
+    ).toEqual({ status: "started", attemptId: secondId });
+    // A stale replay of the first request names its now-Ended Attempt.
+    expect(
+      await asLearner.mutation(api.attemptStart.access.start, firstRequest),
+    ).toEqual({ status: "started", attemptId: firstId });
+
+    const attempts = await allAttempts(t);
+    expect(attempts.map(({ _id, status }) => [_id, status])).toEqual([
+      [firstId, "ended"],
+      [secondId, "active"],
+    ]);
+    expect(
+      await t.run((ctx) =>
+        ctx.db
+          .query("attemptEvents")
+          .filter((q) => q.eq(q.field("kind"), "attempt_ended"))
+          .collect(),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("still starts for a client without request identity", async () => {
+    const { t, asLearner, scenarioId } = await setup();
+    const started = await asLearner.mutation(api.attemptStart.access.start, {
+      scenarioId,
+    });
+    expect(started.status).toBe("started");
+    expect(
+      await asLearner.mutation(api.attemptStart.access.start, { scenarioId }),
+    ).toEqual({
+      status: "active_attempt_exists",
+      activeAttemptId: (started as { attemptId: Id<"attempts"> }).attemptId,
+    });
+    expect(await allAttempts(t)).toHaveLength(1);
+  });
+
+  it("rejects a blank Start request identity", async () => {
+    const { t, asLearner, scenarioId } = await setup();
+    await expect(
+      asLearner.mutation(api.attemptStart.access.start, {
+        scenarioId,
+        clientRequestId: "",
+      }),
+    ).rejects.toThrow("Invalid client request id");
+    expect(await allAttempts(t)).toHaveLength(0);
   });
 
   it("rejects unavailable and cross-institution Scenarios without revealing details", async () => {
@@ -264,7 +360,7 @@ describe("Start the PACU Attempt", () => {
         }),
       ).toEqual({ status: "unavailable" });
       expect(
-        await asMember.mutation(api.attemptStart.access.start, { scenarioId: id }),
+        await asMember.mutation(api.attemptStart.access.start, { scenarioId: id, clientRequestId: crypto.randomUUID() }),
       ).toEqual({ status: "unavailable" });
     }
     expect(
@@ -288,7 +384,7 @@ describe("Start the PACU Attempt", () => {
     });
 
     expect(
-      await asLearner.mutation(api.attemptStart.access.start, { scenarioId }),
+      await asLearner.mutation(api.attemptStart.access.start, { scenarioId, clientRequestId: crypto.randomUUID() }),
     ).toEqual({ status: "unavailable" });
     expect(await allAttempts(t)).toHaveLength(0);
   });
@@ -297,12 +393,14 @@ describe("Start the PACU Attempt", () => {
     const { t, asLearner, asPeer, scenarioId } = await setup();
     const peerStart = await asPeer.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
     });
     const peerAttemptId = (peerStart as { attemptId: Id<"attempts"> }).attemptId;
 
     // Without an Active Attempt of their own, the foreign id is ignored.
     const ownStart = await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
       endActiveAttemptId: peerAttemptId,
     });
     expect(ownStart.status).toBe("started");
@@ -312,6 +410,7 @@ describe("Start the PACU Attempt", () => {
     expect(
       await asLearner.mutation(api.attemptStart.access.start, {
         scenarioId,
+        clientRequestId: crypto.randomUUID(),
         endActiveAttemptId: peerAttemptId,
       }),
     ).toEqual({ status: "active_attempt_exists", activeAttemptId: ownAttemptId });
@@ -333,6 +432,7 @@ describe("Start the PACU Attempt", () => {
     const { asLearner, asPeer, asFaculty, scenarioId } = await setup();
     const started = await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
     });
     const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
 
@@ -343,7 +443,7 @@ describe("Start the PACU Attempt", () => {
       asFaculty.query(api.attemptStart.access.ownAttempt, { attemptId }),
     ).rejects.toThrow("Learner role required");
     await expect(
-      asFaculty.mutation(api.attemptStart.access.start, { scenarioId }),
+      asFaculty.mutation(api.attemptStart.access.start, { scenarioId, clientRequestId: crypto.randomUUID() }),
     ).rejects.toThrow("Learner role required");
   });
 });

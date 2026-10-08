@@ -48,6 +48,7 @@ async function setup() {
   );
   const started = await asLearner.mutation(api.attemptStart.access.start, {
     scenarioId: scenario.scenarioId,
+    clientRequestId: crypto.randomUUID(),
   });
   const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
 
@@ -315,6 +316,7 @@ describe("Hold a recoverable patient exchange", () => {
       // The Learner confirms Start again while the reply is in flight.
       await asLearner.mutation(api.attemptStart.access.start, {
         scenarioId,
+        clientRequestId: crypto.randomUUID(),
         endActiveAttemptId: attemptId,
       });
       return "I'm not sure where I am.";

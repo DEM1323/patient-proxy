@@ -52,6 +52,7 @@ const brief = {
 describe("Learner Brief start", () => {
   afterEach(() => {
     cleanup();
+    window.sessionStorage.clear();
     testState.start.mockReset();
     testState.navigate.mockReset();
   });
@@ -71,8 +72,42 @@ describe("Learner Brief start", () => {
     );
     expect(testState.start).toHaveBeenCalledWith({
       scenarioId: "scenario-id",
-      endActiveAttemptId: undefined,
+      clientRequestId: expect.any(String),
     });
+  });
+
+  it("replays a Start whose response was lost after a reload, without asking to end its Attempt", async () => {
+    testState.brief = { ...brief, activeAttemptId: null };
+    testState.start.mockRejectedValueOnce(new Error("Connection lost"));
+    render(<LearnerBriefPage scenarioId="scenario-id" />);
+    fireEvent.click(screen.getByRole("button", { name: "Start Attempt" }));
+    await screen.findByText("The Attempt could not be started. Try again.");
+    const [{ clientRequestId }] = testState.start.mock.calls[0];
+
+    // The write landed: after the reload, the brief shows the new Attempt.
+    cleanup();
+    testState.brief = { ...brief, activeAttemptId: "new-id" };
+    testState.start.mockResolvedValueOnce({ status: "started", attemptId: "new-id" });
+    render(<LearnerBriefPage scenarioId="scenario-id" />);
+    fireEvent.click(screen.getByRole("button", { name: "Start Attempt" }));
+
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    await waitFor(() =>
+      expect(testState.navigate).toHaveBeenCalledWith({
+        to: "/attempts/$attemptId",
+        params: { attemptId: "new-id" },
+      }),
+    );
+    expect(testState.start).toHaveBeenLastCalledWith({
+      scenarioId: "scenario-id",
+      clientRequestId,
+    });
+
+    // Once answered, the next Start is a new request.
+    cleanup();
+    render(<LearnerBriefPage scenarioId="scenario-id" />);
+    fireEvent.click(screen.getByRole("button", { name: "Start Attempt" }));
+    expect(screen.getByRole("alertdialog")).toBeTruthy();
   });
 
   it("requires confirming the end of the Active Attempt and offers no resume", async () => {
@@ -104,6 +139,7 @@ describe("Learner Brief start", () => {
     await waitFor(() =>
       expect(testState.start).toHaveBeenCalledWith({
         scenarioId: "scenario-id",
+        clientRequestId: expect.any(String),
         endActiveAttemptId: "active-id",
       }),
     );
@@ -133,8 +169,13 @@ describe("Learner Brief start", () => {
     await waitFor(() =>
       expect(testState.start).toHaveBeenLastCalledWith({
         scenarioId: "scenario-id",
+        clientRequestId: expect.any(String),
         endActiveAttemptId: "other-tab-id",
       }),
+    );
+    // The confirmed restart is a new request, not a replay of the first.
+    expect(testState.start.mock.calls[1][0].clientRequestId).not.toBe(
+      testState.start.mock.calls[0][0].clientRequestId,
     );
     expect(testState.navigate).toHaveBeenCalledTimes(1);
   });

@@ -79,7 +79,7 @@ async function setup() {
     await t.finishInProgressScheduledFunctions();
   };
   const endedAttempt = async () => {
-    const started = await asLearner.mutation(api.attemptStart.access.start, { scenarioId });
+    const started = await asLearner.mutation(api.attemptStart.access.start, { scenarioId, clientRequestId: crypto.randomUUID() });
     const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
     await asLearner.mutation(api.attemptInteraction.access.send, {
       attemptId,
@@ -231,7 +231,7 @@ describe("Review an authorized Ended Attempt", () => {
     const { t, asPeer, asFaculty, asAdmin, scenarioId, ids, endedAttempt, list, detail } =
       await setup();
     await endedAttempt();
-    const activeStart = await asPeer.mutation(api.attemptStart.access.start, { scenarioId });
+    const activeStart = await asPeer.mutation(api.attemptStart.access.start, { scenarioId, clientRequestId: crypto.randomUUID() });
     const activeId = (activeStart as { attemptId: Id<"attempts"> }).attemptId;
     const foreignId = await t.run(async (ctx) => {
       const own = (await ctx.db.query("attempts").first())!;
