@@ -15,7 +15,7 @@ The alpha represents an already-provisioned UMass Boston Patient Proxy portal. A
 ## Start, switch tools, and hand off
 
 1. Read this guide, [current status](docs/alpha/WAYFINDER.md), and the working diff (`git status --short`, `git diff`, `git diff --cached`; inspect relevant untracked files too).
-2. Preserve existing work. Start alpha work from the existing `alpha` baseline on a working branch, normally `codex/<task>`; do not reset or replace another tool's edits.
+2. Preserve existing work. Start alpha work from the existing `alpha` baseline on a working branch, normally `codex/<task>`, and open PRs against `alpha`; do not reset or replace another tool's edits. `main` is the deployment branch: it advances only by fast-forward to a reviewed `alpha` commit during a production deployment task, never by PR or force-push.
 3. Sequential tool switches may use the same checkout. Simultaneous editing requires separate Git worktrees and branches. Coordinate any shared Convex development deployment before syncing backend changes.
 4. Keep `docs/alpha/WAYFINDER.md` short: branch, current task, demonstrated behavior, blockers, next action. Distinguish observed results from assumptions and pending user interaction.
 

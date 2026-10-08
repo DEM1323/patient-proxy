@@ -36,6 +36,8 @@ Run `npm run lint`, `npm test`, and `npm run build` once for the alpha baseline.
 
 ## Production
 
+Production deploys from `main`. In an approved deployment task, fast-forward `main` to the reviewed `alpha` commit (`git push origin <alpha-commit>:main`, never forced), check out that commit with a clean working tree, then run the steps below. Record the deployed commit in [current status](WAYFINDER.md).
+
 1. Deploy Convex and build the SPA with its production URL and public WorkOS configuration: `VITE_WORKOS_CLIENT_ID=client_01M0B87CY3Q8E21FXPX3ZZHZWK VITE_WORKOS_REDIRECT_URI=https://patient-proxy-alpha.dem1323.workers.dev/callback npx convex deploy --yes --cmd "npm run build" --cmd-url-env-var-name VITE_CONVEX_URL`.
 2. Store Gemini only in Convex with `npx convex env set GOOGLE_GEMINI_API_KEY <value> --prod`. Never prefix this secret with `VITE_`.
 3. Authenticate Wrangler with `npx wrangler login` or a scoped CI API token.
