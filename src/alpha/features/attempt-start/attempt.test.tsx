@@ -252,6 +252,61 @@ describe("Attempt conversation", () => {
     );
   });
 
+  it("replays an unconfirmed Clinical Action when its button is pressed again", async () => {
+    testState.attempt = attempt();
+    testState.takeAction
+      .mockRejectedValueOnce(new Error("Connection lost"))
+      .mockResolvedValueOnce({ status: "recorded" })
+      .mockResolvedValueOnce({ status: "recorded" });
+    render(<AttemptPage attemptId="attempt-id" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    await screen.findByRole("alert");
+    // The same button, not Retry: still the same occurrence.
+    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    await waitFor(() => expect(testState.takeAction).toHaveBeenCalledTimes(2));
+    const [first, again] = testState.takeAction.mock.calls.map(([args]) => args);
+    expect(again).toEqual(first);
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+
+    // A different action is a new occurrence.
+    fireEvent.click(screen.getByRole("button", { name: "Assess pain" }));
+    await waitFor(() => expect(testState.takeAction).toHaveBeenCalledTimes(3));
+    expect(testState.takeAction.mock.calls[2][0]).toEqual({
+      attemptId: "attempt-id",
+      clientRequestId: expect.any(String),
+      actionKey: "assess_pain",
+    });
+    expect(testState.takeAction.mock.calls[2][0].clientRequestId).not.toBe(
+      first.clientRequestId,
+    );
+  });
+
+  it("keeps an unconfirmed Clinical Action retryable across a reload", async () => {
+    testState.attempt = attempt();
+    // The page reloads while the action is still in flight.
+    testState.takeAction.mockReturnValueOnce(new Promise(() => undefined));
+    render(<AttemptPage attemptId="attempt-id" />);
+    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    const [first] = testState.takeAction.mock.calls[0];
+
+    cleanup();
+    testState.takeAction.mockResolvedValueOnce({ status: "recorded" });
+    render(<AttemptPage attemptId="attempt-id" />);
+    expect(screen.getByRole("alert").textContent).toMatch(
+      /may not have been recorded.*won't be recorded twice/,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry action" }));
+
+    await waitFor(() => expect(testState.takeAction).toHaveBeenCalledTimes(2));
+    expect(testState.takeAction.mock.calls[1][0]).toEqual(first);
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+
+    cleanup();
+    render(<AttemptPage attemptId="attempt-id" />);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("shows revealed observations in the timeline", () => {
     testState.attempt = attempt({
       timeline: [
