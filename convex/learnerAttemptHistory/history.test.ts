@@ -49,6 +49,7 @@ async function setup() {
     (
       (await asMember.mutation(api.attemptStart.access.start, {
         scenarioId,
+        clientRequestId: crypto.randomUUID(),
         endActiveAttemptId,
       })) as { attemptId: Id<"attempts"> }
     ).attemptId;

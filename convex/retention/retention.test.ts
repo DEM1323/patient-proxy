@@ -46,6 +46,7 @@ async function setup() {
     (
       (await asMember.mutation(api.attemptStart.access.start, {
         scenarioId: scenario.scenarioId,
+        clientRequestId: crypto.randomUUID(),
       })) as { attemptId: Id<"attempts"> }
     ).attemptId;
   const send = (asMember: Member, attemptId: Id<"attempts">, id: string) =>

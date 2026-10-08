@@ -4,6 +4,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useSessionState } from "../../session-state";
 import { AttemptDebrief } from "../attempt-debrief";
 import { MembershipGate } from "../membership-access";
 import { AccessLoadingView } from "../membership-access/view";
@@ -24,6 +25,10 @@ import {
 type SendResult = FunctionReturnType<
   typeof api.attemptInteraction.access.send
 >;
+type StartRequest = {
+  clientRequestId: string;
+  endActiveAttemptId?: Id<"attempts">;
+};
 
 export function ScenarioListPage() {
   return (
@@ -36,7 +41,7 @@ export function ScenarioListPage() {
 export function LearnerBriefPage({ scenarioId }: { scenarioId: string }) {
   return (
     <LearnerGate>
-      <LearnerBrief scenarioId={scenarioId} />
+      <LearnerBrief key={scenarioId} scenarioId={scenarioId} />
     </LearnerGate>
   );
 }
@@ -77,6 +82,11 @@ function LearnerBrief({ scenarioId }: { scenarioId: string }) {
   const start = useMutation(api.attemptStart.access.start);
   const navigate = useNavigate();
   const [startState, setStartState] = useState<StartState>({ step: "idle" });
+  // A Start without a definitive answer keeps its request id, even across a
+  // reload, so starting again returns the Attempt it may already have created.
+  const [pendingStart, setPendingStart] = useSessionState<StartRequest>(
+    `start:${scenarioId}`,
+  );
 
   if (brief === undefined) {
     return <AccessLoadingView message="Loading the Learner Brief" />;
@@ -85,10 +95,12 @@ function LearnerBrief({ scenarioId }: { scenarioId: string }) {
     return <ScenarioUnavailableView />;
   }
 
-  const runStart = async (endActiveAttemptId?: Id<"attempts">) => {
+  const runStart = async (request: StartRequest) => {
+    setPendingStart(request);
     setStartState({ step: "starting" });
     try {
-      const result = await start({ scenarioId, endActiveAttemptId });
+      const result = await start({ scenarioId, ...request });
+      setPendingStart(null);
       if (result.status === "started") {
         await navigate({
           to: "/attempts/$attemptId",
@@ -118,17 +130,22 @@ function LearnerBrief({ scenarioId }: { scenarioId: string }) {
       brief={brief}
       startState={startState}
       onStart={() => {
-        if (brief.activeAttemptId) {
+        if (pendingStart) {
+          void runStart(pendingStart);
+        } else if (brief.activeAttemptId) {
           setStartState({
             step: "confirmEnding",
             activeAttemptId: brief.activeAttemptId,
           });
         } else {
-          void runStart();
+          void runStart({ clientRequestId: crypto.randomUUID() });
         }
       }}
       onConfirmEnding={(activeAttemptId) =>
-        void runStart(activeAttemptId)
+        void runStart({
+          clientRequestId: crypto.randomUUID(),
+          endActiveAttemptId: activeAttemptId,
+        })
       }
       onCancelEnding={() => setStartState({ step: "idle" })}
     />
