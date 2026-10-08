@@ -13,10 +13,6 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
 # production
 /build
 /dist
@@ -35,14 +31,10 @@ yarn-error.log*
 .env*
 !/.env.example
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
-next-env.d.ts
 
 # Convex local development
 /.convex/

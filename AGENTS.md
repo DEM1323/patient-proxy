@@ -6,7 +6,7 @@ This is the authoritative shared guide for Codex, Claude Code, and Cursor. Claud
 
 The alpha represents an already-provisioned UMass Boston Patient Proxy portal. An Institutional Admin adds Members with any of the four additive roles, manages participation, Learning Groups, and Scenario availability inside Patient Proxy. An approved Learner completes Elena Ruiz's PACU encounter, receives useful evidence-linked Formative Feedback, and authorized Faculty reviews the saved Ended Attempt within current scope. Finish environment setup before feature development.
 
-- Use the existing Vite, TanStack Router, React, Convex, and WorkOS stack. The alpha lives in `src/alpha/` and `convex/`; the retained Next.js/Supabase prototype is legacy.
+- Use the existing Vite, TanStack Router, React, Convex, and WorkOS stack. The alpha lives in `src/alpha/` and `convex/`. The earlier Next.js/Supabase prototype was removed; it remains in Git history.
 - Deliver one demonstrable feature at a time, from UI through persistence and authorization. Choose routine technical details as needed; add abstractions or tests for concrete requirements and risks.
 - GitHub issues provide requirements and historical decisions, not a mandatory ticket sequence. No wayfinding ceremony, claim-first write, or new planning document is required to begin authorized work.
 - Preserve established product requirements and access boundaries in [CONTEXT.md](CONTEXT.md). Consult the relevant issue and domain references when changing behavior.

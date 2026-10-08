@@ -122,4 +122,4 @@ The self-service decision supersedes the older blanket exclusion in the original
 - Ending starts Formative Feedback generation idempotently. Feedback remains hidden until the Learner explicitly answers or skips both Reflection Prompts. Learner Reflections are append-only and shared with authorized Faculty.
 - Faculty review depends dynamically on current shared Learning Group membership, current Scenario availability, and Ended Attempt state. Institutional Admin analytics spans the Pilot Institution without inheriting other roles.
 - Attempt content is Learner-owned. The approved retention policy deletes an Ended Attempt 90 days after it ended and an Active (incomplete) Attempt 30 days after its last activity, with all Attempt content; a daily purge enforces it, and only non-identifying per-institution counts remain. No in-product downloads.
-- Keep Gemini and secrets in protected Convex functions. Retain the legacy runtime until the replacement journey passes its checks.
+- Keep Gemini and secrets in protected Convex functions. The legacy Next.js/Supabase runtime was removed after the replacement journey passed its checks.
