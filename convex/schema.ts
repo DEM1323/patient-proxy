@@ -116,8 +116,12 @@ export default defineSchema({
     endedAt: v.optional(v.number()),
     // See attemptEnding/validators.ts for the meaning of each reason.
     endReason: v.optional(endReasonValidator),
+    // The Start request that created this Attempt; a retried Start with the
+    // same identity returns this Attempt instead of creating another.
+    startRequestId: v.optional(v.string()),
   })
     .index("by_learner_status", ["learnerMembershipId", "status"])
+    .index("by_learner_start_request", ["learnerMembershipId", "startRequestId"])
     // Institutional Admin review spans the Pilot Institution.
     .index("by_institution_status", ["institutionId", "status"])
     // Retention: Ended Attempts by end time, Active Attempts by start time.

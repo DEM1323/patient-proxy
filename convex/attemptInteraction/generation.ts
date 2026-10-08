@@ -18,6 +18,7 @@ import {
   normalizeReply,
   type PatientContext,
 } from "./patientPrompt";
+import { screenReply } from "./replyScreening";
 
 const targetArgs = {
   exchangeId: v.id("exchangeRequests"),
@@ -51,14 +52,32 @@ export const generate = internalAction({
   },
 });
 
+// A reply that breaks a screened rule is regenerated once; a second violation
+// fails the exchange, which the Learner can retry. A late reply after the
+// exchange deadline is discarded by the generation check, as for any reply.
+const screenedAttempts = 2;
+
 async function generateReply(context: PatientContext) {
+  const patientName = context.learnerBrief.patientName;
   try {
-    const raw = await completePatientReply(buildPatientPrompt(context));
-    const reply = normalizeReply(raw, context.learnerBrief.patientName);
-    if (!reply) {
-      console.warn("Patient reply was empty or malformed");
+    const prompt = buildPatientPrompt(context);
+    for (let attempt = 1; attempt <= screenedAttempts; attempt++) {
+      const reply = normalizeReply(
+        await completePatientReply(prompt),
+        patientName,
+      );
+      if (!reply) {
+        console.warn("Patient reply was empty or malformed");
+        return null;
+      }
+      const reason = screenReply(reply, patientName);
+      if (!reason) {
+        return reply;
+      }
+      // The category only; generated text stays out of logs.
+      console.warn(`Patient reply screened out: ${reason}`);
     }
-    return reply;
+    return null;
   } catch (error) {
     // Timeouts, blocked responses, and a missing key all become a
     // recoverable failure; the Learner sees only generic copy.

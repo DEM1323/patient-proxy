@@ -66,6 +66,7 @@ async function setup() {
   );
   const started = await asLearner.mutation(api.attemptStart.access.start, {
     scenarioId: scenario.scenarioId,
+    clientRequestId: crypto.randomUUID(),
   });
   const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
 
@@ -424,6 +425,7 @@ describe("Complete the Attempt Debrief", () => {
 
     await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
       endActiveAttemptId: attemptId,
     });
     expect(await debrief()).toEqual({ status: "not_available", reason: "restarted" });

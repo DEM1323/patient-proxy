@@ -4,6 +4,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useSessionState } from "../../session-state";
 import { AttemptDebrief } from "../attempt-debrief";
 import { MembershipGate } from "../membership-access";
 import { AccessLoadingView } from "../membership-access/view";
@@ -24,6 +25,15 @@ import {
 type SendResult = FunctionReturnType<
   typeof api.attemptInteraction.access.send
 >;
+const restoredActionNotice =
+  "Your last Clinical Action may not have been recorded before the page reloaded. Retry it; it won't be recorded twice.";
+const restoredMessageNotice =
+  "Your last message may not have been sent before the page reloaded. Send it again; it won't be recorded twice.";
+
+type StartRequest = {
+  clientRequestId: string;
+  endActiveAttemptId?: Id<"attempts">;
+};
 
 export function ScenarioListPage() {
   return (
@@ -36,7 +46,7 @@ export function ScenarioListPage() {
 export function LearnerBriefPage({ scenarioId }: { scenarioId: string }) {
   return (
     <LearnerGate>
-      <LearnerBrief scenarioId={scenarioId} />
+      <LearnerBrief key={scenarioId} scenarioId={scenarioId} />
     </LearnerGate>
   );
 }
@@ -44,7 +54,7 @@ export function LearnerBriefPage({ scenarioId }: { scenarioId: string }) {
 export function AttemptPage({ attemptId }: { attemptId: string }) {
   return (
     <LearnerGate>
-      <Attempt attemptId={attemptId} />
+      <Attempt key={attemptId} attemptId={attemptId} />
     </LearnerGate>
   );
 }
@@ -77,6 +87,11 @@ function LearnerBrief({ scenarioId }: { scenarioId: string }) {
   const start = useMutation(api.attemptStart.access.start);
   const navigate = useNavigate();
   const [startState, setStartState] = useState<StartState>({ step: "idle" });
+  // A Start without a definitive answer keeps its request id, even across a
+  // reload, so starting again returns the Attempt it may already have created.
+  const [pendingStart, setPendingStart] = useSessionState<StartRequest>(
+    `start:${scenarioId}`,
+  );
 
   if (brief === undefined) {
     return <AccessLoadingView message="Loading the Learner Brief" />;
@@ -85,10 +100,12 @@ function LearnerBrief({ scenarioId }: { scenarioId: string }) {
     return <ScenarioUnavailableView />;
   }
 
-  const runStart = async (endActiveAttemptId?: Id<"attempts">) => {
+  const runStart = async (request: StartRequest) => {
+    setPendingStart(request);
     setStartState({ step: "starting" });
     try {
-      const result = await start({ scenarioId, endActiveAttemptId });
+      const result = await start({ scenarioId, ...request });
+      setPendingStart(null);
       if (result.status === "started") {
         await navigate({
           to: "/attempts/$attemptId",
@@ -118,17 +135,22 @@ function LearnerBrief({ scenarioId }: { scenarioId: string }) {
       brief={brief}
       startState={startState}
       onStart={() => {
-        if (brief.activeAttemptId) {
+        if (pendingStart) {
+          void runStart(pendingStart);
+        } else if (brief.activeAttemptId) {
           setStartState({
             step: "confirmEnding",
             activeAttemptId: brief.activeAttemptId,
           });
         } else {
-          void runStart();
+          void runStart({ clientRequestId: crypto.randomUUID() });
         }
       }}
       onConfirmEnding={(activeAttemptId) =>
-        void runStart(activeAttemptId)
+        void runStart({
+          clientRequestId: crypto.randomUUID(),
+          endActiveAttemptId: activeAttemptId,
+        })
       }
       onCancelEnding={() => setStartState({ step: "idle" })}
     />
@@ -141,23 +163,30 @@ function Attempt({ attemptId }: { attemptId: string }) {
   const retry = useMutation(api.attemptInteraction.access.retry);
   const takeAction = useMutation(api.attemptInteraction.access.takeAction);
   const end = useMutation(api.attemptEnding.access.end);
-  const [draft, setDraft] = useState("");
+  // The draft and an unacknowledged message survive a reload of this tab.
+  const [storedDraft, setDraft] = useSessionState<string>(`draft:${attemptId}`);
+  const draft = storedDraft ?? "";
   // A message whose send has not been acknowledged keeps its request id, so
   // sending the same text again cannot record it twice.
-  const [unsent, setUnsent] = useState<{
+  const [unsent, setUnsent] = useSessionState<{
     clientRequestId: string;
     text: string;
-  } | null>(null);
+  }>(`message:${attemptId}`);
   const [submitting, setSubmitting] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  // An action whose response was lost keeps its request id, so Retry can
-  // never record it twice; choosing an action again is a new occurrence.
-  const [unsentAction, setUnsentAction] = useState<{
+  const [notice, setNotice] = useState<string | null>(() =>
+    unsent ? restoredMessageNotice : null,
+  );
+  // An action whose response was lost keeps its request id, even across a
+  // reload, so retrying it or choosing it again can never record it twice.
+  // Once confirmed, choosing an action again is a new occurrence.
+  const [unsentAction, setUnsentAction] = useSessionState<{
     clientRequestId: string;
     actionKey: string;
-  } | null>(null);
+  }>(`action:${attemptId}`);
   const [actionSubmitting, setActionSubmitting] = useState(false);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(() =>
+    unsentAction ? restoredActionNotice : null,
+  );
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const [endSubmitting, setEndSubmitting] = useState(false);
   const [endNotice, setEndNotice] = useState<string | null>(null);
@@ -214,7 +243,7 @@ function Attempt({ attemptId }: { attemptId: string }) {
         "Your message could not be sent. Check your connection and send it again.",
       ).then((accepted) => {
         if (accepted) {
-          setDraft("");
+          setDraft(null);
         }
       });
     },
@@ -258,7 +287,11 @@ function Attempt({ attemptId }: { attemptId: string }) {
     notice: actionNotice,
     canRetry: unsentAction !== null,
     onAction: (actionKey) =>
-      void runAction({ clientRequestId: crypto.randomUUID(), actionKey }),
+      void runAction(
+        unsentAction?.actionKey === actionKey
+          ? unsentAction
+          : { clientRequestId: crypto.randomUUID(), actionKey },
+      ),
     onRetryAction: () => {
       if (unsentAction) {
         void runAction(unsentAction);
