@@ -11,6 +11,7 @@ import {
   commitReply,
   loadGenerationContext,
   markGenerationFailed,
+  patientReplyBudgetMs,
   type GenerationTarget,
 } from "./model";
 import {
@@ -18,6 +19,7 @@ import {
   normalizeReply,
   type PatientContext,
 } from "./patientPrompt";
+import { screenReply } from "./replyScreening";
 
 const targetArgs = {
   exchangeId: v.id("exchangeRequests"),
@@ -51,14 +53,33 @@ export const generate = internalAction({
   },
 });
 
+// A reply that breaks a screened rule is regenerated once, within the same
+// time budget; a second violation fails the exchange, which the Learner can
+// retry.
+const screenedAttempts = 2;
+
 async function generateReply(context: PatientContext) {
+  const patientName = context.learnerBrief.patientName;
+  const deadline = Date.now() + patientReplyBudgetMs;
   try {
-    const raw = await completePatientReply(buildPatientPrompt(context));
-    const reply = normalizeReply(raw, context.learnerBrief.patientName);
-    if (!reply) {
-      console.warn("Patient reply was empty or malformed");
+    const prompt = buildPatientPrompt(context);
+    for (let attempt = 1; attempt <= screenedAttempts; attempt++) {
+      const reply = normalizeReply(
+        await completePatientReply(prompt, deadline),
+        patientName,
+      );
+      if (!reply) {
+        console.warn("Patient reply was empty or malformed");
+        return null;
+      }
+      const reason = screenReply(reply, patientName);
+      if (!reason) {
+        return reply;
+      }
+      // The category only; generated text stays out of logs.
+      console.warn(`Patient reply screened out: ${reason}`);
     }
-    return reply;
+    return null;
   } catch (error) {
     // Timeouts, blocked responses, and a missing key all become a
     // recoverable failure; the Learner sees only generic copy.

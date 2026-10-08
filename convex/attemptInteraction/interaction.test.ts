@@ -48,6 +48,7 @@ async function setup() {
   );
   const started = await asLearner.mutation(api.attemptStart.access.start, {
     scenarioId: scenario.scenarioId,
+    clientRequestId: crypto.randomUUID(),
   });
   const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
 
@@ -223,6 +224,54 @@ describe("Hold a recoverable patient exchange", () => {
     expect(await messages()).toHaveLength(4);
   });
 
+  it("regenerates a screened reply once instead of recording it", async () => {
+    const { send, view, messages, runScheduled } = await setup();
+    completePatientReply
+      .mockResolvedValueOnce("My oxygen is 93% on room air.")
+      .mockResolvedValueOnce("I... I'm so cold.");
+
+    await send("request-1", "How are you feeling?");
+    await runScheduled();
+
+    expect(await messages()).toEqual([
+      ["learner_message", "How are you feeling?"],
+      ["patient_message", "I... I'm so cold."],
+    ]);
+    expect((await view()).exchange).toBeNull();
+    expect(completePatientReply).toHaveBeenCalledTimes(2);
+    // The regeneration spends what is left of the same time budget.
+    const [[, firstDeadline], [, secondDeadline]] =
+      completePatientReply.mock.calls as unknown as [unknown, number][];
+    expect(secondDeadline).toBe(firstDeadline);
+    expect(firstDeadline).toBeGreaterThan(Date.now());
+  });
+
+  it("fails the exchange when the regenerated reply is screened too, and recovers on retry", async () => {
+    const { send, retry, view, messages, runScheduled } = await setup();
+    completePatientReply
+      .mockResolvedValueOnce("*shivers* I'm cold.")
+      .mockResolvedValueOnce("As an AI, I don't feel cold.")
+      .mockResolvedValueOnce("I'm cold...");
+
+    await send("request-1", "How are you feeling?");
+    await runScheduled();
+    expect((await view()).exchange).toEqual({
+      clientRequestId: "request-1",
+      status: "failed",
+    });
+    expect(await messages()).toEqual([
+      ["learner_message", "How are you feeling?"],
+    ]);
+
+    expect(await retry("request-1")).toEqual({ status: "pending" });
+    await runScheduled();
+    expect(await messages()).toEqual([
+      ["learner_message", "How are you feeling?"],
+      ["patient_message", "I'm cold..."],
+    ]);
+    expect(completePatientReply).toHaveBeenCalledTimes(3);
+  });
+
   it("lets only the newest generation commit after an interrupted reply", async () => {
     const { t, send, retry, view, messages, runScheduled } = await setup();
     completePatientReply.mockResolvedValue("Where... where am I?");
@@ -315,6 +364,7 @@ describe("Hold a recoverable patient exchange", () => {
       // The Learner confirms Start again while the reply is in flight.
       await asLearner.mutation(api.attemptStart.access.start, {
         scenarioId,
+        clientRequestId: crypto.randomUUID(),
         endActiveAttemptId: attemptId,
       });
       return "I'm not sure where I am.";
