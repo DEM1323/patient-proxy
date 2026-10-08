@@ -11,10 +11,12 @@ type ReadContext = Pick<QueryCtx, "db">;
 
 export const maxMessageLength = 2000;
 const maxClientRequestIdLength = 100;
-// Longer than the worst case of provider retries and model fallback (four
-// 12-second requests plus backoff), so a pending exchange whose generation was
-// interrupted becomes retryable without the Learner reloading.
+// Longer than the provider budget for one reply, so a pending exchange whose
+// generation was interrupted becomes retryable without the Learner reloading.
 export const exchangeDeadlineMs = 60_000;
+// All provider requests for one reply share this budget, which leaves the
+// deadline room to commit.
+export const patientReplyBudgetMs = 50_000;
 
 export type GenerationTarget = {
   exchangeId: Id<"exchangeRequests">;
