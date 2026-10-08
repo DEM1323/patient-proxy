@@ -22,6 +22,7 @@ import type * as attemptInteraction_gemini from "../attemptInteraction/gemini.js
 import type * as attemptInteraction_generation from "../attemptInteraction/generation.js";
 import type * as attemptInteraction_model from "../attemptInteraction/model.js";
 import type * as attemptInteraction_patientPrompt from "../attemptInteraction/patientPrompt.js";
+import type * as attemptInteraction_replyScreening from "../attemptInteraction/replyScreening.js";
 import type * as attemptInteraction_validators from "../attemptInteraction/validators.js";
 import type * as attemptReview_access from "../attemptReview/access.js";
 import type * as attemptReview_model from "../attemptReview/model.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "attemptInteraction/generation": typeof attemptInteraction_generation;
   "attemptInteraction/model": typeof attemptInteraction_model;
   "attemptInteraction/patientPrompt": typeof attemptInteraction_patientPrompt;
+  "attemptInteraction/replyScreening": typeof attemptInteraction_replyScreening;
   "attemptInteraction/validators": typeof attemptInteraction_validators;
   "attemptReview/access": typeof attemptReview_access;
   "attemptReview/model": typeof attemptReview_model;

@@ -352,7 +352,7 @@ async function latestExchange(ctx: ReadContext, attemptId: Id<"attempts">) {
     .first();
 }
 
-function validClientRequestId(clientRequestId: string) {
+export function validClientRequestId(clientRequestId: string) {
   if (
     clientRequestId.length === 0 ||
     clientRequestId.length > maxClientRequestIdLength

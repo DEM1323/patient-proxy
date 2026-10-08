@@ -73,6 +73,7 @@ async function setup() {
     (
       (await asLearner.mutation(api.attemptStart.access.start, {
         scenarioId: await scenarioId(),
+        clientRequestId: crypto.randomUUID(),
         endActiveAttemptId,
       })) as { attemptId: Id<"attempts"> }
     ).attemptId;
