@@ -80,6 +80,7 @@ async function setup() {
   const endedAttempt = async () => {
     const started = await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId: await scenarioId(),
+      clientRequestId: crypto.randomUUID(),
     });
     const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
     await asLearner.mutation(api.attemptInteraction.access.send, {
@@ -241,6 +242,7 @@ describe("Manage learning and review scope", () => {
     const { ids, asLearner, pilot, enroll, setAvailability, scenarioId } = await setup();
     const started = await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId: await scenarioId(),
+      clientRequestId: crypto.randomUUID(),
     });
     const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
     const pacu = (await pilot()).id;
