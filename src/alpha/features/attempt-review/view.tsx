@@ -12,9 +12,9 @@ type Detail = NonNullable<
 >;
 
 const link =
-  "font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 const sectionClass =
-  "mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm";
+  "mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm";
 
 const stageLabels: Record<Entry["debrief"], string> = {
   none: "No Debrief",
@@ -41,10 +41,10 @@ export function ReviewListView({ attempts }: { attempts: Entry[] }) {
       <Link to="/" className={`text-sm ${link}`}>
         ← Home
       </Link>
-      <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950">
+      <h1 className="mt-4 text-4xl font-bold tracking-tight text-ink">
         Review Ended Attempts
       </h1>
-      <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+      <p className="mt-3 max-w-2xl leading-7 text-ink-2">
         Ended Attempts you are currently authorized to review. Faculty access
         follows current Learning Group membership and Scenario availability
         and changes immediately when either changes. Institutional Admin
@@ -52,7 +52,7 @@ export function ReviewListView({ attempts }: { attempts: Entry[] }) {
         Attempts are deleted automatically 90 days after they end.
       </p>
       {attempts.length === 0 ? (
-        <p className="mt-8 rounded-lg border border-slate-200 bg-white px-5 py-4 text-slate-700">
+        <p className="mt-8 rounded-lg border border-line bg-surface px-5 py-4 text-ink-2">
           No Ended Attempts are currently available for your review.
         </p>
       ) : (
@@ -60,18 +60,18 @@ export function ReviewListView({ attempts }: { attempts: Entry[] }) {
           {attempts.map((attempt) => (
             <li
               key={attempt.id}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              className="rounded-2xl border border-line bg-surface p-6 shadow-sm"
             >
-              <h2 className="text-lg font-semibold text-slate-950">
+              <h2 className="text-lg font-semibold text-ink">
                 <Link
                   to="/review/$attemptId"
                   params={{ attemptId: attempt.id }}
-                  className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   {attempt.learnerEmail} · {attempt.scenarioTitle}
                 </Link>
               </h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm text-ink-2">
                 Scenario Version {attempt.scenarioVersion} · ended{" "}
                 <time dateTime={new Date(attempt.endedAt).toISOString()}>
                   {formatDate(attempt.endedAt)}
@@ -95,17 +95,17 @@ export function ReviewDetailView({ review }: { review: Detail }) {
       <Link to="/review" className={`text-sm ${link}`}>
         ← Review Ended Attempts
       </Link>
-      <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-secondary">
+      <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-blue-text">
         Review · Ended Attempt · {attempt.scenario.setting}
       </p>
-      <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
+      <h1 className="mt-3 text-4xl font-bold tracking-tight text-ink">
         {attempt.scenario.title}
       </h1>
-      <p className="mt-3 text-lg text-slate-700">
+      <p className="mt-3 text-lg text-ink-2">
         {learnerEmail} · Scenario Version {attempt.scenario.version}
         {attempt.endedAt !== null && <> · ended {formatDate(attempt.endedAt)}</>}
       </p>
-      <p className="mt-6 rounded-lg border border-slate-200 bg-white px-5 py-4 leading-7 text-slate-700">
+      <p className="mt-6 rounded-lg border border-line bg-surface px-5 py-4 leading-7 text-ink-2">
         {attempt.endReason === "learner_restarted"
           ? "This Attempt ended when the Learner started a new one."
           : attempt.endReason === "access_suspended"
@@ -115,7 +115,7 @@ export function ReviewDetailView({ review }: { review: Detail }) {
       </p>
 
       <section aria-labelledby="review-conversation-title" className={sectionClass}>
-        <h2 id="review-conversation-title" className="text-lg font-semibold text-slate-950">
+        <h2 id="review-conversation-title" className="text-lg font-semibold text-ink">
           Conversation with {attempt.scenario.patientName}
         </h2>
         <AttemptTimeline
@@ -126,31 +126,31 @@ export function ReviewDetailView({ review }: { review: Detail }) {
       </section>
 
       {debrief.status === "none" ? (
-        <p className={`${sectionClass} leading-7 text-slate-700`}>
+        <p className={`${sectionClass} leading-7 text-ink-2`}>
           This Attempt has no Debrief: only Attempts the Learner ends
           deliberately have one.
         </p>
       ) : (
         <>
           <section aria-labelledby="review-reflections-title" className={sectionClass}>
-            <h2 id="review-reflections-title" className="text-lg font-semibold text-slate-950">
+            <h2 id="review-reflections-title" className="text-lg font-semibold text-ink">
               Learner Reflections
             </h2>
             {debrief.prompts.map((prompt) => (
-              <div key={prompt.key} className="mt-6 border-t border-slate-200 pt-6">
-                <h3 className="font-semibold text-slate-950">
+              <div key={prompt.key} className="mt-6 border-t border-line pt-6">
+                <h3 className="font-semibold text-ink">
                   {promptHeadings[prompt.key]}
                 </h3>
                 {prompt.text && (
-                  <p className="mt-1 leading-7 text-slate-700">{prompt.text}</p>
+                  <p className="mt-1 leading-7 text-ink-2">{prompt.text}</p>
                 )}
                 {prompt.responses.length === 0 ? (
-                  <p className="mt-3 text-slate-600">No response yet.</p>
+                  <p className="mt-3 text-ink-2">No response yet.</p>
                 ) : (
                   <ol className="mt-3 space-y-2">
                     {prompt.responses.map((response, index) => (
-                      <li key={index} className="rounded-lg bg-slate-50 px-4 py-3 text-slate-800">
-                        <p className="text-xs font-semibold text-slate-500">
+                      <li key={index} className="rounded-lg bg-sunken px-4 py-3 text-ink-2">
+                        <p className="text-xs font-semibold text-ink-3">
                           {response.response === "skip" ? "Skipped" : "Reflection"} ·{" "}
                           <time dateTime={new Date(response.submittedAt).toISOString()}>
                             {formatDate(response.submittedAt)}
@@ -168,10 +168,10 @@ export function ReviewDetailView({ review }: { review: Detail }) {
           </section>
 
           <section aria-labelledby="review-feedback-title" className={sectionClass}>
-            <h2 id="review-feedback-title" className="text-lg font-semibold text-slate-950">
+            <h2 id="review-feedback-title" className="text-lg font-semibold text-ink">
               Formative Feedback
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <p className="mt-2 text-sm leading-6 text-ink-2">
               Synthetic educational feedback on communication, linked to
               recorded events. It is not clinical guidance, a grade, or a
               competency assessment.
@@ -182,7 +182,7 @@ export function ReviewDetailView({ review }: { review: Detail }) {
                 noCriteriaText="Instructors have not set Communication Criteria for this Scenario yet."
               />
             ) : (
-              <p className="mt-4 text-slate-700">
+              <p className="mt-4 text-ink-2">
                 {feedbackStatus[debrief.feedback.status]}
               </p>
             )}
@@ -196,10 +196,10 @@ export function ReviewDetailView({ review }: { review: Detail }) {
 export function ReviewNotAvailableView() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+      <h1 className="text-3xl font-bold tracking-tight text-ink">
         This Attempt is not available for your review
       </h1>
-      <p className="mt-4 leading-7 text-slate-600">
+      <p className="mt-4 leading-7 text-ink-2">
         You can review only Ended Attempts within your current authorized
         scope.
       </p>
@@ -213,10 +213,10 @@ export function ReviewNotAvailableView() {
 export function ReviewerRoleRequiredView() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+      <h1 className="text-3xl font-bold tracking-tight text-ink">
         Faculty or Institutional Admin role required
       </h1>
-      <p className="mt-4 leading-7 text-slate-600">
+      <p className="mt-4 leading-7 text-ink-2">
         Your Pilot Membership does not include a review role.
       </p>
       <Link to="/" className={`mt-6 inline-block ${link}`}>

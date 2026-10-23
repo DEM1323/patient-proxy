@@ -49,7 +49,7 @@ export function destinationsForRole(role: MembershipRole) {
 }
 
 const linkClass =
-  "rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "rounded-md px-3 py-2 text-sm font-medium text-ink-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
 // Header links for the signed-in Member; nothing before sign-in or admission.
 export function RoleNavigation() {
@@ -63,7 +63,7 @@ export function RoleNavigation() {
   }
   return (
     <>
-      <Link to="/" className={linkClass} activeOptions={{ exact: true }} activeProps={{ className: "bg-slate-100 text-primary" }}>
+      <Link to="/" className={linkClass} activeOptions={{ exact: true }} activeProps={{ className: "bg-neutral text-blue-text" }}>
         Home
       </Link>
       {roleDestinations(membership.roles).map((destination) => (
@@ -71,7 +71,7 @@ export function RoleNavigation() {
           key={destination.to}
           to={destination.to}
           className={linkClass}
-          activeProps={{ className: "bg-slate-100 text-primary" }}
+          activeProps={{ className: "bg-neutral text-blue-text" }}
         >
           {destination.label}
         </Link>

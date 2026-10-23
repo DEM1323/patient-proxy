@@ -35,7 +35,7 @@ const ratingLabels = {
 };
 
 const sectionClass =
-  "mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm";
+  "mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm";
 
 export function DebriefView({
   debrief,
@@ -47,8 +47,8 @@ export function DebriefView({
   if (debrief.status === "not_available") {
     return debrief.reason === "active" ? null : (
       <section className={sectionClass}>
-        <h2 className="text-lg font-semibold text-slate-950">Attempt Debrief</h2>
-        <p className="mt-2 leading-7 text-slate-700">
+        <h2 className="text-lg font-semibold text-ink">Attempt Debrief</h2>
+        <p className="mt-2 leading-7 text-ink-2">
           {debrief.reason === "restarted"
             ? "This Attempt ended when you started a new one, so it has no Debrief."
             : "This Attempt ended when your access was changed, so it has no Debrief."}
@@ -62,19 +62,19 @@ export function DebriefView({
     // instructors' guidance.
     return (
       <section aria-labelledby="debrief-title" className={sectionClass}>
-        <h2 id="debrief-title" className="text-lg font-semibold text-slate-950">
+        <h2 id="debrief-title" className="text-lg font-semibold text-ink">
           Attempt Debrief
         </h2>
         <div aria-live="polite">
           {!debrief.failed && (
-            <p className="mt-2 italic text-slate-600">
+            <p className="mt-2 italic text-ink-2">
               Preparing your reflection questions…
             </p>
           )}
         </div>
         {debrief.failed && (
-          <div role="alert" className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-5 py-4">
-            <p className="font-medium text-rose-800">
+          <div role="alert" className="mt-4 rounded-lg border border-red-line bg-red-tint px-5 py-4">
+            <p className="font-medium text-red">
               Your reflection questions could not be prepared yet.
             </p>
             <button
@@ -88,7 +88,7 @@ export function DebriefView({
           </div>
         )}
         {props.notice && (
-          <p role="alert" className="mt-4 font-medium text-rose-700">
+          <p role="alert" className="mt-4 font-medium text-red">
             {props.notice}
           </p>
         )}
@@ -100,10 +100,10 @@ export function DebriefView({
   return (
     <>
       <section aria-labelledby="debrief-title" className={sectionClass}>
-        <h2 id="debrief-title" className="text-lg font-semibold text-slate-950">
+        <h2 id="debrief-title" className="text-lg font-semibold text-ink">
           Attempt Debrief
         </h2>
-        <p className="mt-2 leading-7 text-slate-700">
+        <p className="mt-2 leading-7 text-ink-2">
           {revealed
             ? "Your reflections are saved with this Attempt. You can add to them at any time; earlier responses are never replaced."
             : "Answer or skip each question to see your Formative Feedback. Your reflections are saved with this Attempt and shared with your authorized Faculty."}
@@ -116,7 +116,7 @@ export function DebriefView({
           />
         ))}
         {props.notice && (
-          <p role="alert" className="mt-4 font-medium text-rose-700">
+          <p role="alert" className="mt-4 font-medium text-red">
             {props.notice}
           </p>
         )}
@@ -140,19 +140,19 @@ function ReflectionPrompt({
   const draft = props.drafts[prompt.key];
   const answered = prompt.responses.length > 0;
   return (
-    <div className="mt-6 border-t border-slate-200 pt-6">
-      <h3 className="font-semibold text-slate-950">
+    <div className="mt-6 border-t border-line pt-6">
+      <h3 className="font-semibold text-ink">
         {promptHeadings[prompt.key]}
       </h3>
-      <p className="mt-1 leading-7 text-slate-700">{prompt.text}</p>
+      <p className="mt-1 leading-7 text-ink-2">{prompt.text}</p>
       {answered && (
         <ol className="mt-3 space-y-2">
           {prompt.responses.map((response, index) => (
             <li
               key={index}
-              className="rounded-lg bg-slate-50 px-4 py-3 text-slate-800"
+              className="rounded-lg bg-sunken px-4 py-3 text-ink-2"
             >
-              <p className="text-xs font-semibold text-slate-500">
+              <p className="text-xs font-semibold text-ink-3">
                 {response.response === "skip" ? "Skipped" : "Your reflection"} ·{" "}
                 <time dateTime={new Date(response.submittedAt).toISOString()}>
                   {new Date(response.submittedAt).toLocaleString()}
@@ -167,7 +167,7 @@ function ReflectionPrompt({
           ))}
         </ol>
       )}
-      <label htmlFor={fieldId} className="mt-4 block text-sm font-semibold text-slate-800">
+      <label htmlFor={fieldId} className="mt-4 block text-sm font-semibold text-ink-2">
         {answered ? "Add to your reflection" : "Your reflection"}
       </label>
       <textarea
@@ -176,7 +176,7 @@ function ReflectionPrompt({
         maxLength={4000}
         value={draft}
         onChange={(event) => props.onDraftChange(prompt.key, event.target.value)}
-        className="mt-2 block w-full rounded-lg border border-slate-300 px-4 py-3 leading-7 text-slate-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        className="mt-2 block w-full rounded-lg border border-line px-4 py-3 leading-7 text-ink focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
       />
       <div className="mt-3 flex flex-wrap gap-3">
         <button
@@ -211,22 +211,22 @@ function FeedbackView({
 }) {
   return (
     <section aria-labelledby="feedback-title" className={sectionClass}>
-      <h2 id="feedback-title" className="text-lg font-semibold text-slate-950">
+      <h2 id="feedback-title" className="text-lg font-semibold text-ink">
         Formative Feedback
       </h2>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
+      <p className="mt-2 text-sm leading-6 text-ink-2">
         Synthetic educational feedback on your communication, linked to
         recorded events in this Attempt. It is not clinical guidance, a grade,
         or a competency assessment.
       </p>
       <div aria-live="polite">
         {feedback.status === "pending" && (
-          <p className="mt-4 italic text-slate-600">Preparing your feedback…</p>
+          <p className="mt-4 italic text-ink-2">Preparing your feedback…</p>
         )}
       </div>
       {(feedback.status === "failed" || feedback.status === "not_started") && (
-        <div role="alert" className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-5 py-4">
-          <p className="font-medium text-rose-800">
+        <div role="alert" className="mt-4 rounded-lg border border-red-line bg-red-tint px-5 py-4">
+          <p className="font-medium text-red">
             Your feedback could not be prepared yet.
           </p>
           <button
@@ -256,7 +256,7 @@ export function FeedbackSections({
   sections: Sections;
 }) {
   return (
-    <div className="mt-4 space-y-6 text-slate-800">
+    <div className="mt-4 space-y-6 text-ink-2">
       <FeedbackList title="Encounter summary" items={sections.summary} />
       <FeedbackList
         title="Strengths"
@@ -264,12 +264,12 @@ export function FeedbackSections({
         empty="No strengths were identified from the recorded evidence."
       />
       <div>
-        <h3 className="font-semibold text-slate-950">Priorities</h3>
+        <h3 className="font-semibold text-ink">Priorities</h3>
         <ul className="mt-2 space-y-2">
           {sections.priorities.map((item, index) => (
             <li key={index} className="leading-7">
               {!item.observed && (
-                <span className="mr-2 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                <span className="mr-2 rounded bg-neutral px-2 py-0.5 text-xs font-semibold text-ink-2">
                   Not observed
                 </span>
               )}
@@ -279,14 +279,14 @@ export function FeedbackSections({
         </ul>
       </div>
       <div>
-        <h3 className="font-semibold text-slate-950">Communication Criteria</h3>
+        <h3 className="font-semibold text-ink">Communication Criteria</h3>
         {sections.criteria === null ? (
-          <p className="mt-2 leading-7 text-slate-600">{noCriteriaText}</p>
+          <p className="mt-2 leading-7 text-ink-2">{noCriteriaText}</p>
         ) : (
           <ul className="mt-2 space-y-3">
             {sections.criteria.map((criterion) => (
               <li key={criterion.key} className="leading-7">
-                <p className="font-medium text-slate-950">
+                <p className="font-medium text-ink">
                   {criterion.label}: {ratingLabels[criterion.rating]}
                 </p>
                 <p>
@@ -298,7 +298,7 @@ export function FeedbackSections({
         )}
       </div>
       <div>
-        <h3 className="font-semibold text-slate-950">
+        <h3 className="font-semibold text-ink">
           Suggestions for another Attempt
         </h3>
         <ol className="mt-2 list-decimal space-y-1 pl-6 leading-7">
@@ -322,9 +322,9 @@ function FeedbackList({
 }) {
   return (
     <div>
-      <h3 className="font-semibold text-slate-950">{title}</h3>
+      <h3 className="font-semibold text-ink">{title}</h3>
       {items.length === 0 ? (
-        <p className="mt-2 leading-7 text-slate-600">{empty}</p>
+        <p className="mt-2 leading-7 text-ink-2">{empty}</p>
       ) : (
         <ul className="mt-2 space-y-2">
           {items.map((item, index) => (
@@ -344,14 +344,14 @@ function Evidence({ sequences }: { sequences: number[] }) {
     return null;
   }
   return (
-    <span className="text-sm text-slate-500">
+    <span className="text-sm text-ink-3">
       (evidence:{" "}
       {sequences.map((sequence, index) => (
         <span key={sequence}>
           {index > 0 && ", "}
           <a
             href={`#event-${sequence}`}
-            className="font-semibold text-primary hover:underline"
+            className="font-semibold text-blue-text hover:underline"
           >
             event {sequence}
           </a>

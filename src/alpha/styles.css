@@ -1,15 +1,97 @@
+@import "@fontsource-variable/plus-jakarta-sans/wght.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens from the approved redesign (Figma "Patient Proxy Redesign",
+ * page 02, Color collection). Each variable's name is its Figma WEB code
+ * syntax. Color means voice: blue is the Learner, lavender is the patient,
+ * teal is Clinical Actions and observations; amber and red are warnings only.
+ */
 @layer base {
   :root {
     color-scheme: light;
-    font-family:
-      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    --ink: #0f2537;
+    --ink-2: #4a5d6e;
+    --ink-3: #5f7181;
+    --line: #dce3ea;
+    --line-2: #ebeff3;
+    --canvas: #fbf9fb;
+    --surface: #ffffff;
+    --sunken: #f6f8fa;
+    --neutral: #eef1f4;
+    --blue: #015a8b;
+    --blue-text: #015a8b;
+    --on-blue: #ffffff;
+    --harbor: #216f99;
+    --rail: #015a8b;
+    --rail-text: #f1f7fb;
+    --rail-label: #c3daea;
+    --ceil: #e3eef6;
+    --ceil-2: #c9ddeb;
+    --lav: #a09dce;
+    --lav-tint: #efeef8;
+    --lav-ink: #46427f;
+    --teal: #1d7268;
+    --teal-tint: #e4f1ee;
+    --teal-line: #cfe3df;
+    --amber-ink: #8a5a00;
+    --amber-tint: #fff3d9;
+    --amber-line: #f1ddae;
+    --red: #b4232c;
+    --red-tint: #fcebec;
+    --red-line: #ebc3c6;
+    --dis-bg: #eef1f4;
+    --dis-ink: #8796a3;
+    --scrim: rgb(15 37 55 / 0.45);
+    --font:
+      "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Segoe UI", system-ui,
       sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --ink: #e7eef4;
+      --ink-2: #a9bac7;
+      --ink-3: #8da0af;
+      --line: #23384a;
+      --line-2: #1c2e3d;
+      --canvas: #0b1620;
+      --surface: #112230;
+      --sunken: #0e1c28;
+      --neutral: #1b2d3b;
+      --blue: #1f79b3;
+      --blue-text: #8cc8ee;
+      --harbor: #1c6798;
+      --rail: #08304a;
+      --rail-label: #b5cee0;
+      --ceil: #16334a;
+      --ceil-2: #24496a;
+      --lav-tint: #262446;
+      --lav-ink: #cfcbf5;
+      --teal: #63c7b8;
+      --teal-tint: #133631;
+      --teal-line: #1f4a44;
+      --amber-ink: #f1c46b;
+      --amber-tint: #3a2c0e;
+      --amber-line: #5a4614;
+      --red: #f08a8f;
+      --red-tint: #3a1a1d;
+      --red-line: #5a2a2e;
+      --dis-bg: #1b2d3b;
+      --dis-ink: #6b8090;
+      --scrim: rgb(0 0 0 / 0.6);
+    }
+  }
+
+  :root {
+    font-family: var(--font);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
+    accent-color: var(--blue);
   }
 
   * {
@@ -20,5 +102,23 @@
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    background: var(--canvas);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: var(--surface);
+    color: var(--ink);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
   }
 }
