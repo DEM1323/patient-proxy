@@ -1,11 +1,8 @@
-import type { ReactNode } from "react";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
 import { button } from "../../ui/button";
 
 type AccessDenialReason =
-  | "email_not_verified"
-  | "not_on_roster"
-  | "roster_entry_already_bound";
+  "email_not_verified" | "not_on_roster" | "roster_entry_already_bound";
 
 export type MembershipSummary = {
   id: string;
@@ -13,101 +10,6 @@ export type MembershipSummary = {
   roles: MembershipRole[];
   status: "active" | "inactive";
 };
-
-const journeyDetails: Record<
-  MembershipRole,
-  { eyebrow: string; title: string; description: string; accent: string }
-> = {
-  learner: {
-    eyebrow: "Learner journey",
-    title: "Practice with Elena Ruiz",
-    description:
-      "Review the Learner Brief, complete a communication Attempt, and revisit your Attempt Debrief.",
-    accent: "border-ceil-2 bg-ceil",
-  },
-  faculty: {
-    eyebrow: "Faculty journey",
-    title: "Review completed Attempts",
-    description:
-      "Find Ended Attempts in your authorized Learning Groups and review their evidence.",
-    accent: "border-line bg-lav-tint",
-  },
-  author: {
-    eyebrow: "Author journey",
-    title: "Shape learning content",
-    description:
-      "Authoring remains intentionally outside this alpha journey, but your role is recognized.",
-    accent: "border-amber-line bg-amber-tint",
-  },
-  institutionalAdmin: {
-    eyebrow: "Institutional Admin journey",
-    title: "Manage your institution",
-    description:
-      "Add Members, and review Ended Attempts institution-wide, without inheriting Learner, Faculty, or Author permissions.",
-    accent: "border-teal-line bg-teal-tint",
-  },
-};
-
-export function MembershipHome({
-  journeyActions = {},
-  membership,
-  onSignOut,
-}: {
-  journeyActions?: Partial<Record<MembershipRole, ReactNode>>;
-  membership: MembershipSummary;
-  onSignOut: () => void;
-}) {
-  return (
-    <main className="mx-auto max-w-6xl px-5 py-12 sm:py-16">
-      <div className="flex flex-col gap-6 border-b border-line pb-9 sm:flex-row sm:items-end sm:justify-between">
-        <section>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-text">
-            {membership.institution.name}
-          </p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-ink sm:text-5xl">
-            Choose where you want to begin.
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-ink-2">
-            Your Pilot Membership makes each assigned role available separately.
-            One role never grants another role&apos;s permissions.
-          </p>
-        </section>
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="w-fit rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-        >
-          Sign out
-        </button>
-      </div>
-
-      <div className="mt-9 grid gap-5 md:grid-cols-2">
-        {membership.roles.map((role) => {
-          const journey = journeyDetails[role];
-          return (
-            <section
-              key={role}
-              className={`rounded-2xl border p-6 shadow-sm ${journey.accent}`}
-            >
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-ink-2">
-                {journey.eyebrow}
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-ink">
-                {journey.title}
-              </h2>
-              <p className="mt-3 leading-7 text-ink-2">{journey.description}</p>
-              <div className="mt-6">
-                {journeyActions[role] ?? (
-                  <p className="text-sm font-semibold text-blue-text">Journey available</p>
-                )}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-    </main>
-  );
-}
 
 // The landing (Figma 01). Its sample bedside conversation is left out: the
 // sample showed Elena's authored observations, which are hidden Clinical
@@ -120,9 +22,15 @@ export function SignInView({ onSignIn }: { onSignIn: () => void }) {
           <span className="text-[22px] font-extrabold leading-tight text-blue-text">
             Patient Proxy
           </span>
-          <span className="text-small text-ink-2">UMass Boston nursing pilot</span>
+          <span className="text-small text-ink-2">
+            UMass Boston nursing pilot
+          </span>
         </div>
-        <button type="button" onClick={onSignIn} className={button("secondary")}>
+        <button
+          type="button"
+          onClick={onSignIn}
+          className={button("secondary")}
+        >
           Sign in with Google
         </button>
       </header>
@@ -163,7 +71,11 @@ export function SignInView({ onSignIn }: { onSignIn: () => void }) {
 
 // A known Member whose participation an Institutional Admin deactivated.
 // Their records are kept; they are not asked to sign up again.
-export function MembershipDeactivatedView({ onSignOut }: { onSignOut: () => void }) {
+export function MembershipDeactivatedView({
+  onSignOut,
+}: {
+  onSignOut: () => void;
+}) {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl items-center px-5 py-16">
       <section className="w-full rounded-2xl border border-line bg-surface p-8 shadow-sm sm:p-10">
@@ -197,7 +109,8 @@ export function AccessDeniedView({
   reason: AccessDenialReason;
 }) {
   const explanation = {
-    email_not_verified: "WorkOS could not confirm a verified email for this identity.",
+    email_not_verified:
+      "WorkOS could not confirm a verified email for this identity.",
     not_on_roster: "This identity is not on the private Pilot Roster.",
     roster_entry_already_bound:
       "This approved Pilot Roster identity is already bound to another sign-in.",
@@ -213,8 +126,9 @@ export function AccessDeniedView({
           {explanation}
         </h1>
         <p className="mt-4 max-w-xl leading-7 text-ink-2">
-          No Pilot Membership was created. Contact the pilot&apos;s Institutional
-          Admin to confirm the exact Google email approved for your participation.
+          No Pilot Membership was created. Contact the pilot&apos;s
+          Institutional Admin to confirm the exact Google email approved for
+          your participation.
         </p>
         <button
           type="button"
@@ -228,7 +142,9 @@ export function AccessDeniedView({
   );
 }
 
-export function AccessLoadingView({ message = "Checking your Pilot Membership" }) {
+export function AccessLoadingView({
+  message = "Checking your Pilot Membership",
+}) {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-5 py-16">
       <div className="text-center" role="status">

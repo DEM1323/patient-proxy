@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MembersPage } from ".";
@@ -20,7 +27,11 @@ const testState = vi.hoisted(() => ({
 }));
 
 vi.mock("../membership-access", () => ({
-  MembershipGate: ({ children }: { children: (member: unknown) => React.ReactNode }) =>
+  MembershipGate: ({
+    children,
+  }: {
+    children: (member: unknown) => React.ReactNode;
+  }) =>
     children({
       membership: {
         id: "membership-id",
@@ -75,20 +86,27 @@ const data = {
     },
   ],
   pending: [
-    { id: "entry-1", email: "pending@example.edu", roles: ["learner"], approvedAt: 2 },
+    {
+      id: "entry-1",
+      email: "pending@example.edu",
+      roles: ["learner"],
+      approvedAt: 2,
+    },
   ],
 };
 
-const membersSection = () => within(screen.getByRole("region", { name: "Members" }));
+const membersSection = () =>
+  within(screen.getByRole("region", { name: "Members" }));
 const row = (email: string) =>
-  within(membersSection().getByText(email).closest("li") as HTMLElement);
+  within(membersSection().getByText(email).closest("tbody") as HTMLElement);
 
 describe("Members page", () => {
   afterEach(() => {
     cleanup();
     testState.roles = ["institutionalAdmin"];
     testState.auditLog = [];
-    for (const mutation of Object.values(testState.mutations)) mutation.mockReset();
+    for (const mutation of Object.values(testState.mutations))
+      mutation.mockReset();
   });
 
   it("lists Members and pending approvals separately, marking you and deactivated Members", () => {
@@ -97,12 +115,16 @@ describe("Members page", () => {
 
     expect(screen.getByText("pending@example.edu")).toBeTruthy();
     expect(screen.getByText(/awaiting first sign-in/)).toBeTruthy();
-    expect(row("admin@example.edu").getByText("Institutional Admin")).toBeTruthy();
+    expect(
+      row("admin@example.edu").getByText("Institutional Admin, Faculty"),
+    ).toBeTruthy();
     expect(row("admin@example.edu").getByText("(you)")).toBeTruthy();
     // No controls on your own Membership.
     expect(row("admin@example.edu").queryByRole("button")).toBeNull();
     expect(row("away@example.edu").getByText("Deactivated")).toBeTruthy();
-    expect(row("away@example.edu").getByRole("button", { name: "Reactivate" })).toBeTruthy();
+    expect(
+      row("away@example.edu").getByRole("button", { name: "Reactivate" }),
+    ).toBeTruthy();
   });
 
   it("pre-approves an identity with all four roles, without implying an email is sent", async () => {
@@ -117,11 +139,20 @@ describe("Members page", () => {
     fireEvent.change(screen.getByLabelText("Approved identity (email)"), {
       target: { value: "new@example.edu" },
     });
-    const form = within(screen.getByRole("region", { name: "Pre-approve an identity" }));
-    for (const role of ["Learner", "Faculty", "Author", "Institutional Admin"]) {
+    const form = within(
+      screen.getByRole("region", { name: "Pre-approve an identity" }),
+    );
+    for (const role of [
+      "Learner",
+      "Faculty",
+      "Author",
+      "Institutional Admin",
+    ]) {
       fireEvent.click(form.getByRole("checkbox", { name: role }));
     }
-    fireEvent.click(screen.getByRole("button", { name: "Pre-approve identity" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Pre-approve identity" }),
+    );
 
     await waitFor(() =>
       expect(testState.mutations.preapprove).toHaveBeenCalledWith({
@@ -129,7 +160,9 @@ describe("Members page", () => {
         roles: ["learner", "faculty", "author", "institutionalAdmin"],
       }),
     );
-    expect((await screen.findByRole("status")).textContent).toMatch(/is pre-approved/);
+    expect((await screen.findByRole("status")).textContent).toMatch(
+      /is pre-approved/,
+    );
   });
 
   it("edits a Member's roles and explains a refused change", async () => {
@@ -137,9 +170,15 @@ describe("Members page", () => {
     testState.mutations.setRoles.mockResolvedValue({ status: "last_admin" });
     render(<MembersPage />);
 
-    fireEvent.click(row("learner@example.edu").getByRole("button", { name: "Edit roles" }));
-    fireEvent.click(row("learner@example.edu").getByRole("checkbox", { name: "Faculty" }));
-    fireEvent.click(row("learner@example.edu").getByRole("button", { name: "Save roles" }));
+    fireEvent.click(
+      row("learner@example.edu").getByRole("button", { name: "Edit roles" }),
+    );
+    fireEvent.click(
+      row("learner@example.edu").getByRole("checkbox", { name: "Faculty" }),
+    );
+    fireEvent.click(
+      row("learner@example.edu").getByRole("button", { name: "Save roles" }),
+    );
 
     await waitFor(() =>
       expect(testState.mutations.setRoles).toHaveBeenCalledWith({
@@ -157,27 +196,37 @@ describe("Members page", () => {
     testState.mutations.deactivate.mockResolvedValue({ status: "updated" });
     render(<MembersPage />);
 
-    fireEvent.click(row("learner@example.edu").getByRole("button", { name: "Deactivate" }));
+    fireEvent.click(
+      row("learner@example.edu").getByRole("button", { name: "Deactivate" }),
+    );
     const dialog = screen.getByRole("alertdialog");
     expect(dialog.textContent).toMatch(/Active Attempt ends/);
     expect(dialog.textContent).toMatch(/are kept/);
     expect(testState.mutations.deactivate).not.toHaveBeenCalled();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Deactivate Member" }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Deactivate Member" }),
+    );
 
     await waitFor(() =>
       expect(testState.mutations.deactivate).toHaveBeenCalledWith({
         membershipId: "member-learner",
       }),
     );
-    expect((await screen.findByRole("status")).textContent).toMatch(/Member deactivated/);
+    expect((await screen.findByRole("status")).textContent).toMatch(
+      /Member deactivated/,
+    );
   });
 
   it("edits a pending approval's roles", async () => {
     testState.data = data;
-    testState.mutations.setPendingApprovalRoles.mockResolvedValue({ status: "updated" });
+    testState.mutations.setPendingApprovalRoles.mockResolvedValue({
+      status: "updated",
+    });
     render(<MembersPage />);
 
-    const pending = within(screen.getByText("pending@example.edu").closest("li") as HTMLElement);
+    const pending = within(
+      screen.getByText("pending@example.edu").closest("tbody") as HTMLElement,
+    );
     fireEvent.click(pending.getByRole("button", { name: "Edit roles" }));
     fireEvent.click(pending.getByRole("checkbox", { name: "Author" }));
     fireEvent.click(pending.getByRole("button", { name: "Save roles" }));
@@ -210,14 +259,18 @@ describe("Members page", () => {
     const log = within(screen.getByRole("region", { name: "Recent changes" }));
     expect(log.getByText("Roles changed")).toBeTruthy();
     expect(log.getByText(/Learner → Learner, Faculty/)).toBeTruthy();
-    expect(log.getByText("by admin@example.edu")).toBeTruthy();
+    expect(log.getByText("admin@example.edu")).toBeTruthy();
   });
 
   it("holds pre-approval until the roster migration and gates non-admins", () => {
     testState.data = { ...data, rosterSource: "environment" };
     render(<MembersPage />);
-    expect(screen.queryByRole("button", { name: "Pre-approve identity" })).toBeNull();
-    expect(screen.getByText(/after the operator moves the Pilot Roster/)).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Pre-approve identity" }),
+    ).toBeNull();
+    expect(
+      screen.getByText(/after the operator moves the Pilot Roster/),
+    ).toBeTruthy();
     cleanup();
 
     testState.roles = ["learner", "faculty"];

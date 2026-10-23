@@ -1,5 +1,8 @@
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@/convex/_generated/api";
+import { Badge, Notice } from "../../ui/primitives";
+import { Icon } from "../../ui/icon";
+import { EvidenceLink } from "../../ui/evidence";
 import { primaryButton, secondaryButton } from "../attempt-start/view";
 
 type Debrief = NonNullable<
@@ -34,8 +37,7 @@ const ratingLabels = {
   not_yet_demonstrated: "Not observed in this Attempt",
 };
 
-const sectionClass =
-  "mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm";
+const sectionClass = "mb-7 min-w-0 bg-surface";
 
 export function DebriefView({
   debrief,
@@ -47,8 +49,8 @@ export function DebriefView({
   if (debrief.status === "not_available") {
     return debrief.reason === "active" ? null : (
       <section className={sectionClass}>
-        <h2 className="text-lg font-semibold text-ink">Attempt Debrief</h2>
-        <p className="mt-2 leading-7 text-ink-2">
+        <h2 className="text-heading font-bold text-ink">Attempt Debrief</h2>
+        <p className="mt-2 text-small text-ink-2">
           {debrief.reason === "restarted"
             ? "This Attempt ended when you started a new one, so it has no Debrief."
             : "This Attempt ended when your access was changed, so it has no Debrief."}
@@ -62,7 +64,7 @@ export function DebriefView({
     // instructors' guidance.
     return (
       <section aria-labelledby="debrief-title" className={sectionClass}>
-        <h2 id="debrief-title" className="text-lg font-semibold text-ink">
+        <h2 id="debrief-title" className="text-heading font-bold text-ink">
           Attempt Debrief
         </h2>
         <div aria-live="polite">
@@ -73,7 +75,10 @@ export function DebriefView({
           )}
         </div>
         {debrief.failed && (
-          <div role="alert" className="mt-4 rounded-lg border border-red-line bg-red-tint px-5 py-4">
+          <div
+            role="alert"
+            className="mt-4 rounded-lg border border-red-line bg-red-tint px-5 py-4"
+          >
             <p className="font-medium text-red">
               Your reflection questions could not be prepared yet.
             </p>
@@ -100,20 +105,16 @@ export function DebriefView({
   return (
     <>
       <section aria-labelledby="debrief-title" className={sectionClass}>
-        <h2 id="debrief-title" className="text-lg font-semibold text-ink">
+        <h2 id="debrief-title" className="text-heading font-bold text-ink">
           Attempt Debrief
         </h2>
-        <p className="mt-2 leading-7 text-ink-2">
+        <p className="mt-2 text-small text-ink-2">
           {revealed
             ? "Your reflections are saved with this Attempt. You can add to them at any time; earlier responses are never replaced."
             : "Answer or skip each question to see your Formative Feedback. Your reflections are saved with this Attempt and shared with your authorized Faculty."}
         </p>
         {debrief.prompts.map((prompt) => (
-          <ReflectionPrompt
-            key={prompt.key}
-            prompt={prompt}
-            props={props}
-          />
+          <ReflectionPrompt key={prompt.key} prompt={prompt} props={props} />
         ))}
         {props.notice && (
           <p role="alert" className="mt-4 font-medium text-red">
@@ -122,6 +123,18 @@ export function DebriefView({
         )}
       </section>
 
+      {!revealed && (
+        <section aria-label="Locked Formative Feedback" className="mb-7">
+          <h3 className="mb-3 flex items-center gap-2 font-bold">
+            <Icon name="lock" />
+            Formative Feedback
+          </h3>
+          <Notice>
+            Answer or skip both questions to see your Formative Feedback. It is
+            being prepared from your recorded Attempt.
+          </Notice>
+        </section>
+      )}
       {revealed && debrief.feedback && (
         <FeedbackView feedback={debrief.feedback} props={props} />
       )}
@@ -140,17 +153,15 @@ function ReflectionPrompt({
   const draft = props.drafts[prompt.key];
   const answered = prompt.responses.length > 0;
   return (
-    <div className="mt-6 border-t border-line pt-6">
-      <h3 className="font-semibold text-ink">
-        {promptHeadings[prompt.key]}
-      </h3>
+    <div className="mt-6 border-t border-line-2 pt-5">
+      <h3 className="font-semibold text-ink">{promptHeadings[prompt.key]}</h3>
       <p className="mt-1 leading-7 text-ink-2">{prompt.text}</p>
       {answered && (
         <ol className="mt-3 space-y-2">
           {prompt.responses.map((response, index) => (
             <li
               key={index}
-              className="rounded-lg bg-sunken px-4 py-3 text-ink-2"
+              className="rounded-lg bg-sunken px-4 py-3 text-ui text-ink"
             >
               <p className="text-xs font-semibold text-ink-3">
                 {response.response === "skip" ? "Skipped" : "Your reflection"} ·{" "}
@@ -167,7 +178,10 @@ function ReflectionPrompt({
           ))}
         </ol>
       )}
-      <label htmlFor={fieldId} className="mt-4 block text-sm font-semibold text-ink-2">
+      <label
+        htmlFor={fieldId}
+        className="mt-4 block text-sm font-semibold text-ink-2"
+      >
         {answered ? "Add to your reflection" : "Your reflection"}
       </label>
       <textarea
@@ -175,8 +189,10 @@ function ReflectionPrompt({
         rows={3}
         maxLength={4000}
         value={draft}
-        onChange={(event) => props.onDraftChange(prompt.key, event.target.value)}
-        className="mt-2 block w-full rounded-lg border border-line px-4 py-3 leading-7 text-ink focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
+        onChange={(event) =>
+          props.onDraftChange(prompt.key, event.target.value)
+        }
+        className="proxy-input mt-2 min-h-[96px]"
       />
       <div className="mt-3 flex flex-wrap gap-3">
         <button
@@ -211,13 +227,13 @@ function FeedbackView({
 }) {
   return (
     <section aria-labelledby="feedback-title" className={sectionClass}>
-      <h2 id="feedback-title" className="text-lg font-semibold text-ink">
+      <h2 id="feedback-title" className="text-heading font-bold text-ink">
         Formative Feedback
       </h2>
       <p className="mt-2 text-sm leading-6 text-ink-2">
-        Synthetic educational feedback on your communication, linked to
-        recorded events in this Attempt. It is not clinical guidance, a grade,
-        or a competency assessment.
+        Synthetic educational feedback on your communication, linked to recorded
+        events in this Attempt. It is not clinical guidance, a grade, or a
+        competency assessment.
       </p>
       <div aria-live="polite">
         {feedback.status === "pending" && (
@@ -225,7 +241,10 @@ function FeedbackView({
         )}
       </div>
       {(feedback.status === "failed" || feedback.status === "not_started") && (
-        <div role="alert" className="mt-4 rounded-lg border border-red-line bg-red-tint px-5 py-4">
+        <div
+          role="alert"
+          className="mt-4 rounded-lg border border-red-line bg-red-tint px-5 py-4"
+        >
           <p className="font-medium text-red">
             Your feedback could not be prepared yet.
           </p>
@@ -256,7 +275,7 @@ export function FeedbackSections({
   sections: Sections;
 }) {
   return (
-    <div className="mt-4 space-y-6 text-ink-2">
+    <div className="mt-4 space-y-6 text-ui text-ink">
       <FeedbackList title="Encounter summary" items={sections.summary} />
       <FeedbackList
         title="Strengths"
@@ -281,16 +300,31 @@ export function FeedbackSections({
       <div>
         <h3 className="font-semibold text-ink">Communication Criteria</h3>
         {sections.criteria === null ? (
-          <p className="mt-2 leading-7 text-ink-2">{noCriteriaText}</p>
+          <p className="mt-2 text-small text-ink-2">{noCriteriaText}</p>
         ) : (
           <ul className="mt-2 space-y-3">
             {sections.criteria.map((criterion) => (
-              <li key={criterion.key} className="leading-7">
+              <li
+                key={criterion.key}
+                className="rounded-lg border border-line p-3.5 text-small"
+              >
                 <p className="font-medium text-ink">
-                  {criterion.label}: {ratingLabels[criterion.rating]}
+                  {criterion.label}{" "}
+                  <Badge
+                    tone={
+                      criterion.rating === "demonstrated"
+                        ? "teal"
+                        : criterion.rating === "partially_demonstrated"
+                          ? "lav"
+                          : "neutral"
+                    }
+                  >
+                    {ratingLabels[criterion.rating]}
+                  </Badge>
                 </p>
                 <p>
-                  {criterion.rationale} <Evidence sequences={criterion.evidence} />
+                  {criterion.rationale}{" "}
+                  <Evidence sequences={criterion.evidence} />
                 </p>
               </li>
             ))}
@@ -324,7 +358,7 @@ function FeedbackList({
     <div>
       <h3 className="font-semibold text-ink">{title}</h3>
       {items.length === 0 ? (
-        <p className="mt-2 leading-7 text-ink-2">{empty}</p>
+        <p className="mt-2 text-small text-ink-2">{empty}</p>
       ) : (
         <ul className="mt-2 space-y-2">
           {items.map((item, index) => (
@@ -344,20 +378,10 @@ function Evidence({ sequences }: { sequences: number[] }) {
     return null;
   }
   return (
-    <span className="text-sm text-ink-3">
-      (evidence:{" "}
-      {sequences.map((sequence, index) => (
-        <span key={sequence}>
-          {index > 0 && ", "}
-          <a
-            href={`#event-${sequence}`}
-            className="font-semibold text-blue-text hover:underline"
-          >
-            event {sequence}
-          </a>
-        </span>
+    <span>
+      {sequences.map((sequence) => (
+        <EvidenceLink key={sequence} sequence={sequence} />
       ))}
-      )
     </span>
   );
 }

@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LearningGroupsPage } from ".";
@@ -16,7 +23,11 @@ const testState = vi.hoisted(() => ({
 }));
 
 vi.mock("../membership-access", () => ({
-  MembershipGate: ({ children }: { children: (member: unknown) => React.ReactNode }) =>
+  MembershipGate: ({
+    children,
+  }: {
+    children: (member: unknown) => React.ReactNode;
+  }) =>
     children({
       membership: {
         id: "membership-id",
@@ -35,7 +46,9 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("convex/react", () => ({
   useQuery: () => testState.data,
   useMutation: (reference: Parameters<typeof getFunctionName>[0]) =>
-    testState.mutations[getFunctionName(reference).replace("learningGroups/access:", "")],
+    testState.mutations[
+      getFunctionName(reference).replace("learningGroups/access:", "")
+    ],
 }));
 
 const adminView = {
@@ -46,15 +59,30 @@ const adminView = {
       name: "PACU Pilot",
       canChangeAvailability: true,
       members: [
-        { id: "m-learner", email: "learner@example.edu", roles: ["learner"], status: "active" },
+        {
+          id: "m-learner",
+          email: "learner@example.edu",
+          roles: ["learner"],
+          status: "active",
+        },
       ],
       availableScenarioIds: ["scenario-1"],
     },
   ],
   scenarios: [{ id: "scenario-1", title: "Initial PACU Assessment" }],
   institutionMembers: [
-    { id: "m-learner", email: "learner@example.edu", roles: ["learner"], status: "active" },
-    { id: "m-faculty", email: "faculty@example.edu", roles: ["faculty"], status: "active" },
+    {
+      id: "m-learner",
+      email: "learner@example.edu",
+      roles: ["learner"],
+      status: "active",
+    },
+    {
+      id: "m-faculty",
+      email: "faculty@example.edu",
+      roles: ["faculty"],
+      status: "active",
+    },
   ],
 };
 
@@ -64,7 +92,8 @@ describe("Learning Groups page", () => {
   afterEach(() => {
     cleanup();
     testState.roles = ["institutionalAdmin"];
-    for (const mutation of Object.values(testState.mutations)) mutation.mockReset();
+    for (const mutation of Object.values(testState.mutations))
+      mutation.mockReset();
   });
 
   it("lets an Institutional Admin create a group and enroll or remove Members", async () => {
@@ -76,15 +105,23 @@ describe("Learning Groups page", () => {
     testState.mutations.setMembership.mockResolvedValue({ status: "updated" });
     render(<LearningGroupsPage />);
 
-    fireEvent.change(screen.getByLabelText("Group name"), { target: { value: "Spring Cohort" } });
+    fireEvent.click(screen.getByRole("button", { name: "New group" }));
+    fireEvent.change(screen.getByLabelText("Group name"), {
+      target: { value: "Spring Cohort" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Create group" }));
     await waitFor(() =>
-      expect(testState.mutations.createGroup).toHaveBeenCalledWith({ name: "Spring Cohort" }),
+      expect(testState.mutations.createGroup).toHaveBeenCalledWith({
+        name: "Spring Cohort",
+      }),
     );
 
     // Only Members not already in the group are offered.
     const select = group().getByLabelText("Add a Member") as HTMLSelectElement;
-    expect([...select.options].map(({ value }) => value)).toEqual(["", "m-faculty"]);
+    expect([...select.options].map(({ value }) => value)).toEqual([
+      "",
+      "m-faculty",
+    ]);
     fireEvent.change(select, { target: { value: "m-faculty" } });
     fireEvent.click(group().getByRole("button", { name: "Add to group" }));
     await waitFor(() =>
@@ -107,14 +144,22 @@ describe("Learning Groups page", () => {
 
   it("lets Faculty change availability for their groups without enrollment controls", async () => {
     testState.roles = ["faculty"];
-    testState.data = { ...adminView, canManageGroups: false, institutionMembers: [] };
-    testState.mutations.setAvailability.mockResolvedValue({ status: "updated" });
+    testState.data = {
+      ...adminView,
+      canManageGroups: false,
+      institutionMembers: [],
+    };
+    testState.mutations.setAvailability.mockResolvedValue({
+      status: "updated",
+    });
     render(<LearningGroupsPage />);
 
     expect(screen.queryByLabelText("Group name")).toBeNull();
     expect(group().queryByRole("button", { name: "Remove" })).toBeNull();
     expect(group().queryByLabelText("Add a Member")).toBeNull();
-    fireEvent.click(group().getByRole("checkbox", { name: "Initial PACU Assessment" }));
+    fireEvent.click(
+      group().getByRole("checkbox", { name: "Initial PACU Assessment" }),
+    );
     await waitFor(() =>
       expect(testState.mutations.setAvailability).toHaveBeenCalledWith({
         learningGroupId: "group-1",
@@ -122,17 +167,23 @@ describe("Learning Groups page", () => {
         available: false,
       }),
     );
-    expect((await screen.findByRole("status")).textContent).toMatch(/availability removed/);
+    expect((await screen.findByRole("status")).textContent).toMatch(
+      /availability removed/,
+    );
   });
 
   it("explains that removal never ends an Attempt in progress, and gates other roles", () => {
     testState.data = adminView;
     render(<LearningGroupsPage />);
-    expect(screen.getByText(/never ends an Attempt already in progress/)).toBeTruthy();
+    expect(
+      screen.getByText(/never ends an Attempt already in progress/),
+    ).toBeTruthy();
     cleanup();
 
     testState.roles = ["learner", "author"];
     render(<LearningGroupsPage />);
-    expect(screen.getByText("Faculty or Institutional Admin role required")).toBeTruthy();
+    expect(
+      screen.getByText("Faculty or Institutional Admin role required"),
+    ).toBeTruthy();
   });
 });

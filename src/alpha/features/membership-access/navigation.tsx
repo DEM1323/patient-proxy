@@ -11,11 +11,12 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
 import { Icon, type IconName } from "../../ui/icon";
-import { inRoleOrder, roleLabels } from "./roles";
+import { AccountMenu } from "./account-menu";
 import type { MembershipSummary } from "./view";
 
 export type Destination = {
-  to: "/" | "/scenarios" | "/attempts" | "/review" | "/groups" | "/admin/members";
+  to:
+    "/" | "/scenarios" | "/attempts" | "/review" | "/groups" | "/admin/members";
   label: string;
   icon: IconName;
 };
@@ -23,11 +24,31 @@ export type Destination = {
 export type NavGroup = { label: string | null; destinations: Destination[] };
 
 const home: Destination = { to: "/", label: "Home", icon: "home" };
-const scenarios: Destination = { to: "/scenarios", label: "Scenarios", icon: "scenarios" };
-const attempts: Destination = { to: "/attempts", label: "Your Attempts", icon: "clock" };
-const review: Destination = { to: "/review", label: "Ended Attempts", icon: "review" };
-const members: Destination = { to: "/admin/members", label: "Members", icon: "users" };
-const groups: Destination = { to: "/groups", label: "Learning Groups", icon: "groups" };
+const scenarios: Destination = {
+  to: "/scenarios",
+  label: "Scenarios",
+  icon: "scenarios",
+};
+const attempts: Destination = {
+  to: "/attempts",
+  label: "Your Attempts",
+  icon: "clock",
+};
+const review: Destination = {
+  to: "/review",
+  label: "Ended Attempts",
+  icon: "review",
+};
+const members: Destination = {
+  to: "/admin/members",
+  label: "Members",
+  icon: "users",
+};
+const groups: Destination = {
+  to: "/groups",
+  label: "Learning Groups",
+  icon: "groups",
+};
 
 /**
  * The sidebar for a Member's roles. The order never changes (Practice, Review,
@@ -150,28 +171,12 @@ function Sidebar({ membership }: { membership: MembershipSummary }) {
             ))}
           </div>
         ))}
-        <div className="mt-auto flex flex-col gap-2 border-t border-white/20 px-[10px] pt-4 text-small">
-          {user?.email && (
-            <span className="break-all text-label font-semibold">{user.email}</span>
-          )}
-          <span className="flex flex-wrap gap-1.5" aria-label="Your roles">
-            {inRoleOrder(membership.roles).map((role) => (
-              <span
-                key={role}
-                className="rounded-full bg-white/15 px-2 py-0.5 text-chip font-semibold"
-              >
-                {roleLabels[role]}
-              </span>
-            ))}
-          </span>
-          <button
-            type="button"
-            onClick={() => signOut({ returnTo: window.location.origin })}
-            className="w-fit font-semibold underline underline-offset-[3px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            Sign out
-          </button>
-        </div>
+        <AccountMenu
+          membership={membership}
+          email={user?.email}
+          name={[user?.firstName, user?.lastName].filter(Boolean).join(" ")}
+          onSignOut={() => signOut({ returnTo: window.location.origin })}
+        />
       </nav>
     </header>
   );
@@ -184,7 +189,10 @@ function CompactRail() {
       aria-label="Primary navigation"
       className="flex items-center gap-2 bg-rail px-3 py-2 text-white md:sticky md:top-0 md:h-screen md:w-[84px] md:flex-none md:flex-col md:px-2.5 md:py-[22px]"
     >
-      <span aria-hidden="true" className="px-2 text-[15px] font-extrabold md:pb-3">
+      <span
+        aria-hidden="true"
+        className="px-2 text-[15px] font-extrabold md:pb-3"
+      >
         PP
       </span>
       {[home, scenarios, attempts].map((destination) => (

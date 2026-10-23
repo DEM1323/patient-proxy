@@ -1,23 +1,23 @@
+import { Fragment, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
-import type { FormEvent } from "react";
 import type { api } from "@/convex/_generated/api";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
-import { primaryButton, secondaryButton } from "../attempt-start/view";
-import { roleLabels, roleOrder as allRoles } from "../membership-access/roles";
-
+import { button } from "../../ui/button";
+import {
+  Badge,
+  Modal,
+  Notice,
+  Page,
+  Table,
+  textLink,
+} from "../../ui/primitives";
+import { roleLabels } from "../membership-access/roles";
+import { RoleSummary, RoleOptions } from "../../ui/roles";
+export { roleLabels };
 type Members = FunctionReturnType<typeof api.institutionAdmin.access.members>;
 type AuditLog = FunctionReturnType<typeof api.institutionAdmin.access.auditLog>;
-
-export { roleLabels };
-
-const link =
-  "font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
-const sectionClass =
-  "mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm";
-const smallButton =
-  "rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
-
+const link = textLink;
 export type Editing = {
   kind: "member" | "pending";
   id: string;
@@ -46,58 +46,54 @@ export type PreapproveFormProps = {
 };
 
 function formatDate(timestamp: number) {
-  return new Date(timestamp).toLocaleDateString();
+  return new Date(timestamp).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+  });
 }
-
 function RoleList({ roles }: { roles: MembershipRole[] }) {
-  return (
-    <span className="flex flex-wrap gap-1.5">
-      {roles.map((role) => (
-        <span
-          key={role}
-          className="rounded bg-neutral px-2 py-0.5 text-xs font-semibold text-ink-2"
-        >
-          {roleLabels[role]}
-        </span>
-      ))}
-    </span>
-  );
+  return <RoleSummary roles={roles} />;
 }
-
-function RoleEditor({ form, label }: { form: PreapproveFormProps; label: string }) {
-  const editing = form.editing!;
+function RoleEditor({
+  form,
+  label,
+}: {
+  form: PreapproveFormProps;
+  label: string;
+}) {
   return (
-    <fieldset className="mt-3 rounded-lg border border-line bg-sunken p-4">
-      <legend className="px-1 text-sm font-semibold text-ink-2">{label}</legend>
-      <div className="flex flex-wrap gap-4">
-        {allRoles.map((role) => (
-          <label key={role} className="flex items-center gap-2 text-ink-2">
-            <input
-              type="checkbox"
-              checked={editing.roles.includes(role)}
-              onChange={() => form.onToggleEditRole(role)}
-            />
-            {roleLabels[role]}
-          </label>
-        ))}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+    <fieldset className="rounded-lg border border-line bg-sunken p-4">
+      <legend className="px-1 font-bold">{label}</legend>
+      <p className="mb-4 text-small text-ink-2">
+        All selected roles apply together.
+      </p>
+      <RoleOptions
+        roles={form.editing!.roles}
+        onToggle={form.onToggleEditRole}
+      />
+      <p className="mt-3 text-small text-ink-3">
+        Removing Learner ends this Member’s Active Attempt, if any.
+      </p>
+      <div className="mt-4 flex gap-3">
         <button
           type="button"
-          className={smallButton}
-          disabled={form.submitting || editing.roles.length === 0}
+          className={button("primary", "sm")}
+          disabled={form.submitting || !form.editing!.roles.length}
           onClick={form.onSaveEdit}
         >
           Save roles
         </button>
-        <button type="button" className={smallButton} onClick={form.onCancelEdit}>
+        <button
+          type="button"
+          className={button("quiet", "sm")}
+          onClick={form.onCancelEdit}
+        >
           Cancel
         </button>
       </div>
     </fieldset>
   );
 }
-
 export function MembersView({
   auditLog,
   data,
@@ -108,252 +104,296 @@ export function MembersView({
   form: PreapproveFormProps;
 }) {
   const migrated = data.rosterSource === "database";
+  const confirming = data.members.find(
+    (m) => m.id === form.confirmingDeactivate,
+  );
   return (
-    <main className="mx-auto max-w-5xl px-5 py-12 sm:py-16">
-      <Link to="/" className={`text-sm ${link}`}>
-        ← Home
-      </Link>
-      <h1 className="mt-4 text-4xl font-bold tracking-tight text-ink">
-        Members
-      </h1>
-      <p className="mt-3 max-w-2xl leading-7 text-ink-2">
-        Members of your Pilot Institution and identities approved to join it.
-        Roles are additive: each grants only its own journeys. Changes apply
-        immediately and are recorded below.
-      </p>
-      {form.notice && (
-        <p
-          role={form.notice.tone === "error" ? "alert" : "status"}
-          className={`mt-4 font-medium ${form.notice.tone === "error" ? "text-red" : "text-teal"}`}
-        >
-          {form.notice.text}
-        </p>
-      )}
-
-      <section aria-labelledby="preapprove-title" className={sectionClass}>
-        <h2 id="preapprove-title" className="text-lg font-semibold text-ink">
-          Pre-approve an identity
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-ink-2">
-          Enter the exact email the person signs in with. Patient Proxy does not
-          send an invitation; tell them to sign in with that email. They become a
-          Member the first time they sign in.
-        </p>
-        {!migrated ? (
-          <p role="status" className="mt-4 rounded-lg border border-amber-line bg-amber-tint px-4 py-3 text-sm text-amber-ink">
-            Pre-approval becomes available after the operator moves the Pilot
-            Roster into Patient Proxy.
-          </p>
-        ) : (
-          <form
-            className="mt-4"
-            onSubmit={(event: FormEvent) => {
-              event.preventDefault();
-              form.onSubmit();
-            }}
-          >
-            <label htmlFor="preapprove-email" className="block text-sm font-semibold text-ink-2">
-              Approved identity (email)
-            </label>
-            <input
-              id="preapprove-email"
-              type="email"
-              autoComplete="off"
-              value={form.email}
-              onChange={(event) => form.onEmailChange(event.target.value)}
-              className="mt-2 block w-full max-w-md rounded-lg border border-line px-4 py-2 text-ink focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-            />
-            <fieldset className="mt-4">
-              <legend className="text-sm font-semibold text-ink-2">Roles</legend>
-              <div className="mt-2 flex flex-wrap gap-4">
-                {allRoles.map((role) => (
-                  <label key={role} className="flex items-center gap-2 text-ink-2">
-                    <input
-                      type="checkbox"
-                      checked={form.roles.includes(role)}
-                      onChange={() => form.onToggleRole(role)}
-                    />
-                    {roleLabels[role]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <button
-              type="submit"
-              className={`mt-5 ${primaryButton}`}
-              disabled={
-                form.submitting || form.email.trim() === "" || form.roles.length === 0
-              }
-            >
-              {form.submitting ? "Pre-approving…" : "Pre-approve identity"}
-            </button>
-          </form>
+    <Page
+      title="Members"
+      description="Manage who can sign in and what they can access. All held roles apply together. Changes take effect immediately and are recorded below."
+    >
+      <div className="space-y-7">
+        {form.notice && (
+          <Notice tone={form.notice.tone}>{form.notice.text}</Notice>
         )}
-      </section>
-
-      <section aria-labelledby="pending-title" className={sectionClass}>
-        <h2 id="pending-title" className="text-lg font-semibold text-ink">
-          Pending approvals
-        </h2>
-        {data.pending.length === 0 ? (
-          <p className="mt-3 text-ink-2">No identities are waiting to sign in.</p>
-        ) : (
-          <ul className="mt-4 divide-y divide-line">
-            {data.pending.map((entry) => {
-              const editingThis = form.editing?.kind === "pending" && form.editing.id === entry.id;
-              return (
-                <li key={entry.id} className="py-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-ink">{entry.email}</p>
-                      <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-2">
-                        <RoleList roles={entry.roles} /> · approved {formatDate(entry.approvedAt)} ·
+        <section
+          aria-labelledby="preapprove-title"
+          className="rounded-xl border border-line bg-surface p-6"
+        >
+          <h2 id="preapprove-title" className="mb-4 font-bold">
+            Pre-approve an identity
+          </h2>
+          {!migrated ? (
+            <Notice tone="warning">
+              Pre-approval becomes available after the operator moves the Pilot
+              Roster into Patient Proxy.
+            </Notice>
+          ) : (
+            <form
+              onSubmit={(event: FormEvent) => {
+                event.preventDefault();
+                form.onSubmit();
+              }}
+            >
+              <div className="flex flex-col items-start gap-5">
+                <div className="w-full max-w-[360px]">
+                  <label
+                    htmlFor="approval-email"
+                    className="text-label font-semibold"
+                  >
+                    Approved identity (email)
+                  </label>
+                  <input
+                    id="approval-email"
+                    className="proxy-input mt-2"
+                    type="email"
+                    placeholder="name@umb.edu"
+                    value={form.email}
+                    onChange={(e) => form.onEmailChange(e.target.value)}
+                    required
+                  />
+                </div>
+                <fieldset className="min-w-0 w-full">
+                  <legend className="mb-3 text-label font-semibold">
+                    Roles at first sign-in · all selected roles apply
+                  </legend>
+                  <RoleOptions
+                    roles={form.roles}
+                    onToggle={form.onToggleRole}
+                  />
+                </fieldset>
+                <button
+                  type="submit"
+                  className={button()}
+                  disabled={
+                    form.submitting || !form.email.trim() || !form.roles.length
+                  }
+                >
+                  {form.submitting ? "Pre-approving…" : "Pre-approve identity"}
+                </button>
+              </div>
+            </form>
+          )}
+          <p className="mt-5 text-small text-ink-3">
+            Patient Proxy does not send an invitation. Tell the person to sign
+            in with this exact email; they become a Member at first sign-in.
+          </p>
+        </section>
+        <section aria-labelledby="pending-title">
+          <h2 id="pending-title" className="mb-3 text-subheading font-bold">
+            Pending approvals
+          </h2>
+          {!data.pending.length ? (
+            <p className="text-ink-2">No identities are waiting to sign in.</p>
+          ) : (
+            <Table label="Pending approvals">
+              <thead>
+                <tr>
+                  <th>Waiting for first sign-in</th>
+                  <th>Roles at sign-in</th>
+                  <th>Approved</th>
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              {data.pending.map((entry) => (
+                <tbody key={entry.id} aria-label={entry.email}>
+                  <tr>
+                    <td className="max-w-[320px] font-bold">
+                      {entry.email}
+                      <p className="text-small font-normal text-ink-3">
                         awaiting first sign-in
                       </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className={smallButton}
-                        disabled={form.submitting}
-                        onClick={() =>
-                          form.onStartEdit({ kind: "pending", id: entry.id, roles: entry.roles })
-                        }
-                      >
-                        Edit roles
-                      </button>
-                      <button
-                        type="button"
-                        className={secondaryButton}
-                        disabled={form.submitting}
-                        onClick={() => form.onRevoke(entry.id)}
-                      >
-                        Revoke approval
-                      </button>
-                    </div>
-                  </div>
-                  {editingThis && <RoleEditor form={form} label={`Roles for ${entry.email}`} />}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <section aria-labelledby="members-title" className={sectionClass}>
-        <h2 id="members-title" className="text-lg font-semibold text-ink">
-          Members
-        </h2>
-        <ul className="mt-4 divide-y divide-line">
-          {data.members.map((member) => {
-            const editingThis = form.editing?.kind === "member" && form.editing.id === member.id;
-            const confirming = form.confirmingDeactivate === member.id;
-            return (
-              <li key={member.id} className="py-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-ink">
-                      {member.email}
-                      {member.isYou && (
-                        <span className="ml-2 text-xs font-semibold text-ink-3">(you)</span>
-                      )}
-                      {member.status === "inactive" && (
-                        <span className="ml-2 rounded bg-red-tint px-2 py-0.5 text-xs font-semibold text-red">
-                          Deactivated
-                        </span>
-                      )}
-                    </p>
-                    <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-2">
-                      <RoleList roles={member.roles} /> · admitted {formatDate(member.admittedAt)}
-                    </p>
-                  </div>
-                  {member.isYou ? (
-                    <p className="text-xs text-ink-3">
-                      Another Institutional Admin manages your own roles and status.
-                    </p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className={smallButton}
-                        disabled={form.submitting}
-                        onClick={() =>
-                          form.onStartEdit({ kind: "member", id: member.id, roles: member.roles })
-                        }
-                      >
-                        Edit roles
-                      </button>
-                      {member.status === "active" ? (
+                    </td>
+                    <td>
+                      <RoleList roles={entry.roles} />
+                    </td>
+                    <td className="whitespace-nowrap">
+                      {formatDate(entry.approvedAt)}
+                    </td>
+                    <td>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          className={button("secondary", "sm")}
+                          type="button"
+                          disabled={form.submitting}
+                          onClick={() =>
+                            form.onStartEdit({
+                              kind: "pending",
+                              id: entry.id,
+                              roles: entry.roles,
+                            })
+                          }
+                        >
+                          Edit roles
+                        </button>
+                        <button
+                          className={button("danger", "sm")}
+                          type="button"
+                          disabled={form.submitting}
+                          onClick={() => form.onRevoke(entry.id)}
+                        >
+                          Revoke approval
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {form.editing?.kind === "pending" &&
+                    form.editing.id === entry.id && (
+                      <tr>
+                        <td colSpan={4}>
+                          <RoleEditor
+                            form={form}
+                            label={"Roles for " + entry.email}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                </tbody>
+              ))}
+            </Table>
+          )}
+        </section>
+        <section aria-labelledby="members-title">
+          <h2 id="members-title" className="sr-only">
+            Members
+          </h2>
+          <Table label="Members">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Roles</th>
+                <th>Status</th>
+                <th>Admitted</th>
+                <th>
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            {data.members.map((member) => (
+              <tbody key={member.id} aria-label={member.email}>
+                <tr className={member.status === "inactive" ? "bg-sunken" : ""}>
+                  <td className="max-w-[320px] font-bold">
+                    {member.email}
+                    {member.isYou && (
+                      <span className="mt-1 block text-small font-normal text-ink-3">
+                        (you)
+                      </span>
+                    )}
+                  </td>
+                  <td className="max-w-[270px]">
+                    <RoleList roles={member.roles} />
+                  </td>
+                  <td>
+                    <Badge
+                      tone={member.status === "inactive" ? "amber" : "teal"}
+                    >
+                      {member.status === "inactive" ? "Deactivated" : "Active"}
+                    </Badge>
+                  </td>
+                  <td className="whitespace-nowrap">
+                    {formatDate(member.admittedAt)}
+                  </td>
+                  <td>
+                    {member.isYou ? (
+                      <p className="max-w-[190px] text-right text-small text-ink-3">
+                        Another Institutional Admin manages your own roles and
+                        status.
+                      </p>
+                    ) : (
+                      <div className="flex justify-end gap-2">
                         <button
                           type="button"
-                          className={smallButton}
+                          className={button("secondary", "sm")}
                           disabled={form.submitting}
-                          onClick={() => form.onRequestDeactivate(member.id)}
+                          onClick={() =>
+                            form.onStartEdit({
+                              kind: "member",
+                              id: member.id,
+                              roles: member.roles,
+                            })
+                          }
                         >
-                          Deactivate
+                          Edit roles
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className={smallButton}
-                          disabled={form.submitting}
-                          onClick={() => form.onReactivate(member.id)}
-                        >
-                          Reactivate
-                        </button>
-                      )}
-                    </div>
+                        {member.status === "active" ? (
+                          <button
+                            type="button"
+                            className={button("danger", "sm")}
+                            disabled={form.submitting}
+                            onClick={() => form.onRequestDeactivate(member.id)}
+                          >
+                            Deactivate
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className={button("secondary", "sm")}
+                            disabled={form.submitting}
+                            onClick={() => form.onReactivate(member.id)}
+                          >
+                            Reactivate
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+                {form.editing?.kind === "member" &&
+                  form.editing.id === member.id && (
+                    <tr>
+                      <td colSpan={5}>
+                        <RoleEditor
+                          form={form}
+                          label={"Roles for " + member.email}
+                        />
+                      </td>
+                    </tr>
                   )}
-                </div>
-                {editingThis && (
-                  <RoleEditor form={form} label={`Roles for ${member.email}`} />
-                )}
-                {confirming && (
-                  <div
-                    role="alertdialog"
-                    aria-label={`Deactivate ${member.email}?`}
-                    className="mt-3 rounded-lg border border-amber-line bg-amber-tint p-4"
-                  >
-                    <p className="text-sm leading-6 text-ink-2">
-                      {member.email} loses access immediately, and any Active
-                      Attempt ends. Their saved Attempts, reflections, and
-                      feedback are kept, and you can reactivate them later; a
-                      reactivated Member starts a new Attempt.
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className={smallButton}
-                        disabled={form.submitting}
-                        onClick={() => form.onConfirmDeactivate(member.id)}
-                      >
-                        Deactivate Member
-                      </button>
-                      <button
-                        type="button"
-                        className={smallButton}
-                        onClick={() => form.onRequestDeactivate(null)}
-                      >
-                        Keep active
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-4 text-xs text-ink-3">
-          Emails are the approved identities, not live account profiles.
-          Removing the Learner role also ends that Member&apos;s Active Attempt.
-        </p>
-      </section>
-
-      <AuditLogView entries={auditLog} />
-    </main>
+              </tbody>
+            ))}
+          </Table>
+        </section>
+        <AuditLogView entries={auditLog} />
+      </div>
+      {confirming && (
+        <Modal
+          title={"Deactivate " + confirming.email + "?"}
+          onClose={() => {
+            if (!form.submitting) form.onRequestDeactivate(null);
+          }}
+        >
+          <p>
+            This Member loses access immediately, and any Active Attempt ends.
+            Their saved Attempts, reflections, and feedback are kept under the
+            normal retention policy. You can reactivate them later; a
+            reactivated Member starts a new Attempt.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <button
+              autoFocus
+              type="button"
+              className={button("secondary")}
+              disabled={form.submitting}
+              onClick={() => form.onRequestDeactivate(null)}
+            >
+              Keep active
+            </button>
+            <button
+              type="button"
+              className={button("dangerSolid")}
+              disabled={form.submitting}
+              onClick={() => form.onConfirmDeactivate(confirming.id)}
+            >
+              Deactivate Member
+            </button>
+          </div>
+        </Modal>
+      )}
+    </Page>
   );
 }
-
 const actionLabels: Record<AuditLog[number]["action"], string> = {
   roster_migrated: "Pilot Roster moved into Patient Proxy",
   identity_preapproved: "Identity pre-approved",
@@ -377,68 +417,118 @@ function describeState(state: AuditLog[number]["before"]) {
     return null;
   }
   const parts: string[] = [];
-  if (state.roles) parts.push(state.roles.map((role) => roleLabels[role]).join(", "));
+  if (state.roles)
+    parts.push(state.roles.map((role) => roleLabels[role]).join(", "));
   if (state.membershipStatus) parts.push(state.membershipStatus);
   if (state.status) parts.push(state.status);
   return parts.join(" · ") || null;
 }
 
-function AuditLogView({ entries }: { entries: AuditLog | undefined }) {
+export function AuditLogView({
+  entries,
+  compact = false,
+}: {
+  entries: AuditLog | undefined;
+  compact?: boolean;
+}) {
   return (
-    <section aria-labelledby="audit-title" className={sectionClass}>
-      <h2 id="audit-title" className="text-lg font-semibold text-ink">
+    <section aria-labelledby="audit-title">
+      <h2 id="audit-title" className="mb-4 text-subheading font-bold">
         Recent changes
       </h2>
       {entries === undefined ? (
-        <p className="mt-3 text-ink-2">Loading…</p>
-      ) : entries.length === 0 ? (
-        <p className="mt-3 text-ink-2">No changes recorded yet.</p>
-      ) : (
-        <ol className="mt-4 space-y-2 text-sm">
-          {entries.map((entry) => {
-            const before = describeState(entry.before);
-            const after = describeState(entry.after);
-            const actor =
-              entry.actor === "member"
-                ? entry.actorEmail ?? "An Institutional Admin"
-                : entry.actor === "operator"
-                  ? "Operator"
-                  : "Sign-in";
-            return (
-              <li key={entry.id} className="text-ink-2">
-                <time
-                  dateTime={new Date(entry.occurredAt).toISOString()}
-                  className="mr-2 text-ink-3"
-                >
-                  {new Date(entry.occurredAt).toLocaleString()}
-                </time>
-                <span className="font-semibold text-ink">{actionLabels[entry.action]}</span>
-                {entry.targetEmail && <> · {entry.targetEmail}</>}
-                {entry.scenarioTitle && <> · {entry.scenarioTitle}</>}
-                {entry.groupName && <> · {entry.groupName}</>}
-                {(before || after) && (
-                  <>
-                    {" "}
-                    · {before ?? "—"} → {after ?? "—"}
-                  </>
-                )}
-                {entry.counts && (
-                  <>
-                    {" "}
-                    · {entry.counts.boundMemberships} bound, {entry.counts.pendingApprovals}{" "}
-                    pending
-                  </>
-                )}{" "}
-                <span className="text-ink-3">by {actor}</span>
-              </li>
-            );
-          })}
+        <p role="status">Loading…</p>
+      ) : !entries.length ? (
+        <p className="text-ink-2">No changes recorded yet.</p>
+      ) : compact ? (
+        <ol className="divide-y divide-line rounded-lg border border-line bg-surface px-4">
+          {entries.map((entry) => (
+            <li key={entry.id} className="flex items-start gap-3 py-3">
+              <time
+                className="shrink-0 pt-0.5 text-meta text-ink-3"
+                dateTime={new Date(entry.occurredAt).toISOString()}
+              >
+                {formatDate(entry.occurredAt)}
+              </time>
+              <div className="min-w-0">
+                <p className="text-compact font-bold">
+                  {actionLabels[entry.action]}
+                </p>
+                <p className="mt-1 break-all text-small text-ink-2">
+                  {entry.targetEmail ?? entry.groupName ?? entry.scenarioTitle}
+                </p>
+              </div>
+            </li>
+          ))}
         </ol>
+      ) : (
+        <Table label="Recent changes">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Change</th>
+              <th>Details</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry, index) => {
+              const before = describeState(entry.before),
+                after = describeState(entry.after);
+              const day = new Date(entry.occurredAt).toLocaleDateString();
+              return (
+                <Fragment key={entry.id}>
+                  {(index === 0 ||
+                    new Date(
+                      entries[index - 1].occurredAt,
+                    ).toLocaleDateString() !== day) && (
+                    <tr>
+                      <th colSpan={4}>{day}</th>
+                    </tr>
+                  )}
+                  <tr>
+                    <td className="whitespace-nowrap text-small text-ink-3">
+                      <time dateTime={new Date(entry.occurredAt).toISOString()}>
+                        {new Date(entry.occurredAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    </td>
+                    <td className="font-bold">{actionLabels[entry.action]}</td>
+                    <td className="text-small">
+                      {[entry.targetEmail, entry.scenarioTitle, entry.groupName]
+                        .filter(Boolean)
+                        .join(", ")}
+                      {(before || after) && (
+                        <p>
+                          {before ?? "—"} → {after ?? "—"}
+                        </p>
+                      )}
+                      {entry.counts && (
+                        <p>
+                          {entry.counts.boundMemberships} bound,{" "}
+                          {entry.counts.pendingApprovals} pending
+                        </p>
+                      )}
+                    </td>
+                    <td className="text-small text-ink-3">
+                      {entry.actor === "member"
+                        ? (entry.actorEmail ?? "An Institutional Admin")
+                        : entry.actor === "operator"
+                          ? "Operator"
+                          : "Sign-in"}
+                    </td>
+                  </tr>
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </Table>
       )}
     </section>
   );
 }
-
 export function InstitutionalAdminRequiredView() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">

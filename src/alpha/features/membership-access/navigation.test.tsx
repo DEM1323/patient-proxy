@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
 import { AppShell, navGroups, useCompactRail } from "./navigation";
@@ -16,7 +22,10 @@ const testState = vi.hoisted(() => ({
 }));
 
 vi.mock("@workos-inc/authkit-react", () => ({
-  useAuth: () => ({ user: { email: "member@example.edu" }, signOut: testState.signOut }),
+  useAuth: () => ({
+    user: { email: "member@example.edu" },
+    signOut: testState.signOut,
+  }),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -31,18 +40,27 @@ vi.mock("convex/react", () => ({
 }));
 
 const paths = (roles: MembershipRole[]) =>
-  navGroups(roles).map(({ label, destinations }) => [label, destinations.map(({ to }) => to)]);
+  navGroups(roles).map(({ label, destinations }) => [
+    label,
+    destinations.map(({ to }) => to),
+  ]);
 
 const member = (roles: string[], status: "active" | "inactive" = "active") => ({
   id: "membership-id",
-  institution: { id: "institution-id", key: "umb", name: "UMB Pilot Institution" },
+  institution: {
+    id: "institution-id",
+    key: "umb",
+    name: "UMB Pilot Institution",
+  },
   roles,
   status,
 });
 
 describe("Sidebar groups", () => {
   it("keeps one order and shows only the groups held roles grant", () => {
-    expect(paths(["institutionalAdmin", "faculty", "author", "learner"])).toEqual([
+    expect(
+      paths(["institutionalAdmin", "faculty", "author", "learner"]),
+    ).toEqual([
       [null, ["/"]],
       ["Practice", ["/scenarios", "/attempts"]],
       ["Review", ["/review"]],
@@ -87,7 +105,9 @@ describe("App shell", () => {
       </AppShell>,
     );
 
-    const nav = within(screen.getByRole("navigation", { name: "Primary navigation" }));
+    const nav = within(
+      screen.getByRole("navigation", { name: "Primary navigation" }),
+    );
     expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual([
       "Home",
       "Scenarios",
@@ -97,15 +117,58 @@ describe("App shell", () => {
       "Learning Groups",
     ]);
     expect(nav.queryByText("Deployment check")).toBeNull();
-    expect(nav.getByText("member@example.edu")).toBeTruthy();
+    expect(screen.queryByText("member@example.edu")).toBeNull();
+    fireEvent.click(nav.getByRole("button", { name: /My account/ }));
+    const account = within(screen.getByRole("dialog", { name: "My account" }));
+    expect(account.getByText("member@example.edu")).toBeTruthy();
     expect(
-      within(nav.getByLabelText("Your roles"))
-        .getAllByText(/./)
-        .map((chip) => chip.textContent),
-    ).toEqual(["Learner", "Institutional Admin"]);
-    fireEvent.click(nav.getByRole("button", { name: "Sign out" }));
+      account.getByText("All listed roles are active together."),
+    ).toBeTruthy();
+    expect(account.getByText("Institutional Admin")).toBeTruthy();
+    expect(account.getByText("Learner")).toBeTruthy();
+    fireEvent.click(account.getByRole("button", { name: "Sign out" }));
     expect(testState.signOut).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Page")).toBeTruthy();
+  });
+
+  it("opens Settings above the account menu and restores focus on close", () => {
+    testState.membership = member(["learner"]);
+    render(
+      <AppShell>
+        <main>Page</main>
+      </AppShell>,
+    );
+    const trigger = screen.getByRole("button", { name: /My account/ });
+    fireEvent.click(trigger);
+    const settings = screen.getByRole("button", { name: "Settings" });
+    fireEvent.click(settings);
+    const dialog = screen.getByRole("dialog", { name: "Settings" });
+    expect(screen.getByRole("dialog", { name: "My account" })).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("combobox", { name: "Appearance" }),
+    );
+    expect(within(dialog).getAllByRole("option").length).toBe(3);
+    fireEvent(
+      dialog,
+      new Event("cancel", { bubbles: false, cancelable: true }),
+    );
+    expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+    expect(document.activeElement).toBe(settings);
+    fireEvent.click(settings);
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Settings" })).getByRole(
+        "button",
+        { name: "Close dialog" },
+      ),
+    );
+    expect(screen.getByRole("dialog", { name: "My account" })).toBeTruthy();
+    expect(document.activeElement).toBe(settings);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "My account" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByText("Page"));
+    expect(screen.queryByRole("dialog", { name: "My account" })).toBeNull();
   });
 
   it("leaves pages unframed before admission and while deactivated", () => {
@@ -138,7 +201,9 @@ describe("App shell", () => {
       </AppShell>,
     );
 
-    const nav = within(screen.getByRole("navigation", { name: "Primary navigation" }));
+    const nav = within(
+      screen.getByRole("navigation", { name: "Primary navigation" }),
+    );
     expect(nav.getAllByRole("link").map((link) => link.textContent)).toEqual([
       "Home",
       "Scenarios",

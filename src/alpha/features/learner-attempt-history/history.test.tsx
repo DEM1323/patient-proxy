@@ -22,7 +22,9 @@ vi.mock("@tanstack/react-router", () => ({
     params?: { attemptId: string };
     to: string;
   }) => (
-    <a href={`${to.replace("$attemptId", params?.attemptId ?? "")}${hash ? `#${hash}` : ""}`}>
+    <a
+      href={`${to.replace("$attemptId", params?.attemptId ?? "")}${hash ? `#${hash}` : ""}`}
+    >
       {children}
     </a>
   ),
@@ -58,7 +60,9 @@ describe("Attempt history", () => {
     ];
     render(<AttemptHistoryPage />);
 
-    const records = screen.getAllByRole("link", { name: "Initial PACU Assessment" });
+    const records = screen.getAllByRole("link", {
+      name: "Initial PACU Assessment",
+    });
     expect(records.map((link) => link.getAttribute("href"))).toEqual([
       "/attempts/restarted-id",
       "/attempts/ended-id",
@@ -69,13 +73,17 @@ describe("Attempt history", () => {
         .getAllByRole("link", { name: "Open the Attempt Debrief" })
         .map((link) => link.getAttribute("href")),
     ).toEqual(["/attempts/ended-id#debrief-title"]);
-    expect(screen.getByText(/No Debrief/)).toBeTruthy();
-    expect(screen.getByText(/reflection questions answered/)).toBeTruthy();
+    expect(screen.getAllByText(/No Debrief/)[0]).toBeTruthy();
+    expect(screen.getByText(/Reflection questions answered/)).toBeTruthy();
     expect(
-      screen.queryByRole("button", { name: /download|export|transcript|resume|continue/i }),
+      screen.queryByRole("button", {
+        name: /download|export|transcript|resume|continue/i,
+      }),
     ).toBeNull();
     expect(
-      screen.queryByRole("link", { name: /download|export|transcript|resume|continue/i }),
+      screen.queryByRole("link", {
+        name: /download|export|transcript|resume|continue/i,
+      }),
     ).toBeNull();
   });
 
@@ -84,6 +92,8 @@ describe("Attempt history", () => {
     render(<AttemptHistoryPage />);
 
     expect(screen.getByText(/You have no Ended Attempts yet/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "View Available Scenarios" })).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "View Available Scenarios" }),
+    ).toBeTruthy();
   });
 });

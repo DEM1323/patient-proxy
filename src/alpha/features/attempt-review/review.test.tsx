@@ -10,7 +10,11 @@ const testState = vi.hoisted(() => ({
 }));
 
 vi.mock("../membership-access", () => ({
-  MembershipGate: ({ children }: { children: (member: unknown) => React.ReactNode }) =>
+  MembershipGate: ({
+    children,
+  }: {
+    children: (member: unknown) => React.ReactNode;
+  }) =>
     children({
       membership: {
         id: "membership-id",
@@ -30,7 +34,9 @@ vi.mock("@tanstack/react-router", () => ({
     children: React.ReactNode;
     params?: { attemptId: string };
     to: string;
-  }) => <a href={to.replace("$attemptId", params?.attemptId ?? "")}>{children}</a>,
+  }) => (
+    <a href={to.replace("$attemptId", params?.attemptId ?? "")}>{children}</a>
+  ),
 }));
 
 vi.mock("convex/react", () => ({
@@ -52,12 +58,21 @@ const review = {
     },
     timeline: [
       { sequence: 1, kind: "attempt_started", occurredAt: 1 },
-      { sequence: 2, kind: "learner_message", occurredAt: 2, text: "Hi Elena." },
+      {
+        sequence: 2,
+        kind: "learner_message",
+        occurredAt: 2,
+        text: "Hi Elena.",
+      },
       {
         sequence: 3,
         kind: "clinical_action",
         occurredAt: 3,
-        action: { key: "hand_hygiene", label: "Perform hand hygiene", observation: "Hand hygiene recorded." },
+        action: {
+          key: "hand_hygiene",
+          label: "Perform hand hygiene",
+          observation: "Hand hygiene recorded.",
+        },
       },
       { sequence: 4, kind: "attempt_ended", occurredAt: 5 },
     ],
@@ -68,7 +83,13 @@ const review = {
       {
         key: "interpretation",
         text: "What was happening?",
-        responses: [{ response: "answer", text: "Her breathing was slow.", submittedAt: 6 }],
+        responses: [
+          {
+            response: "answer",
+            text: "Her breathing was slow.",
+            submittedAt: 6,
+          },
+        ],
       },
       { key: "planning", text: "What would you change?", responses: [] },
     ],
@@ -77,7 +98,13 @@ const review = {
       sections: {
         summary: [{ text: "You greeted Elena.", evidence: [2] }],
         strengths: [],
-        priorities: [{ text: "Reassurance was not observed in this Attempt.", evidence: [], observed: false }],
+        priorities: [
+          {
+            text: "Reassurance was not observed in this Attempt.",
+            evidence: [],
+            observed: false,
+          },
+        ],
         criteria: null,
         suggestions: ["Tell Elena where she is.", "Explain each action aloud."],
       },
@@ -106,9 +133,7 @@ describe("Attempt review", () => {
     render(<ReviewListPage />);
 
     expect(
-      screen
-        .getByRole("link", { name: "learner@example.edu · Initial PACU Assessment" })
-        .getAttribute("href"),
+      screen.getByRole("link", { name: "Review" }).getAttribute("href"),
     ).toBe("/review/attempt-id");
     expect(screen.getByText(/Reflection in progress/)).toBeTruthy();
   });
@@ -119,13 +144,15 @@ describe("Attempt review", () => {
     render(<ReviewDetailPage attemptId="attempt-id" />);
 
     expect(screen.getByText("Hi Elena.")).toBeTruthy();
-    expect(screen.getByText("Learner ·", { exact: false })).toBeTruthy();
+    expect(screen.getAllByText("Learner", { exact: true })[0]).toBeTruthy();
     expect(screen.getByText("Hand hygiene recorded.")).toBeTruthy();
     expect(screen.getByText("Her breathing was slow.")).toBeTruthy();
     expect(screen.getByText("No response yet.")).toBeTruthy();
     expect(screen.getByText("Tell Elena where she is.")).toBeTruthy();
     expect(
-      screen.getByText("Instructors have not set Communication Criteria for this Scenario yet."),
+      screen.getByText(
+        "Instructors have not set Communication Criteria for this Scenario yet.",
+      ),
     ).toBeTruthy();
     expect(screen.queryByText(/Your instructors/)).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
@@ -136,7 +163,9 @@ describe("Attempt review", () => {
     testState.result = null;
     render(<ReviewDetailPage attemptId="attempt-id" />);
 
-    expect(screen.getByText("This Attempt is not available for your review")).toBeTruthy();
+    expect(
+      screen.getByText("This Attempt is not available for your review"),
+    ).toBeTruthy();
     expect(screen.queryByText("Hi Elena.")).toBeNull();
   });
 
@@ -145,7 +174,9 @@ describe("Attempt review", () => {
     testState.result = review;
     render(<ReviewDetailPage attemptId="attempt-id" />);
 
-    expect(screen.getByText("Faculty or Institutional Admin role required")).toBeTruthy();
+    expect(
+      screen.getByText("Faculty or Institutional Admin role required"),
+    ).toBeTruthy();
     expect(screen.queryByText("Hi Elena.")).toBeNull();
   });
 });

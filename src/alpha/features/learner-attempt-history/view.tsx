@@ -1,85 +1,119 @@
 import { Link } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@/convex/_generated/api";
-
+import { Badge, Empty, Page, Table, textLink } from "../../ui/primitives";
 type Entry = FunctionReturnType<
   typeof api.learnerAttemptHistory.access.ownEndedAttempts
 >[number];
-
-const link =
-  "font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
-
-const debriefLabels: Record<Entry["debrief"], string> = {
-  none: "No Debrief: this Attempt ended when you started a new one.",
-  reflecting: "Debrief: answer or skip the reflection questions to see your feedback.",
-  // Reflection progress only; feedback status is shown on the Attempt page.
-  complete: "Debrief: reflection questions answered. Open it to see your feedback.",
-};
-
-// Records are view-only: there is deliberately no transcript or download
-// action, and Active Attempts are not listed as resumable history.
+export const debriefLabels = {
+  none: "No Debrief",
+  reflecting: "Reflection in progress",
+  complete: "Reflection questions answered",
+} as const;
 export function AttemptHistoryView({ attempts }: { attempts: Entry[] }) {
   return (
-    <main className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
-      <Link to="/" className={`text-sm ${link}`}>
-        ← Home
-      </Link>
-      <h1 className="mt-4 text-4xl font-bold tracking-tight text-ink">
-        Your Ended Attempts
-      </h1>
-      <p className="mt-3 max-w-2xl leading-7 text-ink-2">
-        Reopen an Ended Attempt to review its record and Attempt Debrief. Ended
-        Attempts cannot change or be resumed. Each is deleted automatically,
-        with its Debrief, 90 days after it ended.
+    <Page
+      title="Your Ended Attempts"
+      description="Revisit your record and Attempt Debrief. Ended Attempts cannot change or be resumed."
+    >
+      <AttemptHistoryTable attempts={attempts} />
+      <p className="mt-5 text-small text-ink-3">
+        Each Ended Attempt and its Debrief is deleted automatically 90 days
+        after it ended.
       </p>
-      {attempts.length === 0 ? (
-        <p className="mt-8 rounded-lg border border-line bg-surface px-5 py-4 text-ink-2">
-          You have no Ended Attempts yet.{" "}
-          <Link to="/scenarios" className={link}>
-            View Available Scenarios
-          </Link>
+    </Page>
+  );
+}
+export function AttemptHistoryTable({
+  attempts,
+  label = "Your Attempts",
+}: {
+  attempts: Entry[];
+  label?: string;
+}) {
+  if (!attempts.length)
+    return (
+      <Empty title="You have no Ended Attempts yet.">
+        <p className="mb-4">
+          After an encounter, your record and Debrief will appear here.
         </p>
-      ) : (
-        <ul className="mt-8 grid gap-4">
-          {attempts.map((attempt) => (
-            <li
-              key={attempt.id}
-              className="rounded-2xl border border-line bg-surface p-6 shadow-sm"
-            >
-              <h2 className="text-xl font-semibold tracking-tight text-ink">
-                <Link
-                  to="/attempts/$attemptId"
-                  params={{ attemptId: attempt.id }}
-                  className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-                >
-                  {attempt.scenarioTitle}
-                </Link>
-              </h2>
-              <p className="mt-1 text-sm text-ink-2">
-                Scenario Version {attempt.scenarioVersion} · ended{" "}
-                <time dateTime={new Date(attempt.endedAt).toISOString()}>
-                  {new Date(attempt.endedAt).toLocaleString()}
-                </time>
+        <Link to="/scenarios" className={textLink}>
+          View Available Scenarios
+        </Link>
+      </Empty>
+    );
+  return (
+    <Table label={label}>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Ended</th>
+          <th>Debrief</th>
+          <th>
+            <span className="sr-only">Action</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {attempts.map((attempt) => (
+          <tr key={attempt.id}>
+            <td>
+              <Link
+                to="/attempts/$attemptId"
+                params={{ attemptId: attempt.id }}
+                className="font-bold hover:underline"
+              >
+                {attempt.scenarioTitle}
+              </Link>
+              <p className="text-small text-ink-3">
+                Scenario Version {attempt.scenarioVersion}
               </p>
-              <p className="mt-3 text-ink-2">
-                {attempt.debrief === "none" && attempt.endReason === "access_suspended"
-                  ? "No Debrief: this Attempt ended when your access was changed."
-                  : debriefLabels[attempt.debrief]}
-              </p>
-              {attempt.debrief !== "none" && (
-                <Link
-                  to="/attempts/$attemptId"
-                  params={{ attemptId: attempt.id }}
-                  hash="debrief-title"
-                  className={`mt-3 inline-block ${link}`}
-                >
-                  Open the Attempt Debrief
-                </Link>
+            </td>
+            <td className="min-w-[140px]">
+              <time dateTime={new Date(attempt.endedAt).toISOString()}>
+                {new Date(attempt.endedAt).toLocaleString([], {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </time>
+            </td>
+            <td>
+              <Badge
+                tone={
+                  attempt.debrief === "reflecting"
+                    ? "lav"
+                    : attempt.debrief === "complete"
+                      ? "teal"
+                      : "neutral"
+                }
+              >
+                {debriefLabels[attempt.debrief]}
+              </Badge>
+              {attempt.debrief === "none" && (
+                <p className="mt-1 text-small text-ink-3">
+                  {attempt.endReason === "access_suspended"
+                    ? "No Debrief: this Attempt ended when your access was changed."
+                    : "No Debrief: this Attempt ended when you started a new one."}
+                </p>
               )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+            </td>
+            <td className="min-w-[150px]">
+              <Link
+                to="/attempts/$attemptId"
+                params={{ attemptId: attempt.id }}
+                hash={attempt.debrief === "none" ? undefined : "debrief-title"}
+                className={textLink}
+              >
+                {attempt.debrief === "none"
+                  ? "Open record"
+                  : "Open the Attempt Debrief"}
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
   );
 }

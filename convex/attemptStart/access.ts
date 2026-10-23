@@ -13,7 +13,10 @@ import {
 import { endReasonValidator } from "../attemptEnding/validators";
 import { learnerBriefValidator } from "./scenarioContent";
 
-const estimatedMinutesValidator = v.object({ min: v.number(), max: v.number() });
+const estimatedMinutesValidator = v.object({
+  min: v.number(),
+  max: v.number(),
+});
 
 export const availableScenarios = query({
   args: {},
@@ -99,7 +102,10 @@ export const ownAttempt = query({
       }),
       timeline: v.array(timelineEntryValidator),
       exchange: v.union(v.null(), openExchangeValidator),
-      clinicalActions: v.array(v.object({ key: v.string(), label: v.string() })),
+      clinicalActions: v.array(
+        v.object({ key: v.string(), label: v.string() }),
+      ),
+      brief: v.optional(learnerBriefValidator),
     }),
   ),
   handler: (ctx, { attemptId }) => getOwnAttempt(ctx, attemptId),
