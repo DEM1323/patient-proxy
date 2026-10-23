@@ -4,6 +4,7 @@ import { meetsEndingMinimum } from "../attemptEnding/model";
 import {
   abandonOpenExchanges,
   getOpenExchange,
+  validClientRequestId,
 } from "../attemptInteraction/model";
 import type {
   AttemptEventKind,
@@ -125,11 +126,36 @@ export async function getLearnerBrief(
   };
 }
 
+/**
+ * Replaying the same clientRequestId returns the Attempt that request created,
+ * so a Start whose response was lost never asks the Learner to end it.
+ */
 export async function startAttempt(
   ctx: MutationCtx,
-  input: { scenarioId: string; endActiveAttemptId?: Id<"attempts"> },
+  input: {
+    scenarioId: string;
+    clientRequestId?: string;
+    endActiveAttemptId?: Id<"attempts">;
+  },
 ): Promise<StartAttemptResult> {
   const learner = await requireRole(ctx, "learner");
+  const clientRequestId =
+    input.clientRequestId === undefined
+      ? undefined
+      : validClientRequestId(input.clientRequestId);
+  const replayed =
+    clientRequestId &&
+    (await ctx.db
+      .query("attempts")
+      .withIndex("by_learner_start_request", (query) =>
+        query
+          .eq("learnerMembershipId", learner.id)
+          .eq("startRequestId", clientRequestId),
+      )
+      .unique());
+  if (replayed) {
+    return { status: "started", attemptId: replayed._id };
+  }
   const available = await findAvailableScenario(ctx, learner, input.scenarioId);
   if (!available) {
     return { status: "unavailable" };
@@ -156,6 +182,7 @@ export async function startAttempt(
     scenarioVersionId: available.version._id,
     status: "active",
     startedAt: now,
+    ...(clientRequestId === undefined ? {} : { startRequestId: clientRequestId }),
   });
   await ctx.db.insert("attemptEvents", {
     institutionId: learner.institution.id,

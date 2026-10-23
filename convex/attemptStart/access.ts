@@ -49,6 +49,9 @@ export const learnerBrief = query({
 export const start = mutation({
   args: {
     scenarioId: v.string(),
+    // Optional so a client built before request identity keeps working while
+    // the backend and frontend deploy separately.
+    clientRequestId: v.optional(v.string()),
     endActiveAttemptId: v.optional(v.id("attempts")),
   },
   returns: v.union(

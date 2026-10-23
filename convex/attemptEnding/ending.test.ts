@@ -44,6 +44,7 @@ async function setup() {
   );
   const started = await asLearner.mutation(api.attemptStart.access.start, {
     scenarioId: scenario.scenarioId,
+    clientRequestId: crypto.randomUUID(),
   });
   const attemptId = (started as { attemptId: Id<"attempts"> }).attemptId;
 
@@ -194,6 +195,7 @@ describe("End the Attempt once", () => {
     const { asLearner, scenarioId, attemptId, end, view } = await setup();
     await asLearner.mutation(api.attemptStart.access.start, {
       scenarioId,
+      clientRequestId: crypto.randomUUID(),
       endActiveAttemptId: attemptId,
     });
     expect(await view()).toMatchObject({
