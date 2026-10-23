@@ -25,6 +25,8 @@ import {
 type SendResult = FunctionReturnType<
   typeof api.attemptInteraction.access.send
 >;
+const restoredActionNotice =
+  "Your last Clinical Action may not have been recorded before the page reloaded. Retry it; it won't be recorded twice.";
 const restoredMessageNotice =
   "Your last message may not have been sent before the page reloaded. Send it again; it won't be recorded twice.";
 
@@ -174,14 +176,17 @@ function Attempt({ attemptId }: { attemptId: string }) {
   const [notice, setNotice] = useState<string | null>(() =>
     unsent ? restoredMessageNotice : null,
   );
-  // An action whose response was lost keeps its request id, so Retry can
-  // never record it twice; choosing an action again is a new occurrence.
-  const [unsentAction, setUnsentAction] = useState<{
+  // An action whose response was lost keeps its request id, even across a
+  // reload, so retrying it or choosing it again can never record it twice.
+  // Once confirmed, choosing an action again is a new occurrence.
+  const [unsentAction, setUnsentAction] = useSessionState<{
     clientRequestId: string;
     actionKey: string;
-  } | null>(null);
+  }>(`action:${attemptId}`);
   const [actionSubmitting, setActionSubmitting] = useState(false);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(() =>
+    unsentAction ? restoredActionNotice : null,
+  );
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const [endSubmitting, setEndSubmitting] = useState(false);
   const [endNotice, setEndNotice] = useState<string | null>(null);
@@ -282,7 +287,11 @@ function Attempt({ attemptId }: { attemptId: string }) {
     notice: actionNotice,
     canRetry: unsentAction !== null,
     onAction: (actionKey) =>
-      void runAction({ clientRequestId: crypto.randomUUID(), actionKey }),
+      void runAction(
+        unsentAction?.actionKey === actionKey
+          ? unsentAction
+          : { clientRequestId: crypto.randomUUID(), actionKey },
+      ),
     onRetryAction: () => {
       if (unsentAction) {
         void runAction(unsentAction);
