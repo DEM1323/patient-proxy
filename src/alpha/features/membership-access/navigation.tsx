@@ -1,81 +1,213 @@
 import { Link } from "@tanstack/react-router";
+import { useAuth } from "@workos-inc/authkit-react";
 import { useConvexAuth, useQuery } from "convex/react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { api } from "@/convex/_generated/api";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
+import { Icon, type IconName } from "../../ui/icon";
+import { AccountMenu } from "./account-menu";
+import type { MembershipSummary } from "./view";
 
 export type Destination = {
-  to: "/scenarios" | "/attempts" | "/review" | "/groups" | "/admin/members";
+  to:
+    "/" | "/scenarios" | "/attempts" | "/review" | "/groups" | "/admin/members";
   label: string;
+  icon: IconName;
 };
 
-const destinationsByRole: Record<MembershipRole, Destination[]> = {
-  learner: [
-    { to: "/scenarios", label: "Scenarios" },
-    { to: "/attempts", label: "Your Attempts" },
-  ],
-  faculty: [
-    { to: "/review", label: "Review" },
-    { to: "/groups", label: "Learning Groups" },
-  ],
-  // Recognized, but authoring is not built; no dead link.
-  author: [],
-  institutionalAdmin: [
-    { to: "/review", label: "Review" },
-    { to: "/groups", label: "Learning Groups" },
-    { to: "/admin/members", label: "Members" },
-  ],
+export type NavGroup = { label: string | null; destinations: Destination[] };
+
+const home: Destination = { to: "/", label: "Home", icon: "home" };
+const scenarios: Destination = {
+  to: "/scenarios",
+  label: "Scenarios",
+  icon: "scenarios",
+};
+const attempts: Destination = {
+  to: "/attempts",
+  label: "Your Attempts",
+  icon: "clock",
+};
+const review: Destination = {
+  to: "/review",
+  label: "Ended Attempts",
+  icon: "review",
+};
+const members: Destination = {
+  to: "/admin/members",
+  label: "Members",
+  icon: "users",
+};
+const groups: Destination = {
+  to: "/groups",
+  label: "Learning Groups",
+  icon: "groups",
 };
 
 /**
- * Each implemented journey of the Member's roles, once per destination.
- * Navigation only mirrors roles; Convex authorizes every read and change.
+ * The sidebar for a Member's roles. The order never changes (Practice, Review,
+ * Institution), and only groups for held roles appear. Roles add up without
+ * inheritance; Author has no implemented journey, so it adds nothing.
+ * Navigation only mirrors roles: Convex authorizes every read and change.
  */
-export function roleDestinations(roles: MembershipRole[]): Destination[] {
-  const seen = new Set<string>();
-  const destinations: Destination[] = [];
-  for (const role of roles) {
-    for (const destination of destinationsByRole[role]) {
-      if (!seen.has(destination.to)) {
-        seen.add(destination.to);
-        destinations.push(destination);
-      }
-    }
+export function navGroups(roles: MembershipRole[]): NavGroup[] {
+  const learner = roles.includes("learner");
+  const faculty = roles.includes("faculty");
+  const admin = roles.includes("institutionalAdmin");
+  const result: NavGroup[] = [{ label: null, destinations: [home] }];
+  if (learner) {
+    result.push({ label: "Practice", destinations: [scenarios, attempts] });
   }
-  return destinations;
+  if (faculty || admin) {
+    // Faculty manage availability for their own groups; an admin finds the
+    // same page under Institution, so it appears once.
+    result.push({
+      label: "Review",
+      destinations: faculty && !admin ? [review, groups] : [review],
+    });
+  }
+  if (admin) {
+    result.push({ label: "Institution", destinations: [members, groups] });
+  }
+  return result;
 }
 
-export function destinationsForRole(role: MembershipRole) {
-  return destinationsByRole[role];
+// The Active Attempt collapses the sidebar to a rail so the bedside has room.
+const CompactRailContext = createContext<(compact: boolean) => void>(() => {});
+
+export function useCompactRail(compact: boolean) {
+  const setCompact = useContext(CompactRailContext);
+  useEffect(() => {
+    setCompact(compact);
+    return () => setCompact(false);
+  }, [compact, setCompact]);
 }
 
-const linkClass =
-  "rounded-md px-3 py-2 text-sm font-medium text-ink-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
-
-// Header links for the signed-in Member; nothing before sign-in or admission.
-export function RoleNavigation() {
+/**
+ * The signed-in frame: a Proxy Blue sidebar beside the page. Before sign-in,
+ * admission, or while deactivated, pages render alone, since no journeys exist.
+ */
+export function AppShell({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
   const membership = useQuery(
     api.membershipAccess.access.currentMembership,
     isAuthenticated ? {} : "skip",
   );
+  const [compact, setCompact] = useState(false);
+
   if (!membership || membership.status !== "active") {
-    return null;
+    return <>{children}</>;
   }
   return (
-    <>
-      <Link to="/" className={linkClass} activeOptions={{ exact: true }} activeProps={{ className: "bg-neutral text-blue-text" }}>
-        Home
-      </Link>
-      {roleDestinations(membership.roles).map((destination) => (
+    <CompactRailContext.Provider value={setCompact}>
+      <div className="flex min-h-screen flex-col md:flex-row">
+        {compact ? <CompactRail /> : <Sidebar membership={membership} />}
+        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      </div>
+    </CompactRailContext.Provider>
+  );
+}
+
+const itemClass =
+  "flex items-center gap-3 rounded-md px-[10px] py-[9px] text-ui font-semibold text-rail-text hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+const activeItem = { className: "bg-harbor text-white hover:bg-harbor" };
+
+function Sidebar({ membership }: { membership: MembershipSummary }) {
+  const { signOut, user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+
+  return (
+    <header className="z-10 flex flex-col bg-rail px-[14px] py-3 text-white md:sticky md:top-0 md:h-screen md:w-[248px] md:flex-none md:gap-[22px] md:overflow-y-auto md:pb-[18px] md:pt-[22px]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-0.5 px-[10px]">
+          <span className="text-[19px] font-extrabold leading-tight tracking-[-0.01em]">
+            Patient Proxy
+          </span>
+          <span className="text-caption text-rail-label">
+            {membership.institution.name}
+          </span>
+        </div>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls="primary-navigation"
+          onClick={() => setOpen(!open)}
+          className="rounded-md bg-white/15 px-3 py-1.5 text-small font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:hidden"
+        >
+          {open ? "Close menu" : "Menu"}
+        </button>
+      </div>
+      <nav
+        id="primary-navigation"
+        aria-label="Primary navigation"
+        className={`${open ? "flex" : "hidden"} flex-1 flex-col gap-[22px] pb-2 pt-4 md:flex md:p-0`}
+      >
+        {navGroups(membership.roles).map((group) => (
+          <div key={group.label ?? "home"} className="flex flex-col gap-0.5">
+            {group.label && (
+              <span className="px-[10px] pb-1.5 text-meta font-semibold text-rail-label">
+                {group.label}
+              </span>
+            )}
+            {group.destinations.map((destination) => (
+              <Link
+                key={destination.to}
+                to={destination.to}
+                onClick={close}
+                className={itemClass}
+                activeOptions={{ exact: destination.to === "/" }}
+                activeProps={activeItem}
+              >
+                <Icon name={destination.icon} />
+                {destination.label}
+              </Link>
+            ))}
+          </div>
+        ))}
+        <AccountMenu
+          membership={membership}
+          email={user?.email}
+          name={[user?.firstName, user?.lastName].filter(Boolean).join(" ")}
+          onSignOut={() => signOut({ returnTo: window.location.origin })}
+        />
+      </nav>
+    </header>
+  );
+}
+
+// Icon-only Practice destinations, so leaving the Attempt is one step away.
+function CompactRail() {
+  return (
+    <nav
+      aria-label="Primary navigation"
+      className="flex items-center gap-2 bg-rail px-3 py-2 text-white md:sticky md:top-0 md:h-screen md:w-[84px] md:flex-none md:flex-col md:px-2.5 md:py-[22px]"
+    >
+      <span
+        aria-hidden="true"
+        className="px-2 text-[15px] font-extrabold md:pb-3"
+      >
+        PP
+      </span>
+      {[home, scenarios, attempts].map((destination) => (
         <Link
           key={destination.to}
           to={destination.to}
-          className={linkClass}
-          activeProps={{ className: "bg-neutral text-blue-text" }}
+          title={destination.label}
+          className={itemClass}
+          activeOptions={{ exact: true }}
+          activeProps={activeItem}
         >
-          {destination.label}
+          <Icon name={destination.icon} />
+          <span className="sr-only">{destination.label}</span>
         </Link>
       ))}
-    </>
+    </nav>
   );
 }

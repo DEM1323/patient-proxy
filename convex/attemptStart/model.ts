@@ -41,6 +41,8 @@ export type StartAttemptResult =
   | { status: "unavailable" };
 
 export type AttemptView = {
+  // Only the pinned Learner Brief; never Clinical Truth or the current version.
+  brief?: LearnerBrief;
   id: Id<"attempts">;
   status: "active" | "ended";
   startedAt: number;
@@ -182,7 +184,9 @@ export async function startAttempt(
     scenarioVersionId: available.version._id,
     status: "active",
     startedAt: now,
-    ...(clientRequestId === undefined ? {} : { startRequestId: clientRequestId }),
+    ...(clientRequestId === undefined
+      ? {}
+      : { startRequestId: clientRequestId }),
   });
   await ctx.db.insert("attemptEvents", {
     institutionId: learner.institution.id,
@@ -257,6 +261,7 @@ export async function buildAttemptView(
         ? await getOpenExchange(ctx, attempt._id)
         : null,
     clinicalActions: actions.map(({ key, label }) => ({ key, label })),
+    brief: version.learnerBrief,
   };
 }
 
@@ -292,7 +297,9 @@ async function findAvailableScenario(
     const availability = await ctx.db
       .query("scenarioAvailabilities")
       .withIndex("by_group_scenario", (query) =>
-        query.eq("learningGroupId", learningGroupId).eq("scenarioId", scenarioId),
+        query
+          .eq("learningGroupId", learningGroupId)
+          .eq("scenarioId", scenarioId),
       )
       .first();
     if (availability && availability.institutionId === learner.institution.id) {

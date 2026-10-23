@@ -7,7 +7,7 @@ export function HomePage() {
   }
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-73px)] max-w-6xl items-center gap-12 px-5 py-16 lg:grid-cols-[1.25fr_0.75fr]">
+    <main className="mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-5 py-16 lg:grid-cols-[1.25fr_0.75fr]">
       <section>
         <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-blue-text">
           Clinical communication practice

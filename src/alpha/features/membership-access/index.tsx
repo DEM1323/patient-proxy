@@ -1,6 +1,5 @@
 import { useAuth } from "@workos-inc/authkit-react";
 import { useAction, useConvexAuth, useQuery } from "convex/react";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import {
@@ -8,99 +7,26 @@ import {
   AccessErrorView,
   AccessLoadingView,
   MembershipDeactivatedView,
-  MembershipHome,
   SignInView,
   type MembershipSummary,
 } from "./view";
+
+import { RoleHome } from "./home";
 
 type AdmissionState =
   | {
       userId: string;
       status: "denied";
       reason:
-        | "email_not_verified"
-        | "not_on_roster"
-        | "roster_entry_already_bound";
+        "email_not_verified" | "not_on_roster" | "roster_entry_already_bound";
     }
   | { userId: string; status: "error" }
   | null;
 
-const reviewLink = (
-  <Link
-    to="/review"
-    className="inline-flex rounded-md bg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-  >
-    Review Ended Attempts
-  </Link>
-);
-
 export function MembershipAccessPage() {
   return (
     <MembershipGate>
-      {({ membership, signOut }) => (
-        <MembershipHome
-          membership={membership}
-          onSignOut={signOut}
-          journeyActions={{
-            learner: (
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/scenarios"
-                  className="inline-flex rounded-md bg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-                >
-                  Open scenario list
-                </Link>
-                <Link
-                  to="/attempts"
-                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-                >
-                  Your Ended Attempts
-                </Link>
-              </div>
-            ),
-            faculty: (
-              <div className="flex flex-wrap gap-3">
-                {reviewLink}
-                <Link
-                  to="/groups"
-                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-                >
-                  Learning Groups
-                </Link>
-              </div>
-            ),
-            // Same destinations as the header (navigation.tsx).
-            institutionalAdmin: (
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/admin/members"
-                  className="inline-flex rounded-md bg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-                >
-                  Manage Members
-                </Link>
-                <Link
-                  to="/review"
-                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-                >
-                  Review Ended Attempts
-                </Link>
-                <Link
-                  to="/groups"
-                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-                >
-                  Learning Groups
-                </Link>
-              </div>
-            ),
-            // Recognized role; authoring is not built, so no dead link.
-            author: (
-              <p className="text-sm font-semibold text-ink-2">
-                Authoring isn&apos;t available in this alpha yet.
-              </p>
-            ),
-          }}
-        />
-      )}
+      {({ membership }) => <RoleHome membership={membership} />}
     </MembershipGate>
   );
 }
@@ -156,9 +82,7 @@ export function MembershipGate({
   }
   if (!user) {
     return (
-      <SignInView
-        onSignIn={() => void signIn({ state: { returnTo: "/" } })}
-      />
+      <SignInView onSignIn={() => void signIn({ state: { returnTo: "/" } })} />
     );
   }
   if (convexLoading || !isAuthenticated || membership === undefined) {

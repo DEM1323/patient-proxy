@@ -10,10 +10,15 @@ import {
 import { MembershipAccessProvider } from "./features/membership-access/provider";
 import { router } from "./router";
 import "./styles.css";
+import { initializeAppearance } from "./ui/appearance";
+
+initializeAppearance();
 
 const root = createRoot(document.getElementById("root")!);
 const app = <RouterProvider router={router} />;
-const convexClient = isConvexConfigured ? new ConvexReactClient(convexUrl) : null;
+const convexClient = isConvexConfigured
+  ? new ConvexReactClient(convexUrl)
+  : null;
 
 root.render(
   <StrictMode>

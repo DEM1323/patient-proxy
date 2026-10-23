@@ -1,5 +1,4 @@
 import {
-  Link,
   Outlet,
   createRootRoute,
   createRoute,
@@ -16,37 +15,25 @@ import { AttemptHistoryPage } from "./features/learner-attempt-history";
 import { ReviewDetailPage, ReviewListPage } from "./features/attempt-review";
 import { MembersPage } from "./features/institution-admin";
 import { LearningGroupsPage } from "./features/learning-groups";
-import { RoleNavigation } from "./features/membership-access/navigation";
+import { AppShell } from "./features/membership-access/navigation";
 import { isMembershipAccessConfigured } from "./env";
 import {
   CallbackPage,
   LoginPage,
 } from "./features/membership-access/auth-routes";
 
+// Every page renders inside the shell; the deployment check stays reachable
+// by URL but is no longer a navigation destination.
 const rootRoute = createRootRoute({
   component: () => (
     <div className="min-h-screen bg-canvas text-ink">
-      <header className="border-b border-line bg-surface">
-        <nav
-          aria-label="Primary navigation"
-          className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4"
-        >
-          <Link to="/" className="text-lg font-semibold tracking-tight text-blue-text">
-            Patient Proxy
-          </Link>
-          <div className="flex flex-wrap items-center justify-end gap-1">
-            {isMembershipAccessConfigured && <RoleNavigation />}
-            <Link
-              to="/deployment-check"
-              className="rounded-md px-3 py-2 text-sm font-medium text-ink-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
-              activeProps={{ className: "bg-neutral text-blue-text" }}
-            >
-              Deployment check
-            </Link>
-          </div>
-        </nav>
-      </header>
-      <Outlet />
+      {isMembershipAccessConfigured ? (
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      ) : (
+        <Outlet />
+      )}
     </div>
   ),
 });

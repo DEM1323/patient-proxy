@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { getFunctionName } from "convex/server";
 import { StrictMode } from "react";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -33,7 +34,16 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("convex/react", () => ({
   useAction: () => testState.enterPilot,
   useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
-  useQuery: () => testState.membership,
+  useQuery: (
+    reference: Parameters<typeof getFunctionName>[0],
+    args: unknown,
+  ) => {
+    if (args === "skip") return undefined;
+    return getFunctionName(reference) ===
+      "membershipAccess/access:currentMembership"
+      ? testState.membership
+      : [];
+  },
 }));
 
 describe("Membership admission gate", () => {
@@ -46,13 +56,19 @@ describe("Membership admission gate", () => {
   it("shows a deactivated Member their status instead of re-admitting them", () => {
     testState.membership = {
       id: "membership-id",
-      institution: { id: "institution-id", key: "umb", name: "UMB Pilot Institution" },
+      institution: {
+        id: "institution-id",
+        key: "umb",
+        name: "UMB Pilot Institution",
+      },
       roles: ["learner"],
       status: "inactive",
     };
     render(<MembershipAccessPage />);
 
-    expect(screen.getByText("Your Pilot Membership is currently deactivated.")).toBeTruthy();
+    expect(
+      screen.getByText("Your Pilot Membership is currently deactivated."),
+    ).toBeTruthy();
     expect(screen.queryByText("Open scenario list")).toBeNull();
     expect(testState.enterPilot).not.toHaveBeenCalled();
   });
@@ -94,9 +110,11 @@ describe("Membership admission gate", () => {
       </StrictMode>,
     );
 
-    expect(await screen.findByText("Learner journey")).toBeTruthy();
     expect(
-      screen.getByRole("link", { name: "Open scenario list" }).getAttribute("href"),
-    ).toBe("/scenarios");
+      await screen.findByRole("region", { name: "Learner journey" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Your Attempts" }).getAttribute("href"),
+    ).toBe("/attempts");
   });
 });

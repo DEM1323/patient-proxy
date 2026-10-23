@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AttemptPage } from ".";
@@ -85,7 +91,8 @@ function attempt(overrides: Record<string, unknown> = {}) {
   };
 }
 
-const messageBox = () => screen.getByRole("textbox", { name: "Message to Elena" });
+const messageBox = () =>
+  screen.getByRole("textbox", { name: "Message to Elena" });
 const sendButton = () => screen.getByRole("button", { name: "Send" });
 
 describe("Attempt conversation", () => {
@@ -107,10 +114,14 @@ describe("Attempt conversation", () => {
     expect(screen.getByText("I'm not sure...")).toBeTruthy();
     expect((sendButton() as HTMLButtonElement).disabled).toBe(true);
 
-    fireEvent.change(messageBox(), { target: { value: "  You're in recovery.  " } });
+    fireEvent.change(messageBox(), {
+      target: { value: "  You're in recovery.  " },
+    });
     fireEvent.click(sendButton());
 
-    await waitFor(() => expect((messageBox() as HTMLTextAreaElement).value).toBe(""));
+    await waitFor(() =>
+      expect((messageBox() as HTMLTextAreaElement).value).toBe(""),
+    );
     expect(testState.send).toHaveBeenCalledWith({
       attemptId: "attempt-id",
       clientRequestId: expect.any(String),
@@ -158,7 +169,9 @@ describe("Attempt conversation", () => {
       /may not have been sent.*won't be recorded twice/,
     );
     fireEvent.click(sendButton());
-    await waitFor(() => expect((messageBox() as HTMLTextAreaElement).value).toBe(""));
+    await waitFor(() =>
+      expect((messageBox() as HTMLTextAreaElement).value).toBe(""),
+    );
     expect(testState.send).toHaveBeenLastCalledWith({
       attemptId: "attempt-id",
       clientRequestId,
@@ -179,7 +192,9 @@ describe("Attempt conversation", () => {
 
     cleanup();
     render(<AttemptPage attemptId="attempt-id" />);
-    expect((messageBox() as HTMLTextAreaElement).value).toBe("Are you in pain?");
+    expect((messageBox() as HTMLTextAreaElement).value).toBe(
+      "Are you in pain?",
+    );
     expect(screen.queryByRole("alert")).toBeNull();
 
     cleanup();
@@ -227,14 +242,18 @@ describe("Attempt conversation", () => {
       .mockResolvedValueOnce({ status: "recorded" });
     render(<AttemptPage attemptId="attempt-id" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Obtain all vital signs" }),
+    );
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /could not be confirmed/,
     );
     fireEvent.click(screen.getByRole("button", { name: "Retry action" }));
 
     await waitFor(() => expect(testState.takeAction).toHaveBeenCalledTimes(2));
-    const [first, retried] = testState.takeAction.mock.calls.map(([args]) => args);
+    const [first, retried] = testState.takeAction.mock.calls.map(
+      ([args]) => args,
+    );
     expect(first).toEqual({
       attemptId: "attempt-id",
       clientRequestId: expect.any(String),
@@ -245,7 +264,9 @@ describe("Attempt conversation", () => {
 
     // Choosing the action again is an intentional repeat with a new id.
     testState.takeAction.mockResolvedValueOnce({ status: "recorded" });
-    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Obtain all vital signs" }),
+    );
     await waitFor(() => expect(testState.takeAction).toHaveBeenCalledTimes(3));
     expect(testState.takeAction.mock.calls[2][0].clientRequestId).not.toBe(
       first.clientRequestId,
@@ -260,12 +281,18 @@ describe("Attempt conversation", () => {
       .mockResolvedValueOnce({ status: "recorded" });
     render(<AttemptPage attemptId="attempt-id" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Obtain all vital signs" }),
+    );
     await screen.findByRole("alert");
     // The same button, not Retry: still the same occurrence.
-    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Obtain all vital signs" }),
+    );
     await waitFor(() => expect(testState.takeAction).toHaveBeenCalledTimes(2));
-    const [first, again] = testState.takeAction.mock.calls.map(([args]) => args);
+    const [first, again] = testState.takeAction.mock.calls.map(
+      ([args]) => args,
+    );
     expect(again).toEqual(first);
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
 
@@ -287,7 +314,9 @@ describe("Attempt conversation", () => {
     // The page reloads while the action is still in flight.
     testState.takeAction.mockReturnValueOnce(new Promise(() => undefined));
     render(<AttemptPage attemptId="attempt-id" />);
-    fireEvent.click(screen.getByRole("button", { name: "Obtain all vital signs" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Obtain all vital signs" }),
+    );
     const [first] = testState.takeAction.mock.calls[0];
 
     cleanup();
@@ -318,14 +347,21 @@ describe("Attempt conversation", () => {
           action: {
             key: "vital_signs",
             label: "Obtain all vital signs",
-            observation: "BP 124/84, HR 92, RR 8, SpO2 93% on room air, temperature 98.4 F.",
+            observation:
+              "BP 124/84, HR 92, RR 8, SpO2 93% on room air, temperature 98.4 F.",
           },
         },
       ],
     });
     render(<AttemptPage attemptId="attempt-id" />);
 
-    expect(screen.getByText(/Clinical Action · Obtain all vital signs/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === "P" &&
+          element.textContent === "Clinical Action · Obtain all vital signs",
+      ),
+    ).toBeTruthy();
     expect(screen.getByText(/SpO2 93% on room air/)).toBeTruthy();
   });
 
@@ -335,8 +371,12 @@ describe("Attempt conversation", () => {
 
     expect(screen.getByText("I'm not sure...")).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
-    expect(screen.queryByRole("button", { name: /send|retry|resume/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Obtain all vital signs" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /send|retry|resume/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Obtain all vital signs" }),
+    ).toBeNull();
     expect(screen.queryByRole("button", { name: "End Attempt" })).toBeNull();
   });
 });
@@ -363,7 +403,10 @@ describe("Ending the Attempt", () => {
 
   it("requires explicit confirmation and can be cancelled", async () => {
     testState.attempt = attempt({ canEnd: true });
-    testState.end.mockResolvedValue({ status: "ended", endReason: "learner_ended" });
+    testState.end.mockResolvedValue({
+      status: "ended",
+      endReason: "learner_ended",
+    });
     render(<AttemptPage attemptId="attempt-id" />);
 
     fireEvent.click(endButton());
@@ -414,7 +457,11 @@ describe("Ending the Attempt", () => {
     });
     render(<AttemptPage attemptId="attempt-id" />);
 
-    expect(screen.getByText(/You ended this Attempt\. It can no longer change\./)).toBeTruthy();
+    expect(
+      screen.getByText(
+        /You ended this Attempt\. The encounter record can no longer change\./,
+      ),
+    ).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/passed|failed|score|grade/i);
   });
 });
