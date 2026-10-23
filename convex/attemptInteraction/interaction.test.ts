@@ -239,6 +239,11 @@ describe("Hold a recoverable patient exchange", () => {
     ]);
     expect((await view()).exchange).toBeNull();
     expect(completePatientReply).toHaveBeenCalledTimes(2);
+    // The regeneration spends what is left of the same time budget.
+    const [[, firstDeadline], [, secondDeadline]] =
+      completePatientReply.mock.calls as unknown as [unknown, number][];
+    expect(secondDeadline).toBe(firstDeadline);
+    expect(firstDeadline).toBeGreaterThan(Date.now());
   });
 
   it("fails the exchange when the regenerated reply is screened too, and recovers on retry", async () => {

@@ -11,6 +11,7 @@ import {
   commitReply,
   loadGenerationContext,
   markGenerationFailed,
+  patientReplyBudgetMs,
   type GenerationTarget,
 } from "./model";
 import {
@@ -52,18 +53,19 @@ export const generate = internalAction({
   },
 });
 
-// A reply that breaks a screened rule is regenerated once; a second violation
-// fails the exchange, which the Learner can retry. A late reply after the
-// exchange deadline is discarded by the generation check, as for any reply.
+// A reply that breaks a screened rule is regenerated once, within the same
+// time budget; a second violation fails the exchange, which the Learner can
+// retry.
 const screenedAttempts = 2;
 
 async function generateReply(context: PatientContext) {
   const patientName = context.learnerBrief.patientName;
+  const deadline = Date.now() + patientReplyBudgetMs;
   try {
     const prompt = buildPatientPrompt(context);
     for (let attempt = 1; attempt <= screenedAttempts; attempt++) {
       const reply = normalizeReply(
-        await completePatientReply(prompt),
+        await completePatientReply(prompt, deadline),
         patientName,
       );
       if (!reply) {
