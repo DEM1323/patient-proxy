@@ -9,11 +9,11 @@ type Groups = FunctionReturnType<typeof api.learningGroups.access.learningGroups
 type Group = Groups["groups"][number];
 
 const link =
-  "font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 const sectionClass =
-  "mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm";
+  "mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm";
 const smallButton =
-  "rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
 export type GroupControls = {
   newGroupName: string;
@@ -38,15 +38,15 @@ export function LearningGroupsView({
       <Link to="/" className={`text-sm ${link}`}>
         ← Home
       </Link>
-      <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950">
+      <h1 className="mt-4 text-4xl font-bold tracking-tight text-ink">
         Learning Groups
       </h1>
-      <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+      <p className="mt-3 max-w-2xl leading-7 text-ink-2">
         {data.canManageGroups
           ? "Groups decide which Scenarios Learners can start and which Ended Attempts Faculty can review. Faculty review an Attempt while they share a group with its Learner and that group makes the Scenario available."
           : "Your Learning Groups. You can change which Scenarios each one makes available; an Institutional Admin manages who belongs to them."}
       </p>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-3">
         Removing a Member or a Scenario takes effect immediately for new
         Attempts and for Faculty review. It never ends an Attempt already in
         progress.
@@ -54,7 +54,7 @@ export function LearningGroupsView({
       {controls.notice && (
         <p
           role={controls.notice.tone === "error" ? "alert" : "status"}
-          className={`mt-4 font-medium ${controls.notice.tone === "error" ? "text-rose-700" : "text-emerald-700"}`}
+          className={`mt-4 font-medium ${controls.notice.tone === "error" ? "text-red" : "text-teal"}`}
         >
           {controls.notice.text}
         </p>
@@ -62,7 +62,7 @@ export function LearningGroupsView({
 
       {data.canManageGroups && (
         <section aria-labelledby="create-group-title" className={sectionClass}>
-          <h2 id="create-group-title" className="text-lg font-semibold text-slate-950">
+          <h2 id="create-group-title" className="text-lg font-semibold text-ink">
             Create a Learning Group
           </h2>
           <form
@@ -73,7 +73,7 @@ export function LearningGroupsView({
             }}
           >
             <div>
-              <label htmlFor="group-name" className="block text-sm font-semibold text-slate-800">
+              <label htmlFor="group-name" className="block text-sm font-semibold text-ink-2">
                 Group name
               </label>
               <input
@@ -81,7 +81,7 @@ export function LearningGroupsView({
                 value={controls.newGroupName}
                 maxLength={80}
                 onChange={(event) => controls.onNewGroupNameChange(event.target.value)}
-                className="mt-2 block w-72 rounded-lg border border-slate-300 px-4 py-2 text-slate-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-2 block w-72 rounded-lg border border-line px-4 py-2 text-ink focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
               />
             </div>
             <button
@@ -96,7 +96,7 @@ export function LearningGroupsView({
       )}
 
       {data.groups.length === 0 ? (
-        <p className={`${sectionClass} text-slate-600`}>
+        <p className={`${sectionClass} text-ink-2`}>
           {data.canManageGroups
             ? "No Learning Groups yet."
             : "You don't belong to any Learning Groups yet."}
@@ -124,18 +124,18 @@ function GroupCard({
   const selectId = `enroll-${group.id}`;
   return (
     <section aria-label={group.name} className={sectionClass}>
-      <h2 className="text-lg font-semibold text-slate-950">{group.name}</h2>
+      <h2 className="text-lg font-semibold text-ink">{group.name}</h2>
 
-      <h3 className="mt-5 font-semibold text-slate-900">Available Scenarios</h3>
+      <h3 className="mt-5 font-semibold text-ink">Available Scenarios</h3>
       {data.scenarios.length === 0 ? (
-        <p className="mt-2 text-slate-600">No Published Scenarios yet.</p>
+        <p className="mt-2 text-ink-2">No Published Scenarios yet.</p>
       ) : (
         <ul className="mt-2 space-y-2">
           {data.scenarios.map((scenario) => {
             const available = group.availableScenarioIds.includes(scenario.id);
             return (
               <li key={scenario.id}>
-                <label className="flex items-center gap-2 text-slate-700">
+                <label className="flex items-center gap-2 text-ink-2">
                   <input
                     type="checkbox"
                     checked={available}
@@ -152,16 +152,16 @@ function GroupCard({
         </ul>
       )}
 
-      <h3 className="mt-6 font-semibold text-slate-900">Members</h3>
+      <h3 className="mt-6 font-semibold text-ink">Members</h3>
       {group.members.length === 0 ? (
-        <p className="mt-2 text-slate-600">No Members yet.</p>
+        <p className="mt-2 text-ink-2">No Members yet.</p>
       ) : (
-        <ul className="mt-2 divide-y divide-slate-200">
+        <ul className="mt-2 divide-y divide-line">
           {group.members.map((member) => (
             <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-              <span className="text-slate-800">
+              <span className="text-ink-2">
                 {member.email}{" "}
-                <span className="text-sm text-slate-500">
+                <span className="text-sm text-ink-3">
                   · {member.roles.map((role) => roleLabels[role]).join(", ")}
                   {member.status === "inactive" && " · Deactivated"}
                 </span>
@@ -193,14 +193,14 @@ function GroupCard({
           }}
         >
           <div>
-            <label htmlFor={selectId} className="block text-sm font-semibold text-slate-800">
+            <label htmlFor={selectId} className="block text-sm font-semibold text-ink-2">
               Add a Member
             </label>
             <select
               id={selectId}
               name={selectId}
               defaultValue=""
-              className="mt-2 block w-72 rounded-lg border border-slate-300 px-3 py-2 text-slate-900"
+              className="mt-2 block w-72 rounded-lg border border-line px-3 py-2 text-ink"
             >
               <option value="" disabled>
                 Choose a Member
@@ -224,10 +224,10 @@ function GroupCard({
 export function GroupReaderRequiredView() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+      <h1 className="text-3xl font-bold tracking-tight text-ink">
         Faculty or Institutional Admin role required
       </h1>
-      <p className="mt-4 leading-7 text-slate-600">
+      <p className="mt-4 leading-7 text-ink-2">
         Your Pilot Membership does not include a role that manages Learning Groups.
       </p>
       <Link to="/" className={`mt-6 inline-block ${link}`}>

@@ -35,7 +35,7 @@ function AuthenticationConfigurationMissing() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">
       <h1 className="text-3xl font-bold tracking-tight">Authentication is not configured</h1>
-      <p className="mt-4 text-slate-600">
+      <p className="mt-4 text-ink-2">
         Set the replacement application&apos;s Convex and WorkOS environment variables.
       </p>
     </main>

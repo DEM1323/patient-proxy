@@ -28,7 +28,7 @@ type AdmissionState =
 const reviewLink = (
   <Link
     to="/review"
-    className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    className="inline-flex rounded-md bg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
   >
     Review Ended Attempts
   </Link>
@@ -46,13 +46,13 @@ export function MembershipAccessPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   to="/scenarios"
-                  className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-flex rounded-md bg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   Open scenario list
                 </Link>
                 <Link
                   to="/attempts"
-                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   Your Ended Attempts
                 </Link>
@@ -63,7 +63,7 @@ export function MembershipAccessPage() {
                 {reviewLink}
                 <Link
                   to="/groups"
-                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   Learning Groups
                 </Link>
@@ -74,19 +74,19 @@ export function MembershipAccessPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   to="/admin/members"
-                  className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-flex rounded-md bg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   Manage Members
                 </Link>
                 <Link
                   to="/review"
-                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   Review Ended Attempts
                 </Link>
                 <Link
                   to="/groups"
-                  className="inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-flex rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   Learning Groups
                 </Link>
@@ -94,7 +94,7 @@ export function MembershipAccessPage() {
             ),
             // Recognized role; authoring is not built, so no dead link.
             author: (
-              <p className="text-sm font-semibold text-slate-600">
+              <p className="text-sm font-semibold text-ink-2">
                 Authoring isn&apos;t available in this alpha yet.
               </p>
             ),

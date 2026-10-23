@@ -16,11 +16,11 @@ type OwnAttempt = NonNullable<
 >;
 
 export const primaryButton =
-  "inline-flex rounded-md bg-primary px-5 py-3 font-semibold text-white shadow-sm hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "inline-flex rounded-md bg-blue px-5 py-3 font-semibold text-white shadow-sm hover:bg-harbor disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 export const secondaryButton =
-  "inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "inline-flex rounded-md border border-line bg-surface px-4 py-2 font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 const backLink =
-  "text-sm font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "text-sm font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
 export function ScenarioListView({
   scenarios,
@@ -32,14 +32,14 @@ export function ScenarioListView({
       <Link to="/" className={backLink}>
         ← Home
       </Link>
-      <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950">
+      <h1 className="mt-4 text-4xl font-bold tracking-tight text-ink">
         Available Scenarios
       </h1>
-      <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+      <p className="mt-3 max-w-2xl leading-7 text-ink-2">
         Scenarios made available through your current Learning Groups.
       </p>
       {scenarios.length === 0 ? (
-        <p className="mt-8 rounded-lg border border-slate-200 bg-white px-5 py-4 text-slate-700">
+        <p className="mt-8 rounded-lg border border-line bg-surface px-5 py-4 text-ink-2">
           No Scenarios are currently available to your Learning Groups. Contact
           your Faculty if you expected one.
         </p>
@@ -50,15 +50,15 @@ export function ScenarioListView({
               <Link
                 to="/scenarios/$scenarioId"
                 params={{ scenarioId: scenario.scenarioId }}
-                className="block rounded-2xl border border-sky-200 bg-sky-50 p-6 shadow-sm hover:border-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="block rounded-2xl border border-ceil-2 bg-ceil p-6 shadow-sm hover:border-ceil-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
               >
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-ink-2">
                   {scenario.setting}
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
                   {scenario.title}
                 </h2>
-                <p className="mt-2 text-slate-700">
+                <p className="mt-2 text-ink-2">
                   {scenario.patientName} · about {scenario.estimatedMinutes.min}–
                   {scenario.estimatedMinutes.max} minutes
                 </p>
@@ -112,33 +112,33 @@ export function LearnerBriefView({
       <Link to="/scenarios" className={backLink}>
         ← Available Scenarios
       </Link>
-      <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-secondary">
+      <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-blue-text">
         Learner Brief · {content.setting}
       </p>
-      <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
+      <h1 className="mt-3 text-4xl font-bold tracking-tight text-ink">
         {title}
       </h1>
-      <p className="mt-3 text-lg text-slate-700">
+      <p className="mt-3 text-lg text-ink-2">
         {content.patientName} · about {content.estimatedMinutes.min}–
         {content.estimatedMinutes.max} minutes
       </p>
 
-      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Handoff</h2>
-        <div className="mt-3 space-y-3 leading-7 text-slate-700">
+      <section className="mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm">
+        <h2 className="text-lg font-semibold text-ink">Handoff</h2>
+        <div className="mt-3 space-y-3 leading-7 text-ink-2">
           {content.handoff.map((line) => (
             <p key={line}>{line}</p>
           ))}
         </div>
-        <h2 className="mt-6 text-lg font-semibold text-slate-950">
+        <h2 className="mt-6 text-lg font-semibold text-ink">
           What you can see on arrival
         </h2>
-        <ul className="mt-3 list-disc space-y-1 pl-6 text-slate-700">
+        <ul className="mt-3 list-disc space-y-1 pl-6 text-ink-2">
           {content.visibleSigns.map((sign) => (
             <li key={sign}>{sign}</li>
           ))}
         </ul>
-        <p className="mt-6 border-t border-slate-200 pt-5 text-xs leading-5 text-slate-500">
+        <p className="mt-6 border-t border-line pt-5 text-xs leading-5 text-ink-3">
           Synthetic patient for communication practice. An Attempt is one
           continuous run: once started it cannot be paused or resumed later.
           An unfinished Attempt is deleted after 30 days without activity; an
@@ -151,17 +151,17 @@ export function LearnerBriefView({
           role="alertdialog"
           aria-labelledby="end-active-attempt-title"
           aria-describedby="end-active-attempt-description"
-          className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-7 shadow-sm"
+          className="mt-8 rounded-2xl border border-amber-line bg-amber-tint p-7 shadow-sm"
         >
           <h2
             id="end-active-attempt-title"
-            className="text-xl font-semibold text-slate-950"
+            className="text-xl font-semibold text-ink"
           >
             End your Active Attempt first?
           </h2>
           <p
             id="end-active-attempt-description"
-            className="mt-3 max-w-2xl leading-7 text-slate-700"
+            className="mt-3 max-w-2xl leading-7 text-ink-2"
           >
             You already have an Active Attempt. Starting again ends that Attempt
             permanently, and a new Attempt begins only after it has ended.
@@ -196,7 +196,7 @@ export function LearnerBriefView({
             {starting ? "Starting…" : "Start Attempt"}
           </button>
           {startState.step === "failed" && (
-            <p role="alert" className="mt-4 font-medium text-rose-700">
+            <p role="alert" className="mt-4 font-medium text-red">
               {startState.message}
             </p>
           )}
@@ -209,10 +209,10 @@ export function LearnerBriefView({
 export function ScenarioUnavailableView() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+      <h1 className="text-3xl font-bold tracking-tight text-ink">
         This Scenario is not available to you.
       </h1>
-      <p className="mt-4 leading-7 text-slate-600">
+      <p className="mt-4 leading-7 text-ink-2">
         Only Scenarios made available through your current Learning Groups can
         be started.
       </p>
@@ -282,24 +282,24 @@ export function AttemptView({
   const { exchange } = attempt;
   return (
     <main className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-secondary">
+      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-text">
         {active ? "Active Attempt" : "Ended Attempt"} · {attempt.scenario.setting}
       </p>
-      <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
+      <h1 className="mt-3 text-4xl font-bold tracking-tight text-ink">
         {attempt.scenario.title}
       </h1>
-      <p className="mt-3 text-lg text-slate-700">
+      <p className="mt-3 text-lg text-ink-2">
         {patientName} · Scenario Version {attempt.scenario.version}
       </p>
 
       {active ? (
-        <p className="mt-6 rounded-lg border border-sky-200 bg-sky-50 px-5 py-4 leading-7 text-slate-700">
+        <p className="mt-6 rounded-lg border border-ceil-2 bg-ceil px-5 py-4 leading-7 text-ink-2">
           This simulation is continuous. If your connection drops or this page
           reloads, it reconnects to this same Attempt and its recorded
           conversation.
         </p>
       ) : (
-        <p className="mt-6 rounded-lg border border-slate-200 bg-white px-5 py-4 leading-7 text-slate-700">
+        <p className="mt-6 rounded-lg border border-line bg-surface px-5 py-4 leading-7 text-ink-2">
           {attempt.endReason === "learner_ended"
             ? "You ended this Attempt. "
             : attempt.endReason === "learner_restarted"
@@ -313,9 +313,9 @@ export function AttemptView({
 
       <section
         aria-labelledby="conversation-title"
-        className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+        className="mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm"
       >
-        <h2 id="conversation-title" className="text-lg font-semibold text-slate-950">
+        <h2 id="conversation-title" className="text-lg font-semibold text-ink">
           Conversation with {patientName}
         </h2>
         <AttemptTimeline
@@ -325,7 +325,7 @@ export function AttemptView({
         />
         <div aria-live="polite">
           {exchange?.status === "pending" && (
-            <p className="mt-4 max-w-[80%] rounded-2xl rounded-bl-sm bg-slate-100 px-4 py-3 italic text-slate-600">
+            <p className="mt-4 max-w-[80%] rounded-2xl rounded-bl-sm bg-neutral px-4 py-3 italic text-ink-2">
               {firstName} is responding…
             </p>
           )}
@@ -333,12 +333,12 @@ export function AttemptView({
         {exchange?.status === "failed" && (
           <div
             role="alert"
-            className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-5 py-4"
+            className="mt-4 rounded-lg border border-red-line bg-red-tint px-5 py-4"
           >
-            <p className="font-medium text-rose-800">
+            <p className="font-medium text-red">
               {firstName} could not respond to your last message.
             </p>
-            <p className="mt-1 text-sm text-rose-800">
+            <p className="mt-1 text-sm text-red">
               Retry it, or send a different message instead.
             </p>
             <button
@@ -417,7 +417,7 @@ export function AttemptTimeline({
               />
             )
           ) : (
-            <p className="text-center text-sm text-slate-500">
+            <p className="text-center text-sm text-ink-3">
               {lifecycleLabels[event.kind]} ·{" "}
               <time dateTime={new Date(event.occurredAt).toISOString()}>
                 {formatTime(event.occurredAt)}
@@ -455,9 +455,9 @@ function EndPanel({
   return (
     <section
       aria-labelledby="end-attempt-title"
-      className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+      className="mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm"
     >
-      <h2 id="end-attempt-title" className="text-lg font-semibold text-slate-950">
+      <h2 id="end-attempt-title" className="text-lg font-semibold text-ink">
         End the Attempt
       </h2>
       {ending.confirming ? (
@@ -465,12 +465,12 @@ function EndPanel({
           role="alertdialog"
           aria-labelledby="confirm-end-title"
           aria-describedby="confirm-end-description"
-          className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-5"
+          className="mt-4 rounded-lg border border-amber-line bg-amber-tint p-5"
         >
-          <p id="confirm-end-title" className="font-semibold text-slate-950">
+          <p id="confirm-end-title" className="font-semibold text-ink">
             End this Attempt?
           </p>
-          <p id="confirm-end-description" className="mt-2 leading-7 text-slate-700">
+          <p id="confirm-end-description" className="mt-2 leading-7 text-ink-2">
             You will not be able to send messages or take Clinical Actions
             afterward. Ending records only that you stopped; it is not a pass,
             a fail, or a grade.
@@ -497,7 +497,7 @@ function EndPanel({
         </div>
       ) : (
         <div className="mt-3">
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="text-sm leading-6 text-ink-2">
             {canEnd
               ? "End when you are ready. Missing actions do not prevent ending."
               : endingMinimum}
@@ -514,7 +514,7 @@ function EndPanel({
         </div>
       )}
       {ending.notice && (
-        <p role="alert" className="mt-4 font-medium text-rose-700">
+        <p role="alert" className="mt-4 font-medium text-red">
           {ending.notice}
         </p>
       )}
@@ -532,14 +532,14 @@ function ActionEntry({
   occurredAt: number;
 }) {
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-      <p className="text-xs font-semibold text-amber-900">
+    <div className="rounded-lg border border-amber-line bg-amber-tint px-4 py-3">
+      <p className="text-xs font-semibold text-amber-ink">
         Clinical Action · {label} ·{" "}
         <time dateTime={new Date(occurredAt).toISOString()}>
           {formatTime(occurredAt)}
         </time>
       </p>
-      <p className="mt-1 leading-7 text-slate-900">{observation}</p>
+      <p className="mt-1 leading-7 text-ink">{observation}</p>
     </div>
   );
 }
@@ -554,15 +554,15 @@ function ActionPanel({
   return (
     <section
       aria-labelledby="clinical-actions-title"
-      className="mt-8 rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+      className="mt-8 rounded-2xl border border-line bg-surface p-7 shadow-sm"
     >
       <h2
         id="clinical-actions-title"
-        className="text-lg font-semibold text-slate-950"
+        className="text-lg font-semibold text-ink"
       >
         Clinical Actions
       </h2>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
+      <p className="mt-2 text-sm leading-6 text-ink-2">
         Choosing an action records that you performed it and shows what you
         observe. It does not assess your technique.
       </p>
@@ -581,7 +581,7 @@ function ActionPanel({
       </div>
       {panel.notice && (
         <div role="alert" className="mt-4">
-          <p className="font-medium text-rose-700">{panel.notice}</p>
+          <p className="font-medium text-red">{panel.notice}</p>
           {panel.canRetry && (
             <button
               type="button"
@@ -612,7 +612,7 @@ function Message({
   return (
     <div className={fromLearner ? "ml-auto max-w-[80%]" : "max-w-[80%]"}>
       <p
-        className={`text-xs font-semibold text-slate-500 ${fromLearner ? "text-right" : ""}`}
+        className={`text-xs font-semibold text-ink-3 ${fromLearner ? "text-right" : ""}`}
       >
         {speaker} ·{" "}
         <time dateTime={new Date(occurredAt).toISOString()}>
@@ -622,8 +622,8 @@ function Message({
       <p
         className={`mt-1 whitespace-pre-wrap rounded-2xl px-4 py-3 leading-7 ${
           fromLearner
-            ? "rounded-br-sm bg-primary text-white"
-            : "rounded-bl-sm bg-slate-100 text-slate-900"
+            ? "rounded-br-sm bg-blue text-white"
+            : "rounded-bl-sm bg-neutral text-ink"
         }`}
       >
         {text}
@@ -655,7 +655,7 @@ function Composer({
     >
       <label
         htmlFor="attempt-message"
-        className="block font-semibold text-slate-950"
+        className="block font-semibold text-ink"
       >
         Message to {patientFirstName}
       </label>
@@ -671,20 +671,20 @@ function Composer({
             event.currentTarget.form?.requestSubmit();
           }
         }}
-        className="mt-2 block w-full rounded-lg border border-slate-300 px-4 py-3 leading-7 text-slate-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        className="mt-2 block w-full rounded-lg border border-line px-4 py-3 leading-7 text-ink focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
       />
       <div className="mt-3 flex flex-wrap items-center gap-4">
         <button type="submit" className={primaryButton} disabled={!canSend}>
           {composer.submitting ? "Sending…" : "Send"}
         </button>
         {waiting && (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-ink-2">
             You can send your next message after {patientFirstName} responds.
           </p>
         )}
       </div>
       {composer.notice && (
-        <p role="alert" className="mt-4 font-medium text-rose-700">
+        <p role="alert" className="mt-4 font-medium text-red">
           {composer.notice}
         </p>
       )}
@@ -695,10 +695,10 @@ function Composer({
 export function AttemptNotFoundView() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+      <h1 className="text-3xl font-bold tracking-tight text-ink">
         Attempt not found
       </h1>
-      <p className="mt-4 leading-7 text-slate-600">
+      <p className="mt-4 leading-7 text-ink-2">
         You can open only your own Attempts.
       </p>
       <Link to="/scenarios" className={`mt-6 inline-block ${backLink}`}>
@@ -711,10 +711,10 @@ export function AttemptNotFoundView() {
 export function LearnerRoleRequiredView() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+      <h1 className="text-3xl font-bold tracking-tight text-ink">
         Learner role required
       </h1>
-      <p className="mt-4 leading-7 text-slate-600">
+      <p className="mt-4 leading-7 text-ink-2">
         Your Pilot Membership does not include the Learner role.
       </p>
       <Link to="/" className={`mt-6 inline-block ${backLink}`}>

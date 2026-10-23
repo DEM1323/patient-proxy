@@ -25,21 +25,21 @@ import {
 
 const rootRoute = createRootRoute({
   component: () => (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-canvas text-ink">
+      <header className="border-b border-line bg-surface">
         <nav
           aria-label="Primary navigation"
           className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4"
         >
-          <Link to="/" className="text-lg font-semibold tracking-tight text-primary">
+          <Link to="/" className="text-lg font-semibold tracking-tight text-blue-text">
             Patient Proxy
           </Link>
           <div className="flex flex-wrap items-center justify-end gap-1">
             {isMembershipAccessConfigured && <RoleNavigation />}
             <Link
               to="/deployment-check"
-              className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              activeProps={{ className: "bg-slate-100 text-primary" }}
+              className="rounded-md px-3 py-2 text-sm font-medium text-ink-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+              activeProps={{ className: "bg-neutral text-blue-text" }}
             >
               Deployment check
             </Link>

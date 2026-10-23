@@ -7,7 +7,7 @@ type Entry = FunctionReturnType<
 >[number];
 
 const link =
-  "font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
 const debriefLabels: Record<Entry["debrief"], string> = {
   none: "No Debrief: this Attempt ended when you started a new one.",
@@ -24,16 +24,16 @@ export function AttemptHistoryView({ attempts }: { attempts: Entry[] }) {
       <Link to="/" className={`text-sm ${link}`}>
         ← Home
       </Link>
-      <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950">
+      <h1 className="mt-4 text-4xl font-bold tracking-tight text-ink">
         Your Ended Attempts
       </h1>
-      <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+      <p className="mt-3 max-w-2xl leading-7 text-ink-2">
         Reopen an Ended Attempt to review its record and Attempt Debrief. Ended
         Attempts cannot change or be resumed. Each is deleted automatically,
         with its Debrief, 90 days after it ended.
       </p>
       {attempts.length === 0 ? (
-        <p className="mt-8 rounded-lg border border-slate-200 bg-white px-5 py-4 text-slate-700">
+        <p className="mt-8 rounded-lg border border-line bg-surface px-5 py-4 text-ink-2">
           You have no Ended Attempts yet.{" "}
           <Link to="/scenarios" className={link}>
             View Available Scenarios
@@ -44,24 +44,24 @@ export function AttemptHistoryView({ attempts }: { attempts: Entry[] }) {
           {attempts.map((attempt) => (
             <li
               key={attempt.id}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              className="rounded-2xl border border-line bg-surface p-6 shadow-sm"
             >
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">
+              <h2 className="text-xl font-semibold tracking-tight text-ink">
                 <Link
                   to="/attempts/$attemptId"
                   params={{ attemptId: attempt.id }}
-                  className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                 >
                   {attempt.scenarioTitle}
                 </Link>
               </h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm text-ink-2">
                 Scenario Version {attempt.scenarioVersion} · ended{" "}
                 <time dateTime={new Date(attempt.endedAt).toISOString()}>
                   {new Date(attempt.endedAt).toLocaleString()}
                 </time>
               </p>
-              <p className="mt-3 text-slate-700">
+              <p className="mt-3 text-ink-2">
                 {attempt.debrief === "none" && attempt.endReason === "access_suspended"
                   ? "No Debrief: this Attempt ended when your access was changed."
                   : debriefLabels[attempt.debrief]}

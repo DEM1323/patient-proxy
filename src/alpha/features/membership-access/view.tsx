@@ -22,28 +22,28 @@ const journeyDetails: Record<
     title: "Practice with Elena Ruiz",
     description:
       "Review the Learner Brief, complete a communication Attempt, and revisit your Attempt Debrief.",
-    accent: "border-sky-200 bg-sky-50",
+    accent: "border-ceil-2 bg-ceil",
   },
   faculty: {
     eyebrow: "Faculty journey",
     title: "Review completed Attempts",
     description:
       "Find Ended Attempts in your authorized Learning Groups and review their evidence.",
-    accent: "border-violet-200 bg-violet-50",
+    accent: "border-line bg-lav-tint",
   },
   author: {
     eyebrow: "Author journey",
     title: "Shape learning content",
     description:
       "Authoring remains intentionally outside this alpha journey, but your role is recognized.",
-    accent: "border-amber-200 bg-amber-50",
+    accent: "border-amber-line bg-amber-tint",
   },
   institutionalAdmin: {
     eyebrow: "Institutional Admin journey",
     title: "Manage your institution",
     description:
       "Add Members, and review Ended Attempts institution-wide, without inheriting Learner, Faculty, or Author permissions.",
-    accent: "border-emerald-200 bg-emerald-50",
+    accent: "border-teal-line bg-teal-tint",
   },
 };
 
@@ -58,15 +58,15 @@ export function MembershipHome({
 }) {
   return (
     <main className="mx-auto max-w-6xl px-5 py-12 sm:py-16">
-      <div className="flex flex-col gap-6 border-b border-slate-200 pb-9 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-6 border-b border-line pb-9 sm:flex-row sm:items-end sm:justify-between">
         <section>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-secondary">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-text">
             {membership.institution.name}
           </p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-ink sm:text-5xl">
             Choose where you want to begin.
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+          <p className="mt-4 max-w-2xl text-base leading-7 text-ink-2">
             Your Pilot Membership makes each assigned role available separately.
             One role never grants another role&apos;s permissions.
           </p>
@@ -74,7 +74,7 @@ export function MembershipHome({
         <button
           type="button"
           onClick={onSignOut}
-          className="w-fit rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="w-fit rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
         >
           Sign out
         </button>
@@ -88,16 +88,16 @@ export function MembershipHome({
               key={role}
               className={`rounded-2xl border p-6 shadow-sm ${journey.accent}`}
             >
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-ink-2">
                 {journey.eyebrow}
               </p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-ink">
                 {journey.title}
               </h2>
-              <p className="mt-3 leading-7 text-slate-700">{journey.description}</p>
+              <p className="mt-3 leading-7 text-ink-2">{journey.description}</p>
               <div className="mt-6">
                 {journeyActions[role] ?? (
-                  <p className="text-sm font-semibold text-primary">Journey available</p>
+                  <p className="text-sm font-semibold text-blue-text">Journey available</p>
                 )}
               </div>
             </section>
@@ -112,31 +112,31 @@ export function SignInView({ onSignIn }: { onSignIn: () => void }) {
   return (
     <main className="mx-auto grid min-h-[calc(100vh-73px)] max-w-6xl items-center gap-12 px-5 py-16 lg:grid-cols-[1.2fr_0.8fr]">
       <section>
-        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-secondary">
+        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-blue-text">
           UMB pilot alpha
         </p>
-        <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-slate-950 sm:text-6xl">
+        <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-ink sm:text-6xl">
           Practice the conversation before it matters.
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+        <p className="mt-6 max-w-2xl text-lg leading-8 text-ink-2">
           Sign in with the exact Google identity approved for the private pilot.
           Authentication alone does not grant access.
         </p>
         <button
           type="button"
           onClick={onSignIn}
-          className="mt-8 inline-flex rounded-md bg-primary px-5 py-3 font-semibold text-white shadow-sm hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="mt-8 inline-flex rounded-md bg-blue px-5 py-3 font-semibold text-white shadow-sm hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
         >
           Sign in with Google
         </button>
       </section>
-      <aside className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-        <p className="text-sm font-semibold text-primary">Private pilot</p>
-        <p className="mt-4 leading-7 text-slate-600">
+      <aside className="rounded-2xl border border-line bg-surface p-7 shadow-sm">
+        <p className="text-sm font-semibold text-blue-text">Private pilot</p>
+        <p className="mt-4 leading-7 text-ink-2">
           Patient Proxy supports supervised clinical communication practice with
           Simulated Patients using synthetic data only.
         </p>
-        <p className="mt-6 border-t border-slate-200 pt-5 text-xs leading-5 text-slate-500">
+        <p className="mt-6 border-t border-line pt-5 text-xs leading-5 text-ink-3">
           Formative Feedback is educational guidance, not Clinical Truth or a
           formal assessment.
         </p>
@@ -150,21 +150,21 @@ export function SignInView({ onSignIn }: { onSignIn: () => void }) {
 export function MembershipDeactivatedView({ onSignOut }: { onSignOut: () => void }) {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-3xl items-center px-5 py-16">
-      <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-        <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-600">
+      <section className="w-full rounded-2xl border border-line bg-surface p-8 shadow-sm sm:p-10">
+        <p className="text-sm font-bold uppercase tracking-[0.18em] text-ink-2">
           Membership deactivated
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink">
           Your Pilot Membership is currently deactivated.
         </h1>
-        <p className="mt-4 max-w-xl leading-7 text-slate-700">
+        <p className="mt-4 max-w-xl leading-7 text-ink-2">
           Your saved Attempts and reflections are kept. Contact your
           institution&apos;s Institutional Admin if you expected to have access.
         </p>
         <button
           type="button"
           onClick={onSignOut}
-          className="mt-7 rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="mt-7 rounded-md border border-line bg-surface px-4 py-2 font-semibold text-ink-2 hover:bg-neutral focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
         >
           Sign out
         </button>
@@ -189,21 +189,21 @@ export function AccessDeniedView({
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-3xl items-center px-5 py-16">
-      <section className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-8 shadow-sm sm:p-10">
-        <p className="text-sm font-bold uppercase tracking-[0.18em] text-amber-800">
+      <section className="w-full rounded-2xl border border-amber-line bg-amber-tint p-8 shadow-sm sm:p-10">
+        <p className="text-sm font-bold uppercase tracking-[0.18em] text-amber-ink">
           Access not approved
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink">
           {explanation}
         </h1>
-        <p className="mt-4 max-w-xl leading-7 text-slate-700">
+        <p className="mt-4 max-w-xl leading-7 text-ink-2">
           No Pilot Membership was created. Contact the pilot&apos;s Institutional
           Admin to confirm the exact Google email approved for your participation.
         </p>
         <button
           type="button"
           onClick={onSignOut}
-          className="mt-7 rounded-md border border-amber-300 bg-white px-4 py-2 font-semibold text-amber-950 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800"
+          className="mt-7 rounded-md border border-amber-line bg-surface px-4 py-2 font-semibold text-amber-ink hover:bg-amber-tint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-ink"
         >
           Sign out and try another identity
         </button>
@@ -216,8 +216,8 @@ export function AccessLoadingView({ message = "Checking your Pilot Membership" }
   return (
     <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-3xl items-center justify-center px-5 py-16">
       <div className="text-center" role="status">
-        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-primary" />
-        <p className="mt-5 font-semibold text-slate-700">{message}</p>
+        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-line border-t-blue" />
+        <p className="mt-5 font-semibold text-ink-2">{message}</p>
       </div>
     </main>
   );
@@ -226,18 +226,18 @@ export function AccessLoadingView({ message = "Checking your Pilot Membership" }
 export function AccessErrorView({ onRetry }: { onRetry: () => void }) {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-3xl items-center px-5 py-16">
-      <section className="w-full rounded-2xl border border-rose-200 bg-rose-50 p-8 shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+      <section className="w-full rounded-2xl border border-red-line bg-red-tint p-8 shadow-sm">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">
           We could not check your Pilot Membership.
         </h1>
-        <p className="mt-3 leading-7 text-slate-700">
+        <p className="mt-3 leading-7 text-ink-2">
           Your access has not been changed. Try the check again, or contact the
           pilot&apos;s Institutional Admin if the problem continues.
         </p>
         <button
           type="button"
           onClick={onRetry}
-          className="mt-6 rounded-md bg-primary px-4 py-2 font-semibold text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="mt-6 rounded-md bg-blue px-4 py-2 font-semibold text-white hover:bg-harbor focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
         >
           Try again
         </button>
