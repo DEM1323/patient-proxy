@@ -25,6 +25,9 @@ import {
 type SendResult = FunctionReturnType<
   typeof api.attemptInteraction.access.send
 >;
+const restoredMessageNotice =
+  "Your last message may not have been sent before the page reloaded. Send it again; it won't be recorded twice.";
+
 type StartRequest = {
   clientRequestId: string;
   endActiveAttemptId?: Id<"attempts">;
@@ -49,7 +52,7 @@ export function LearnerBriefPage({ scenarioId }: { scenarioId: string }) {
 export function AttemptPage({ attemptId }: { attemptId: string }) {
   return (
     <LearnerGate>
-      <Attempt attemptId={attemptId} />
+      <Attempt key={attemptId} attemptId={attemptId} />
     </LearnerGate>
   );
 }
@@ -158,15 +161,19 @@ function Attempt({ attemptId }: { attemptId: string }) {
   const retry = useMutation(api.attemptInteraction.access.retry);
   const takeAction = useMutation(api.attemptInteraction.access.takeAction);
   const end = useMutation(api.attemptEnding.access.end);
-  const [draft, setDraft] = useState("");
+  // The draft and an unacknowledged message survive a reload of this tab.
+  const [storedDraft, setDraft] = useSessionState<string>(`draft:${attemptId}`);
+  const draft = storedDraft ?? "";
   // A message whose send has not been acknowledged keeps its request id, so
   // sending the same text again cannot record it twice.
-  const [unsent, setUnsent] = useState<{
+  const [unsent, setUnsent] = useSessionState<{
     clientRequestId: string;
     text: string;
-  } | null>(null);
+  }>(`message:${attemptId}`);
   const [submitting, setSubmitting] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(() =>
+    unsent ? restoredMessageNotice : null,
+  );
   // An action whose response was lost keeps its request id, so Retry can
   // never record it twice; choosing an action again is a new occurrence.
   const [unsentAction, setUnsentAction] = useState<{
@@ -231,7 +238,7 @@ function Attempt({ attemptId }: { attemptId: string }) {
         "Your message could not be sent. Check your connection and send it again.",
       ).then((accepted) => {
         if (accepted) {
-          setDraft("");
+          setDraft(null);
         }
       });
     },
