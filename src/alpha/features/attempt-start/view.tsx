@@ -3,6 +3,8 @@ import type { FunctionReturnType } from "convex/server";
 import { useEffect, useRef, type ReactNode } from "react";
 import type { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { button } from "../../ui/button";
+import { useCompactRail } from "../membership-access/navigation";
 
 type AvailableScenario = FunctionReturnType<
   typeof api.attemptStart.access.availableScenarios
@@ -15,10 +17,8 @@ type OwnAttempt = NonNullable<
   FunctionReturnType<typeof api.attemptStart.access.ownAttempt>
 >;
 
-export const primaryButton =
-  "inline-flex rounded-md bg-blue px-5 py-3 font-semibold text-white shadow-sm hover:bg-harbor disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
-export const secondaryButton =
-  "inline-flex rounded-md border border-line bg-surface px-4 py-2 font-semibold text-ink-2 hover:border-ceil-2 hover:bg-neutral disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
+export const primaryButton = button("primary");
+export const secondaryButton = button("secondary");
 const backLink =
   "text-sm font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";
 
@@ -277,6 +277,7 @@ export function AttemptView({
   ending: EndingProps;
 }) {
   const active = attempt.status === "active";
+  useCompactRail(active);
   const patientName = attempt.scenario.patientName;
   const firstName = patientName.split(" ")[0];
   const { exchange } = attempt;

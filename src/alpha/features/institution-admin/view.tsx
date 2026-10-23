@@ -4,17 +4,12 @@ import type { FormEvent } from "react";
 import type { api } from "@/convex/_generated/api";
 import type { MembershipRole } from "@/convex/membershipAccess/roles";
 import { primaryButton, secondaryButton } from "../attempt-start/view";
+import { roleLabels, roleOrder as allRoles } from "../membership-access/roles";
 
 type Members = FunctionReturnType<typeof api.institutionAdmin.access.members>;
 type AuditLog = FunctionReturnType<typeof api.institutionAdmin.access.auditLog>;
 
-export const roleLabels: Record<MembershipRole, string> = {
-  learner: "Learner",
-  faculty: "Faculty",
-  author: "Author",
-  institutionalAdmin: "Institutional Admin",
-};
-const allRoles = Object.keys(roleLabels) as MembershipRole[];
+export { roleLabels };
 
 const link =
   "font-semibold text-blue-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue";

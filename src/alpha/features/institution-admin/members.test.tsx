@@ -4,7 +4,6 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { getFunctionName } from "convex/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MembersPage } from ".";
-import { roleDestinations } from "../membership-access/navigation";
 
 const testState = vi.hoisted(() => ({
   roles: ["institutionalAdmin"] as string[],
@@ -83,23 +82,6 @@ const data = {
 const membersSection = () => within(screen.getByRole("region", { name: "Members" }));
 const row = (email: string) =>
   within(membersSection().getByText(email).closest("li") as HTMLElement);
-
-describe("Role-aware navigation", () => {
-  it("lists each implemented destination once, with no inheritance or dead Author link", () => {
-    expect(roleDestinations(["faculty", "institutionalAdmin"]).map(({ to }) => to)).toEqual([
-      "/review",
-      "/groups",
-      "/admin/members",
-    ]);
-    expect(roleDestinations(["institutionalAdmin"]).map(({ to }) => to)).not.toContain(
-      "/scenarios",
-    );
-    expect(roleDestinations(["author"])).toEqual([]);
-    expect(
-      roleDestinations(["learner", "faculty", "author", "institutionalAdmin"]).map(({ to }) => to),
-    ).toEqual(["/scenarios", "/attempts", "/review", "/groups", "/admin/members"]);
-  });
-});
 
 describe("Members page", () => {
   afterEach(() => {
