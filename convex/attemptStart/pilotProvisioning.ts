@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import { ensurePilotInstitution } from "../membershipAccess/model";
+import { generatedDebriefTemplates } from "./debriefTemplates";
 import {
   initialPacuAssessment,
   type DebriefContent,
@@ -152,7 +153,18 @@ function authored({
 
 // Feedback matches criteria by key and shows their labels, so a blank or
 // duplicated entry would publish a version that can never be rated cleanly.
+// A generated template reaches Learners only after an Author edits or
+// explicitly adopts it.
 function assertPublishableDebrief(debrief: DebriefContent) {
+  if (
+    generatedDebriefTemplates.some(
+      ({ content }) => canonicalJson(content) === canonicalJson(debrief),
+    )
+  ) {
+    throw new Error(
+      "A generated debrief template must be edited or adopted by an Author before it is published",
+    );
+  }
   const blank = (value: string) => value.trim().length === 0;
   const criteria = debrief.communicationCriteria ?? [];
   const keys = new Set(criteria.map(({ key }) => key));

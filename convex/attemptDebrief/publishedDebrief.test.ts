@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { PatientPrompt } from "../attemptInteraction/patientPrompt";
+import { pacuDebriefTemplate } from "../attemptStart/debriefTemplates";
 import type { DebriefContent } from "../attemptStart/scenarioContent";
 import { initialPacuAssessment } from "../attemptStart/scenarioContent";
 import { admitWorkosUser } from "../membershipAccess/model";
@@ -424,5 +425,22 @@ describe("Publish Author-controlled debrief content", () => {
       provision({ reflectionPrompts: { interpretation: " ", planning: "Fixture?" } }),
     ).rejects.toThrow("blank or duplicated");
     expect(await versions()).toHaveLength(1);
+  });
+
+  it("never publishes the generated template until an Author changes it", async () => {
+    const { provision, versions } = await setup(undefined);
+    expect(pacuDebriefTemplate).toMatchObject({
+      origin: "generated_template",
+      notice: expect.stringContaining("Generated template, edit before use"),
+    });
+    await expect(provision(structuredClone(pacuDebriefTemplate.content))).rejects.toThrow(
+      "must be edited or adopted by an Author",
+    );
+    expect(await versions()).toHaveLength(1);
+
+    const edited = structuredClone(pacuDebriefTemplate.content);
+    edited.reflectionPrompts!.planning = "Fixture: an Author's edited planning prompt?";
+    expect(await provision(edited)).toMatchObject({ scenarioVersion: 2 });
+    expect((await versions())[1].debrief).toEqual(edited);
   });
 });
