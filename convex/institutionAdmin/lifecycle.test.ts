@@ -367,4 +367,30 @@ describe("Manage participation", () => {
       after: { membershipStatus: "active" },
     });
   });
+
+  it("adds a role to the only Institutional Admin only through the restricted operator command", async () => {
+    const { t, adminId, membership, audits } = await setup();
+    const before = (await membership(adminId))!.roles;
+    expect(
+      await t.mutation(internal.institutionAdmin.operator.addMemberRole, {
+        membershipId: adminId,
+        role: "author",
+      }),
+    ).toEqual({ status: "added" });
+    expect((await membership(adminId))!.roles).toEqual([...before, "author"]);
+    expect(
+      await t.mutation(internal.institutionAdmin.operator.addMemberRole, {
+        membershipId: adminId,
+        role: "author",
+      }),
+    ).toEqual({ status: "unchanged" });
+    const changes = await audits("member_roles_changed");
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toMatchObject({
+      actor: { kind: "operator" },
+      membershipId: adminId,
+      before: { roles: before },
+      after: { roles: [...before, "author"] },
+    });
+  });
 });
