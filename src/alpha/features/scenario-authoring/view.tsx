@@ -36,7 +36,7 @@ export function SourceBadge({ source }: { source: Source }) {
 
 export function AuthorRequiredView() {
   return (
-    <Page title="Scenario debriefs">
+    <Page title="Debrief content">
       <Empty title="Author role required">
         Ask your Institutional Admin to add the Author role if you write
         Scenario debrief content.
@@ -72,7 +72,7 @@ export function AuthoringScenarioTable({ scenarios }: { scenarios: AuthoringScen
             <td className="text-right">
               <Link
                 className={textLink}
-                to="/authoring/$scenarioId"
+                to="/scenarios/$scenarioId/debrief"
                 params={{ scenarioId: scenario.id }}
               >
                 Edit debrief
@@ -339,8 +339,8 @@ export function DebriefEditorView(props: EditorProps) {
             {props.submitting ? "Publishing…" : `Publish as version ${scenario.version + 1}`}
           </button>
         </form>
-        <Link className={textLink} to="/authoring">
-          All Scenario debriefs
+        <Link className={textLink} to="/scenarios">
+          All Scenarios
         </Link>
       </div>
       {confirmGenerate && (

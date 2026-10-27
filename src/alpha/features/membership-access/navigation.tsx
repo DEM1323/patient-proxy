@@ -21,8 +21,7 @@ export type Destination = {
     | "/attempts"
     | "/review"
     | "/groups"
-    | "/admin/members"
-    | "/authoring";
+    | "/admin/members";
   label: string;
   icon: IconName;
 };
@@ -49,11 +48,6 @@ const members: Destination = {
   to: "/admin/members",
   label: "Members",
   icon: "users",
-};
-const debriefs: Destination = {
-  to: "/authoring",
-  label: "Scenario debriefs",
-  icon: "scenarios",
 };
 const groups: Destination = {
   to: "/groups",
@@ -87,8 +81,10 @@ export function navGroups(roles: MembershipRole[]): NavGroup[] {
   if (admin) {
     result.push({ label: "Institution", destinations: [members, groups] });
   }
-  if (author) {
-    result.push({ label: "Authoring", destinations: [debriefs] });
+  if (author && !learner) {
+    // Learners already reach Scenarios under Practice, where the Author
+    // section appears too, so the page is listed once.
+    result.push({ label: "Authoring", destinations: [scenarios] });
   }
   return result;
 }

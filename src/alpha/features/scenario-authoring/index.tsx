@@ -24,27 +24,13 @@ function AuthorGate({ children }: { children: () => React.ReactNode }) {
   );
 }
 
-export function AuthoringListPage() {
-  return <AuthorGate>{() => <AuthoringList />}</AuthorGate>;
-}
-
+// The Author section of the Scenarios page and an Author-only Home.
 export function AuthoringScenarios() {
   const scenarios = useQuery(api.scenarioAuthoring.access.scenarios, {});
   if (scenarios === undefined) {
     return <p role="status">Loading Scenarios…</p>;
   }
   return <AuthoringScenarioTable scenarios={scenarios} />;
-}
-
-function AuthoringList() {
-  return (
-    <Page
-      title="Scenario debriefs"
-      description="Communication Criteria, feedback guidance, and Reflection Prompts for each Scenario. Publishing creates a new Scenario Version; Attempts already started keep theirs."
-    >
-      <AuthoringScenarios />
-    </Page>
-  );
 }
 
 export function DebriefEditorPage({ scenarioId }: { scenarioId: string }) {
@@ -60,7 +46,7 @@ function DebriefEditor({ scenarioId }: { scenarioId: string }) {
   }
   if (scenario === null) {
     return (
-      <Page title="Scenario debriefs">
+      <Page title="Debrief content">
         <Empty title="Scenario not found">
           This Scenario does not exist or is not in your institution.
         </Empty>
