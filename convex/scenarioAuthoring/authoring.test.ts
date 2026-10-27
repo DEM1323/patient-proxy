@@ -85,7 +85,7 @@ describe("Author debrief content", () => {
       source: "none",
       publication: null,
       template: {
-        notice: expect.stringContaining("Generated template, edit before use"),
+        notice: expect.stringContaining("Generated draft, edit before use"),
         content: pacuDebriefTemplate.content,
       },
     });

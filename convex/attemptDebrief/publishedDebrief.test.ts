@@ -431,7 +431,7 @@ describe("Publish Author-controlled debrief content", () => {
     const { provision, versions } = await setup(undefined);
     expect(pacuDebriefTemplate).toMatchObject({
       origin: "generated_template",
-      notice: expect.stringContaining("Generated template, edit before use"),
+      notice: expect.stringContaining("Generated draft, edit before use"),
     });
     await expect(provision(structuredClone(pacuDebriefTemplate.content))).rejects.toThrow(
       "must be edited or adopted by an Author",

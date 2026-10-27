@@ -5,7 +5,7 @@ import { getFunctionName } from "convex/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DebriefEditorPage } from ".";
 
-// TEST FIXTURE ONLY: stands in for a generated template.
+// TEST FIXTURE ONLY: stands in for a generated draft.
 const templateContent = {
   feedbackGuidance: "Fixture guidance.",
   communicationCriteria: [
@@ -51,7 +51,7 @@ vi.mock("convex/react", () => ({
       source: testState.debrief ? "author" : "none",
       publication: null,
       template: {
-        notice: "Generated template, edit before use. Fixture notice.",
+        notice: "Generated draft, edit before use. Fixture notice.",
         content: templateContent,
       },
     };
@@ -73,9 +73,9 @@ describe("Author debrief editor", () => {
   it("fills in the labeled template, and publishes it unchanged only with an explicit adoption", async () => {
     testState.publish.mockResolvedValue({ status: "published", version: 2 });
     render(<DebriefEditorPage scenarioId="scenario-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Generate template" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate a draft" }));
 
-    expect(screen.getByRole("alert").textContent).toContain("Generated template, edit before use.");
+    expect(screen.getByRole("alert").textContent).toContain("Generated draft, edit before use.");
     expect((screen.getByLabelText("Feedback guidance") as HTMLTextAreaElement).value).toBe(
       "Fixture guidance.",
     );
@@ -98,7 +98,7 @@ describe("Author debrief editor", () => {
   it("publishes an edited template as the Author's own wording without asking for adoption", async () => {
     testState.publish.mockResolvedValue({ status: "published", version: 2 });
     render(<DebriefEditorPage scenarioId="scenario-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Generate template" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate a draft" }));
     fireEvent.change(screen.getByLabelText("Planning prompt"), {
       target: { value: "Fixture: edited planning?" },
     });
@@ -120,14 +120,14 @@ describe("Author debrief editor", () => {
   it("asks before Generate replaces existing entries", () => {
     testState.debrief = { feedbackGuidance: "Fixture: the Author's guidance." };
     render(<DebriefEditorPage scenarioId="scenario-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "Generate template" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate a draft" }));
     fireEvent.click(screen.getByRole("button", { name: "Keep my entries" }));
     expect((screen.getByLabelText("Feedback guidance") as HTMLTextAreaElement).value).toBe(
       "Fixture: the Author's guidance.",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Generate template" }));
-    fireEvent.click(screen.getByRole("button", { name: "Replace with template" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate a draft" }));
+    fireEvent.click(screen.getByRole("button", { name: "Replace with draft" }));
     expect((screen.getByLabelText("Feedback guidance") as HTMLTextAreaElement).value).toBe(
       "Fixture guidance.",
     );

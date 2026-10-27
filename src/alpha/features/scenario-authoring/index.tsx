@@ -96,7 +96,7 @@ function DebriefForm({
           : result.status === "unchanged"
             ? { tone: "success", text: `Nothing changed; version ${result.version} is still current.` }
             : result.status === "template_not_adopted"
-              ? { tone: "error", text: "Edit the generated template, or confirm that you adopt it unchanged." }
+              ? { tone: "error", text: "Edit the generated draft, or confirm that you adopt it unchanged." }
               : result.status === "invalid"
                 ? {
                     tone: "error",

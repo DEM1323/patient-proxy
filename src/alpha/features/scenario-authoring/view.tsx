@@ -27,7 +27,7 @@ const sources: Record<Source, { label: string; tone: "neutral" | "blue" | "teal"
   none: { label: "Not authored", tone: "neutral" },
   provisioned: { label: "Provisioned", tone: "blue" },
   author: { label: "Author-written", tone: "teal" },
-  adopted_template: { label: "Adopted generated template", tone: "amber" },
+  adopted_template: { label: "Adopted generated draft", tone: "amber" },
 };
 
 export function SourceBadge({ source }: { source: Source }) {
@@ -171,7 +171,7 @@ export function DebriefEditorView(props: EditorProps) {
       action={
         scenario.template && (
           <button type="button" className={button("secondary")} onClick={generate}>
-            Generate template
+            Generate a draft
           </button>
         )
       }
@@ -195,9 +195,8 @@ export function DebriefEditorView(props: EditorProps) {
         </section>
         {props.generated && scenario.template && (
           <Notice tone="warning">
-            <strong>Generated template, edit before use.</strong>{" "}
-            {scenario.template.notice} Review every field and change it to fit
-            your course.
+            {scenario.template.notice} Review every field and change it to
+            fit your course.
           </Notice>
         )}
         <form
@@ -326,7 +325,7 @@ export function DebriefEditorView(props: EditorProps) {
                 onChange={(event) => props.onAdoptChange(event.target.checked)}
               />
               <span>
-                I reviewed this generated template and adopt it unchanged.
+                I reviewed this generated draft and adopt it unchanged.
                 Patient Proxy records that you adopted it.
               </span>
             </label>
@@ -346,7 +345,7 @@ export function DebriefEditorView(props: EditorProps) {
       {confirmGenerate && (
         <Modal title="Replace your entries?" onClose={() => setConfirmGenerate(false)}>
           <p className="text-ink-2">
-            The generated template replaces everything in this form. Nothing is
+            The generated draft replaces everything in this form. Nothing is
             published until you publish.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -359,7 +358,7 @@ export function DebriefEditorView(props: EditorProps) {
                 props.onGenerate();
               }}
             >
-              Replace with template
+              Replace with draft
             </button>
             <button
               type="button"

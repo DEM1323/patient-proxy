@@ -1,7 +1,7 @@
 import type { DebriefContent } from "./scenarioContent";
 
 /**
- * GENERATED TEMPLATE, EDIT BEFORE USE.
+ * GENERATED DRAFT, EDIT BEFORE USE.
  *
  * AI-drafted starting points for a Scenario's debrief content, written at the
  * owner's request (2026-10-27) so Authors can edit them instead of starting
@@ -16,7 +16,7 @@ export type GeneratedDebriefTemplate = {
 };
 
 const notice =
-  "Generated template, edit before use. AI-drafted from Scenario decision #5; not approved by the Scenario's Authors.";
+  "Generated draft, edit before use. AI-drafted from Scenario decision #5; not approved by the Scenario's Authors.";
 
 // Drafted from the approved learning objectives and evidence priorities in
 // Scenario decision #5, limited to observable communication.
