@@ -16,7 +16,13 @@ import type { MembershipSummary } from "./view";
 
 export type Destination = {
   to:
-    "/" | "/scenarios" | "/attempts" | "/review" | "/groups" | "/admin/members";
+    | "/"
+    | "/scenarios"
+    | "/attempts"
+    | "/review"
+    | "/groups"
+    | "/admin/members"
+    | "/authoring";
   label: string;
   icon: IconName;
 };
@@ -44,6 +50,11 @@ const members: Destination = {
   label: "Members",
   icon: "users",
 };
+const debriefs: Destination = {
+  to: "/authoring",
+  label: "Scenario debriefs",
+  icon: "scenarios",
+};
 const groups: Destination = {
   to: "/groups",
   label: "Learning Groups",
@@ -52,14 +63,15 @@ const groups: Destination = {
 
 /**
  * The sidebar for a Member's roles. The order never changes (Practice, Review,
- * Institution), and only groups for held roles appear. Roles add up without
- * inheritance; Author has no implemented journey, so it adds nothing.
+ * Institution, Authoring), and only groups for held roles appear. Roles add up
+ * without inheritance.
  * Navigation only mirrors roles: Convex authorizes every read and change.
  */
 export function navGroups(roles: MembershipRole[]): NavGroup[] {
   const learner = roles.includes("learner");
   const faculty = roles.includes("faculty");
   const admin = roles.includes("institutionalAdmin");
+  const author = roles.includes("author");
   const result: NavGroup[] = [{ label: null, destinations: [home] }];
   if (learner) {
     result.push({ label: "Practice", destinations: [scenarios, attempts] });
@@ -74,6 +86,9 @@ export function navGroups(roles: MembershipRole[]): NavGroup[] {
   }
   if (admin) {
     result.push({ label: "Institution", destinations: [members, groups] });
+  }
+  if (author) {
+    result.push({ label: "Authoring", destinations: [debriefs] });
   }
   return result;
 }

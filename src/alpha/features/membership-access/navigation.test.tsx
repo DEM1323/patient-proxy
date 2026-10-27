@@ -65,6 +65,7 @@ describe("Sidebar groups", () => {
       ["Practice", ["/scenarios", "/attempts"]],
       ["Review", ["/review"]],
       ["Institution", ["/admin/members", "/groups"]],
+      ["Authoring", ["/authoring"]],
     ]);
     expect(paths(["institutionalAdmin"])).toEqual([
       [null, ["/"]],
@@ -81,8 +82,11 @@ describe("Sidebar groups", () => {
     ]);
   });
 
-  it("grants nothing by inheritance, and no dead Author link", () => {
-    expect(paths(["author"])).toEqual([[null, ["/"]]]);
+  it("grants nothing by inheritance, and gives Author only Scenario debriefs", () => {
+    expect(paths(["author"])).toEqual([
+      [null, ["/"]],
+      ["Authoring", ["/authoring"]],
+    ]);
     expect(paths(["learner"])).toEqual([
       [null, ["/"]],
       ["Practice", ["/scenarios", "/attempts"]],

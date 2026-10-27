@@ -60,7 +60,7 @@ describe("Home role boundaries", () => {
       "learnerAttemptHistory/access:ownEndedAttempts",
     );
   });
-  it("retains practice when Learner is additive and recognizes Author without a dead journey", () => {
+  it("retains practice when Learner is additive and gives an Author-only Member their Scenario debriefs", () => {
     const { unmount } = render(
       <RoleHome
         membership={{
@@ -79,8 +79,8 @@ describe("Home role boundaries", () => {
     state.reads.length = 0;
     render(<RoleHome membership={{ ...membership, roles: ["author"] }} />);
     expect(
-      screen.getByText("Scenario authoring isn’t available yet"),
+      screen.getByRole("heading", { name: "Scenario debriefs" }),
     ).toBeTruthy();
-    expect(state.reads).toEqual([]);
+    expect(state.reads).toEqual(["scenarioAuthoring/access:scenarios"]);
   });
 });

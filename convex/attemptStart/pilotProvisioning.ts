@@ -2,12 +2,12 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import { ensurePilotInstitution } from "../membershipAccess/model";
-import { generatedDebriefTemplates } from "./debriefTemplates";
 import {
-  initialPacuAssessment,
-  type DebriefContent,
-  type ScenarioContent,
-} from "./scenarioContent";
+  isGeneratedTemplate,
+  isPublishableDebrief,
+  publishScenarioVersion,
+} from "./publishing";
+import { initialPacuAssessment, type ScenarioContent } from "./scenarioContent";
 
 const pilotLearningGroup = { key: "pacu-pilot", name: "PACU Pilot" };
 
@@ -97,9 +97,6 @@ async function ensurePublishedScenario(
   institutionId: Id<"pilotInstitutions">,
   content: ScenarioContent,
 ) {
-  if (content.debrief) {
-    assertPublishableDebrief(content.debrief);
-  }
   const existing = await ctx.db
     .query("scenarios")
     .withIndex("by_institution_key", (query) =>
@@ -114,86 +111,36 @@ async function ensurePublishedScenario(
       title: content.title,
       status: "published",
     }));
-
-  const current = existing?.currentVersionId
-    ? await ctx.db.get(existing.currentVersionId)
+  const scenario = (await ctx.db.get(scenarioId))!;
+  const current = scenario.currentVersionId
+    ? await ctx.db.get(scenario.currentVersionId)
     : null;
-  if (current && canonicalJson(authored(current)) === canonicalJson(authored(content))) {
-    return { scenarioId, version: current.version };
-  }
 
-  // Changed authored content becomes a new version; Attempts stay pinned to
-  // the version they started with, debrief content included.
-  const version = (current?.version ?? 0) + 1;
-  const versionId = await ctx.db.insert("scenarioVersions", {
-    institutionId,
-    scenarioId,
-    version,
+  // Once an Author publishes debrief content in Patient Proxy, it is managed
+  // there: provisioning carries it forward instead of replacing it.
+  if (current?.debriefPublication) {
+    const { version } = await publishScenarioVersion(ctx, scenario, current, {
+      ...content,
+      debrief: current.debrief,
+      debriefPublication: current.debriefPublication,
+    });
+    return { scenarioId, version };
+  }
+  if (content.debrief) {
+    if (isGeneratedTemplate(content.debrief)) {
+      throw new Error(
+        "A generated debrief template must be edited or adopted by an Author before it is published",
+      );
+    }
+    if (!isPublishableDebrief(content.debrief)) {
+      throw new Error("Debrief content has a blank, duplicated, or oversized entry");
+    }
+  }
+  const { version } = await publishScenarioVersion(ctx, scenario, current, {
     title: content.title,
     learnerBrief: content.learnerBrief,
     clinicalTruth: content.clinicalTruth,
-    ...(content.debrief ? { debrief: content.debrief } : {}),
-    createdAt: Date.now(),
+    debrief: content.debrief,
   });
-  await ctx.db.patch(scenarioId, { currentVersionId: versionId });
   return { scenarioId, version };
-}
-
-// The Author-controlled parts of a Scenario Version that decide whether a
-// rerun publishes a new one. Versions published before debrief content
-// existed compare equal to content that still has none.
-function authored({
-  title,
-  learnerBrief,
-  clinicalTruth,
-  debrief,
-}: Pick<ScenarioContent, "title" | "learnerBrief" | "clinicalTruth" | "debrief">) {
-  return { title, learnerBrief, clinicalTruth, debrief: debrief ?? null };
-}
-
-// Feedback matches criteria by key and shows their labels, so a blank or
-// duplicated entry would publish a version that can never be rated cleanly.
-// A generated template reaches Learners only after an Author edits or
-// explicitly adopts it.
-function assertPublishableDebrief(debrief: DebriefContent) {
-  if (
-    generatedDebriefTemplates.some(
-      ({ content }) => canonicalJson(content) === canonicalJson(debrief),
-    )
-  ) {
-    throw new Error(
-      "A generated debrief template must be edited or adopted by an Author before it is published",
-    );
-  }
-  const blank = (value: string) => value.trim().length === 0;
-  const criteria = debrief.communicationCriteria ?? [];
-  const keys = new Set(criteria.map(({ key }) => key));
-  if (
-    keys.size !== criteria.length ||
-    criteria.some(({ key, label, description }) =>
-      [key, label, description].some(blank),
-    ) ||
-    (debrief.feedbackGuidance !== undefined && blank(debrief.feedbackGuidance)) ||
-    (debrief.reflectionPrompts &&
-      Object.values(debrief.reflectionPrompts).some(blank))
-  ) {
-    throw new Error("Debrief content has a blank or duplicated entry");
-  }
-}
-
-// Stored documents need not preserve object key order.
-function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(",")}]`;
-  }
-  if (value !== null && typeof value === "object") {
-    return `{${Object.keys(value)
-      .sort()
-      .map(
-        (key) =>
-          `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`,
-      )
-      .join(",")}}`;
-  }
-  return JSON.stringify(value);
 }

@@ -420,10 +420,10 @@ describe("Publish Author-controlled debrief content", () => {
         { key: "fixture_dup", label: "Fixture two", description: "Fixture." },
       ],
     };
-    await expect(provision(duplicated)).rejects.toThrow("blank or duplicated");
+    await expect(provision(duplicated)).rejects.toThrow("blank, duplicated, or oversized");
     await expect(
       provision({ reflectionPrompts: { interpretation: " ", planning: "Fixture?" } }),
-    ).rejects.toThrow("blank or duplicated");
+    ).rejects.toThrow("blank, duplicated, or oversized");
     expect(await versions()).toHaveLength(1);
   });
 
