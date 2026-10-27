@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { ensurePilotInstitution } from "../membershipAccess/model";
-import { membershipRoleValidator } from "../membershipAccess/roles";
 import { parsePilotRoster } from "../membershipAccess/roster";
 import { findRosterEntry, recordAudit } from "./roster";
 
@@ -213,41 +212,5 @@ export const recoverInstitutionalAdmin = internalMutation({
       after: { roles, membershipStatus: "active" },
     });
     return { status: "recovered" as const };
-  },
-});
-
-/**
- * Restricted, audited operator command (deployment admin key only) that adds
- * one role to an explicitly designated Membership, for a change Patient Proxy
- * cannot make itself, such as the only Institutional Admin adding a role to
- * their own Membership:
- *
- *   npx convex run institutionAdmin/operator:addMemberRole '{"membershipId":"...","role":"author"}'
- *
- * It only adds: removing roles and every other change stay in Patient Proxy,
- * where the Active Attempt and last-admin rules apply.
- */
-export const addMemberRole = internalMutation({
-  args: { membershipId: v.id("memberships"), role: membershipRoleValidator },
-  returns: v.object({ status: v.union(v.literal("added"), v.literal("unchanged")) }),
-  handler: async (ctx, { membershipId, role }) => {
-    const membership = await ctx.db.get(membershipId);
-    if (!membership) {
-      throw new Error("Membership not found");
-    }
-    if (membership.roles.includes(role)) {
-      return { status: "unchanged" as const };
-    }
-    const roles = [...membership.roles, role];
-    await ctx.db.patch(membershipId, { roles });
-    await recordAudit(ctx, {
-      institutionId: membership.institutionId,
-      actor: { kind: "operator" },
-      action: "member_roles_changed",
-      membershipId,
-      before: { roles: membership.roles },
-      after: { roles },
-    });
-    return { status: "added" as const };
   },
 });

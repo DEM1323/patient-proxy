@@ -143,7 +143,6 @@ describe("Manage participation", () => {
     });
 
     expect(await setRoles(learnerId, [...allRoles].reverse())).toEqual({ status: "unchanged" });
-    expect(await setRoles(adminId, ["learner"])).toEqual({ status: "self_change" });
     expect(await setRoles(learnerId, [])).toEqual({ status: "invalid_roles" });
     expect(await setRoles("not-a-membership", ["learner"])).toEqual({ status: "not_found" });
     expect((await membership(adminId))!.roles).toContain("institutionalAdmin");
@@ -162,7 +161,10 @@ describe("Manage participation", () => {
       m!.roles.includes("institutionalAdmin"),
     );
     expect(admins).toHaveLength(1);
-    // The remaining admin cannot remove or deactivate themselves.
+    // The remaining admin cannot drop their own admin role or deactivate themselves.
+    expect(await setRoles(admins[0]!._id, ["faculty"], admins[0]!._id === adminId ? undefined : asSecond)).toEqual({
+      status: "last_admin",
+    });
     expect(await deactivate(admins[0]!._id, admins[0]!._id === adminId ? undefined : asSecond)).toEqual({
       status: "self_change",
     });
@@ -368,29 +370,30 @@ describe("Manage participation", () => {
     });
   });
 
-  it("adds a role to the only Institutional Admin only through the restricted operator command", async () => {
-    const { t, adminId, membership, audits } = await setup();
-    const before = (await membership(adminId))!.roles;
-    expect(
-      await t.mutation(internal.institutionAdmin.operator.addMemberRole, {
-        membershipId: adminId,
-        role: "author",
-      }),
-    ).toEqual({ status: "added" });
-    expect((await membership(adminId))!.roles).toEqual([...before, "author"]);
-    expect(
-      await t.mutation(internal.institutionAdmin.operator.addMemberRole, {
-        membershipId: adminId,
-        role: "author",
-      }),
-    ).toEqual({ status: "unchanged" });
-    const changes = await audits("member_roles_changed");
-    expect(changes).toHaveLength(1);
-    expect(changes[0]).toMatchObject({
-      actor: { kind: "operator" },
-      membershipId: adminId,
-      before: { roles: before },
-      after: { roles: [...before, "author"] },
+  it("lets an admin change their own roles but never regrant their own admin role", async () => {
+    const { adminId, secondAdminId, asSecond, setRoles, membership, audits } = await setup();
+    // Sole admin: adding other roles works; dropping admin does not.
+    expect(await setRoles(adminId, ["institutionalAdmin", "author", "learner"])).toEqual({
+      status: "updated",
     });
+    expect(await setRoles(adminId, ["author"])).toEqual({ status: "last_admin" });
+    const [selfChange] = await audits("member_roles_changed");
+    expect(selfChange).toMatchObject({
+      actor: { kind: "member", membershipId: adminId },
+      membershipId: adminId,
+    });
+
+    // With a second admin, the first may drop their own admin role...
+    await setRoles(secondAdminId, ["faculty", "institutionalAdmin"]);
+    expect(await setRoles(adminId, ["author", "learner"])).toEqual({ status: "updated" });
+    expect((await membership(adminId))!.roles).not.toContain("institutionalAdmin");
+    // ...after which they cannot act as an admin, so cannot grant it back.
+    await expect(setRoles(adminId, ["author", "learner", "institutionalAdmin"])).rejects.toThrow(
+      "Institutional Admin role required",
+    );
+    // Only another admin can.
+    expect(
+      await setRoles(adminId, ["author", "learner", "institutionalAdmin"], asSecond),
+    ).toEqual({ status: "updated" });
   });
 });

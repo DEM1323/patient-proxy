@@ -57,10 +57,14 @@ function RoleList({ roles }: { roles: MembershipRole[] }) {
 function RoleEditor({
   form,
   label,
+  self = false,
 }: {
   form: PreapproveFormProps;
   label: string;
+  self?: boolean;
 }) {
+  const droppingAdmin =
+    self && !form.editing!.roles.includes("institutionalAdmin");
   return (
     <fieldset className="rounded-lg border border-line bg-sunken p-4">
       <legend className="px-1 font-bold">{label}</legend>
@@ -72,16 +76,26 @@ function RoleEditor({
         onToggle={form.onToggleEditRole}
       />
       <p className="mt-3 text-small text-ink-3">
-        Removing Learner ends this Member’s Active Attempt, if any.
+        {self
+          ? "Removing Learner ends your Active Attempt, if any."
+          : "Removing Learner ends this Member’s Active Attempt, if any."}
       </p>
+      {droppingAdmin && (
+        <div className="mt-4">
+          <Notice tone="warning">
+            You’ll lose Institutional Admin as soon as you save, including this
+            page. Only another Institutional Admin can grant it back.
+          </Notice>
+        </div>
+      )}
       <div className="mt-4 flex gap-3">
         <button
           type="button"
-          className={button("primary", "sm")}
+          className={button(droppingAdmin ? "danger" : "primary", "sm")}
           disabled={form.submitting || !form.editing!.roles.length}
           onClick={form.onSaveEdit}
         >
-          Save roles
+          {droppingAdmin ? "Remove my Institutional Admin role" : "Save roles"}
         </button>
         <button
           type="button"
@@ -297,10 +311,25 @@ export function MembersView({
                   </td>
                   <td>
                     {member.isYou ? (
-                      <p className="max-w-[190px] text-right text-small text-ink-3">
-                        Another Institutional Admin manages your own roles and
-                        status.
-                      </p>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <button
+                          type="button"
+                          className={button("secondary", "sm")}
+                          disabled={form.submitting}
+                          onClick={() =>
+                            form.onStartEdit({
+                              kind: "member",
+                              id: member.id,
+                              roles: member.roles,
+                            })
+                          }
+                        >
+                          Edit my roles
+                        </button>
+                        <p className="max-w-[190px] text-right text-small text-ink-3">
+                          Another Institutional Admin manages your status.
+                        </p>
+                      </div>
                     ) : (
                       <div className="flex justify-end gap-2">
                         <button
@@ -346,7 +375,10 @@ export function MembersView({
                       <td colSpan={5}>
                         <RoleEditor
                           form={form}
-                          label={"Roles for " + member.email}
+                          label={
+                            member.isYou ? "Your roles" : "Roles for " + member.email
+                          }
+                          self={member.isYou}
                         />
                       </td>
                     </tr>

@@ -19,7 +19,10 @@ const isActive = (membership: Doc<"memberships">) =>
 /**
  * Lifecycle rules (slice 2):
  * - Only a current, active Institutional Admin acts, within their own
- *   institution, and never on their own roles or status.
+ *   institution. An admin may change their own roles: since only an admin
+ *   acts, they can add any other role but never grant Institutional Admin to
+ *   themselves, and once they remove it only another admin can grant it
+ *   back. They never change their own status.
  * - No change may leave the institution without an active Institutional
  *   Admin. The check reads every Membership in the institution, so two
  *   admins changing each other at once conflict and one is re-run.
@@ -35,9 +38,6 @@ export async function setMemberRoles(
   const target = await findTarget(ctx, admin, input.membershipId);
   if (!target) {
     return { status: "not_found" };
-  }
-  if (target._id === admin.id) {
-    return { status: "self_change" };
   }
   const roles = validRoles(input.roles);
   if (!roles) {
