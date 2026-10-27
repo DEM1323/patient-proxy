@@ -1,8 +1,12 @@
 import { v } from "convex/values";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../_generated/server";
 import { ensurePilotInstitution } from "../membershipAccess/model";
-import { initialPacuAssessment } from "./scenarioContent";
+import {
+  initialPacuAssessment,
+  type DebriefContent,
+  type ScenarioContent,
+} from "./scenarioContent";
 
 const pilotLearningGroup = { key: "pacu-pilot", name: "PACU Pilot" };
 
@@ -12,7 +16,8 @@ const pilotLearningGroup = { key: "pacu-pilot", name: "PACU Pilot" };
  *   npx convex run attemptStart/pilotProvisioning:provision
  *
  * Content is idempotent on every run: it publishes Initial PACU Assessment (a
- * new Scenario Version whenever the authored content has changed).
+ * new Scenario Version whenever the authored content, debrief content
+ * included, has changed).
  *
  * Participation is bootstrapped only once, when the "PACU Pilot" Learning
  * Group does not exist yet: it creates the group, makes the Scenario available
@@ -33,6 +38,7 @@ export const provision = internalMutation({
     const { scenarioId, version } = await ensurePublishedScenario(
       ctx,
       institution._id,
+      initialPacuAssessment,
     );
     const existingGroup = await ctx.db
       .query("learningGroups")
@@ -88,56 +94,79 @@ export const provision = internalMutation({
 async function ensurePublishedScenario(
   ctx: MutationCtx,
   institutionId: Id<"pilotInstitutions">,
+  content: ScenarioContent,
 ) {
+  if (content.debrief) {
+    assertPublishableDebrief(content.debrief);
+  }
   const existing = await ctx.db
     .query("scenarios")
     .withIndex("by_institution_key", (query) =>
-      query.eq("institutionId", institutionId).eq("key", initialPacuAssessment.key),
+      query.eq("institutionId", institutionId).eq("key", content.key),
     )
     .unique();
   const scenarioId =
     existing?._id ??
     (await ctx.db.insert("scenarios", {
       institutionId,
-      key: initialPacuAssessment.key,
-      title: initialPacuAssessment.title,
+      key: content.key,
+      title: content.title,
       status: "published",
     }));
 
   const current = existing?.currentVersionId
     ? await ctx.db.get(existing.currentVersionId)
     : null;
-  if (current && sameAuthoredContent(current)) {
+  if (current && canonicalJson(authored(current)) === canonicalJson(authored(content))) {
     return { scenarioId, version: current.version };
   }
 
   // Changed authored content becomes a new version; Attempts stay pinned to
-  // the version they started with.
+  // the version they started with, debrief content included.
   const version = (current?.version ?? 0) + 1;
   const versionId = await ctx.db.insert("scenarioVersions", {
     institutionId,
     scenarioId,
     version,
-    title: initialPacuAssessment.title,
-    learnerBrief: initialPacuAssessment.learnerBrief,
-    clinicalTruth: initialPacuAssessment.clinicalTruth,
+    title: content.title,
+    learnerBrief: content.learnerBrief,
+    clinicalTruth: content.clinicalTruth,
+    ...(content.debrief ? { debrief: content.debrief } : {}),
     createdAt: Date.now(),
   });
   await ctx.db.patch(scenarioId, { currentVersionId: versionId });
   return { scenarioId, version };
 }
 
-function sameAuthoredContent(version: Doc<"scenarioVersions">) {
-  const authored = {
-    title: initialPacuAssessment.title,
-    learnerBrief: initialPacuAssessment.learnerBrief,
-    clinicalTruth: initialPacuAssessment.clinicalTruth,
-  };
-  const { title, learnerBrief, clinicalTruth } = version;
-  return (
-    canonicalJson({ title, learnerBrief, clinicalTruth }) ===
-    canonicalJson(authored)
-  );
+// The Author-controlled parts of a Scenario Version that decide whether a
+// rerun publishes a new one. Versions published before debrief content
+// existed compare equal to content that still has none.
+function authored({
+  title,
+  learnerBrief,
+  clinicalTruth,
+  debrief,
+}: Pick<ScenarioContent, "title" | "learnerBrief" | "clinicalTruth" | "debrief">) {
+  return { title, learnerBrief, clinicalTruth, debrief: debrief ?? null };
+}
+
+// Feedback matches criteria by key and shows their labels, so a blank or
+// duplicated entry would publish a version that can never be rated cleanly.
+function assertPublishableDebrief(debrief: DebriefContent) {
+  const blank = (value: string) => value.trim().length === 0;
+  const criteria = debrief.communicationCriteria ?? [];
+  const keys = new Set(criteria.map(({ key }) => key));
+  if (
+    keys.size !== criteria.length ||
+    criteria.some(({ key, label, description }) =>
+      [key, label, description].some(blank),
+    ) ||
+    (debrief.feedbackGuidance !== undefined && blank(debrief.feedbackGuidance)) ||
+    (debrief.reflectionPrompts &&
+      Object.values(debrief.reflectionPrompts).some(blank))
+  ) {
+    throw new Error("Debrief content has a blank or duplicated entry");
+  }
 }
 
 // Stored documents need not preserve object key order.
