@@ -134,6 +134,9 @@ export type EditorProps = {
   submitting: boolean;
   notice: EditorNotice;
   onPublish: () => void;
+  // The version published by someone else since the draft began, if any.
+  newerVersion: number | null;
+  onLoadNewerVersion: () => void;
 };
 
 export function DebriefEditorView(props: EditorProps) {
@@ -186,13 +189,29 @@ export function DebriefEditorView(props: EditorProps) {
           <SourceBadge source={scenario.source} />
           {scenario.publication && (
             <span>
-              Published by {scenario.publication.publishedBy ?? "a former Member"} on{" "}
+              Published by {scenario.publication.byYou ? "you" : "another Author"} on{" "}
               <time dateTime={new Date(scenario.publication.publishedAt).toISOString()}>
                 {new Date(scenario.publication.publishedAt).toLocaleString()}
               </time>
             </span>
           )}
         </section>
+        {props.newerVersion !== null && (
+          <Notice tone="warning">
+            <p>
+              Another Author published version {props.newerVersion} while you
+              were editing. Your edits are kept below, but publishing is paused
+              so they cannot overwrite it.
+            </p>
+            <button
+              type="button"
+              className={`${button("secondary", "sm")} mt-3`}
+              onClick={props.onLoadNewerVersion}
+            >
+              Load version {props.newerVersion} and discard my edits
+            </button>
+          </Notice>
+        )}
         {props.generated && scenario.template && (
           <Notice tone="warning">
             {scenario.template.notice} Review every field and change it to
@@ -333,7 +352,11 @@ export function DebriefEditorView(props: EditorProps) {
           <button
             type="submit"
             className={button()}
-            disabled={props.submitting || (unchangedTemplate && !props.adopt)}
+            disabled={
+              props.submitting ||
+              props.newerVersion !== null ||
+              (unchangedTemplate && !props.adopt)
+            }
           >
             {props.submitting ? "Publishing…" : `Publish as version ${scenario.version + 1}`}
           </button>

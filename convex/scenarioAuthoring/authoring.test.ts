@@ -20,6 +20,7 @@ const roster = JSON.stringify({
   version: 1,
   entries: [
     { email: "author@example.edu", institutionKey: "umb", roles: ["author"] },
+    { email: "second-author@example.edu", institutionKey: "umb", roles: ["author"] },
     { email: "learner@example.edu", institutionKey: "umb", roles: ["learner"] },
     { email: "admin@example.edu", institutionKey: "umb", roles: ["institutionalAdmin", "faculty"] },
   ],
@@ -45,18 +46,27 @@ async function setup() {
     return t.withIdentity({ subject });
   };
   const asAuthor = await admit("user_author", "author@example.edu");
+  const asSecondAuthor = await admit("user_second_author", "second-author@example.edu");
   const asLearner = await admit("user_learner", "learner@example.edu");
   const asAdmin = await admit("user_admin", "admin@example.edu");
   await t.mutation(internal.attemptStart.pilotProvisioning.provision, {});
   const [{ id: scenarioId }] = await asAuthor.query(api.scenarioAuthoring.access.scenarios, {});
-  const publish = (debrief: DebriefContent, adoptTemplate = false, as = asAuthor) =>
+  const detail = (as = asAuthor) =>
+    as.query(api.scenarioAuthoring.access.scenarioDebrief, { scenarioId });
+  // Publishes from the current version unless the test says which version the
+  // form was based on.
+  const publish = async (
+    debrief: DebriefContent,
+    adoptTemplate = false,
+    as = asAuthor,
+    expectedVersion?: number,
+  ) =>
     as.mutation(api.scenarioAuthoring.access.publish, {
       scenarioId,
+      expectedVersion: expectedVersion ?? (await detail(as))!.version,
       debrief,
       adoptTemplate,
     });
-  const detail = () =>
-    asAuthor.query(api.scenarioAuthoring.access.scenarioDebrief, { scenarioId });
   const versions = () => t.run((ctx) => ctx.db.query("scenarioVersions").collect());
   const startAttempt = async () => {
     const started = await asLearner.mutation(api.attemptStart.access.start, {
@@ -65,7 +75,7 @@ async function setup() {
     });
     return (started as { attemptId: Id<"attempts"> }).attemptId;
   };
-  return { t, asAuthor, asLearner, asAdmin, scenarioId, publish, detail, versions, startAttempt };
+  return { t, asAuthor, asSecondAuthor, asLearner, asAdmin, scenarioId, publish, detail, versions, startAttempt };
 }
 
 describe("Author debrief content", () => {
@@ -109,7 +119,7 @@ describe("Author debrief content", () => {
     expect(await detail()).toMatchObject({
       version: 2,
       source: "author",
-      publication: { publishedBy: "author@example.edu" },
+      publication: { byYou: true },
     });
     // The same content again publishes nothing.
     expect(await publish(fixture)).toEqual({ status: "unchanged", version: 2 });
@@ -130,7 +140,7 @@ describe("Author debrief content", () => {
     });
     expect(await detail()).toMatchObject({
       source: "adopted_template",
-      publication: { publishedBy: "author@example.edu" },
+      publication: { byYou: true },
     });
 
     // Once edited, it is the Author's own wording.
@@ -193,6 +203,7 @@ describe("Author debrief content", () => {
       expect(
         await asAuthor.mutation(api.scenarioAuthoring.access.publish, {
           scenarioId: id,
+          expectedVersion: 1,
           debrief: fixture,
           adoptTemplate: false,
         }),
@@ -209,6 +220,44 @@ describe("Author debrief content", () => {
       await ctx.db.patch(author._id, { status: "inactive" });
     });
     await expect(publish(fixture)).rejects.toThrow("deactivated");
+  });
+
+  it("refuses a publication based on a version another Author has since replaced", async () => {
+    const { asSecondAuthor, publish, detail, versions } = await setup();
+    const second = { feedbackGuidance: "Fixture: the second Author's guidance." };
+    // Both Authors opened version 1; the first publishes.
+    expect(await publish(fixture, false, undefined, 1)).toEqual({
+      status: "published",
+      version: 2,
+    });
+
+    expect(await publish(second, false, asSecondAuthor, 1)).toEqual({ status: "stale_version" });
+    expect(await versions()).toHaveLength(2);
+    expect(await detail()).toMatchObject({ version: 2, debrief: fixture });
+    // Not even a publication that would change nothing slips past the check.
+    expect(await publish(fixture, false, asSecondAuthor, 1)).toEqual({ status: "stale_version" });
+
+    // Based on the current version, it publishes.
+    expect(await publish(second, false, asSecondAuthor, 2)).toEqual({
+      status: "published",
+      version: 3,
+    });
+  });
+
+  it("shows no debrief when an Author clears all content, and hides other Members' emails", async () => {
+    const { asAuthor, asSecondAuthor, publish, detail } = await setup();
+    await publish(fixture);
+    expect(await detail(asSecondAuthor)).toMatchObject({
+      source: "author",
+      publication: { byYou: false },
+    });
+    expect(JSON.stringify(await detail(asSecondAuthor))).not.toContain("example.edu");
+
+    expect(await publish({}, false, asSecondAuthor)).toEqual({ status: "published", version: 3 });
+    expect(await detail()).toMatchObject({ version: 3, debrief: null, source: "none" });
+    expect(await asAuthor.query(api.scenarioAuthoring.access.scenarios, {})).toMatchObject([
+      { version: 3, debrief: "none" },
+    ]);
   });
 
   it("keeps Author-published content when provisioning reruns", async () => {

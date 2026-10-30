@@ -49,7 +49,6 @@ export async function getScenarioDebrief(ctx: ReadContext, rawScenarioId: string
   }
   const { scenario, current } = found;
   const publication = current.debriefPublication;
-  const publisher = publication ? await ctx.db.get(publication.membershipId) : null;
   const template = generatedDebriefTemplates[scenario.key];
   return {
     id: scenario._id,
@@ -61,7 +60,8 @@ export async function getScenarioDebrief(ctx: ReadContext, rawScenarioId: string
     source: debriefSource(current),
     publication: publication
       ? {
-          publishedBy: publisher?.rosterEmail ?? null,
+          // Other Members' roster emails are not shown to Authors.
+          byYou: publication.membershipId === author.id,
           publishedAt: publication.publishedAt,
         }
       : null,
@@ -76,15 +76,25 @@ export async function getScenarioDebrief(ctx: ReadContext, rawScenarioId: string
  * through the shared publication path, recording who published it and when.
  * A generated template published unchanged needs `adoptTemplate`, and is
  * then recorded as an adoption rather than the Author's own wording.
+ * `expectedVersion` is the version the Author edited from; if another Author
+ * has published since, nothing is published, so no one is overwritten silently.
  */
 export async function publishDebrief(
   ctx: MutationCtx,
-  input: { scenarioId: string; debrief: DebriefContent; adoptTemplate: boolean },
+  input: {
+    scenarioId: string;
+    expectedVersion: number;
+    debrief: DebriefContent;
+    adoptTemplate: boolean;
+  },
 ) {
   const author = await requireRole(ctx, "author");
   const found = await findScenario(ctx, author, input.scenarioId);
   if (!found) {
     return { status: "not_found" as const };
+  }
+  if (found.current.version !== input.expectedVersion) {
+    return { status: "stale_version" as const };
   }
   const debrief = normalize(input.debrief);
   if (debrief === "invalid" || (debrief && !isPublishableDebrief(debrief))) {
@@ -138,11 +148,13 @@ function normalize(input: DebriefContent): DebriefContent | null | "invalid" {
   return Object.keys(debrief).length ? debrief : null;
 }
 
+// A version with no debrief content is "none", even if an Author published it
+// by clearing the previous content.
 function debriefSource(version: Doc<"scenarioVersions">): DebriefSource {
-  if (version.debriefPublication) {
-    return version.debriefPublication.source;
+  if (!version.debrief) {
+    return "none";
   }
-  return version.debrief ? "provisioned" : "none";
+  return version.debriefPublication?.source ?? "provisioned";
 }
 
 async function findScenario(

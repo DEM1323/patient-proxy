@@ -39,8 +39,6 @@ export function DebriefEditorPage({ scenarioId }: { scenarioId: string }) {
 
 function DebriefEditor({ scenarioId }: { scenarioId: string }) {
   const scenario = useQuery(api.scenarioAuthoring.access.scenarioDebrief, { scenarioId });
-  // Outlives the form, which resets to the published content of each version.
-  const [notice, setNotice] = useState<EditorNotice>(null);
   if (scenario === undefined) {
     return <AccessLoadingView message="Loading debrief content" />;
   }
@@ -53,27 +51,17 @@ function DebriefEditor({ scenarioId }: { scenarioId: string }) {
       </Page>
     );
   }
-  return (
-    <DebriefForm
-      key={scenario.version}
-      scenario={scenario}
-      notice={notice}
-      setNotice={setNotice}
-    />
-  );
+  // Keyed by Scenario, not version: another Author's publication must not
+  // discard the draft in progress.
+  return <DebriefForm key={scenario.id} scenario={scenario} />;
 }
 
-function DebriefForm({
-  scenario,
-  notice,
-  setNotice,
-}: {
-  scenario: ScenarioDebrief;
-  notice: EditorNotice;
-  setNotice: (notice: EditorNotice) => void;
-}) {
+function DebriefForm({ scenario }: { scenario: ScenarioDebrief }) {
   const publish = useMutation(api.scenarioAuthoring.access.publish);
+  const [notice, setNotice] = useState<EditorNotice>(null);
   const [draft, setDraft] = useState(() => toDraft(scenario.debrief));
+  // The version the draft started from, sent with every publication.
+  const [baseVersion, setBaseVersion] = useState(scenario.version);
   const [generated, setGenerated] = useState(false);
   const [adopt, setAdopt] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -84,9 +72,13 @@ function DebriefForm({
     try {
       const result = await publish({
         scenarioId: scenario.id,
+        expectedVersion: baseVersion,
         debrief: toContent(draft),
         adoptTemplate: adopt,
       });
+      if (result.status === "published" || result.status === "unchanged") {
+        setBaseVersion(result.version);
+      }
       setNotice(
         result.status === "published"
           ? {
@@ -95,6 +87,11 @@ function DebriefForm({
             }
           : result.status === "unchanged"
             ? { tone: "success", text: `Nothing changed; version ${result.version} is still current.` }
+            : result.status === "stale_version"
+              ? {
+                  tone: "error",
+                  text: "Another Author published a newer version, so nothing was published. Your edits are still here; load the latest version to continue.",
+                }
             : result.status === "template_not_adopted"
               ? { tone: "error", text: "Edit the generated draft, or confirm that you adopt it unchanged." }
               : result.status === "invalid"
@@ -136,6 +133,14 @@ function DebriefForm({
       submitting={submitting}
       notice={notice}
       onPublish={() => void onPublish()}
+      newerVersion={scenario.version > baseVersion ? scenario.version : null}
+      onLoadNewerVersion={() => {
+        setDraft(toDraft(scenario.debrief));
+        setBaseVersion(scenario.version);
+        setGenerated(false);
+        setAdopt(false);
+        setNotice(null);
+      }}
     />
   );
 }

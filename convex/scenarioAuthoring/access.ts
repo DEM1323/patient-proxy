@@ -41,7 +41,7 @@ export const scenarioDebrief = query({
       publication: v.union(
         v.null(),
         v.object({
-          publishedBy: v.union(v.null(), v.string()),
+          byYou: v.boolean(),
           publishedAt: v.number(),
         }),
       ),
@@ -58,6 +58,8 @@ export const scenarioDebrief = query({
 export const publish = mutation({
   args: {
     scenarioId: v.string(),
+    // The version the Author's form was based on.
+    expectedVersion: v.number(),
     debrief: debriefContentValidator,
     adoptTemplate: v.boolean(),
   },
@@ -69,6 +71,7 @@ export const publish = mutation({
     v.object({
       status: v.union(
         v.literal("not_found"),
+        v.literal("stale_version"),
         v.literal("invalid"),
         v.literal("template_not_adopted"),
       ),
