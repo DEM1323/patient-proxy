@@ -69,6 +69,14 @@ export type LearnerBrief = Infer<typeof learnerBriefValidator>;
 export type DebriefContent = Infer<typeof debriefContentValidator>;
 export type ClinicalTruth = Infer<typeof clinicalTruthValidator>;
 export type ClinicalActions = Infer<typeof clinicalActionsValidator>;
+export type ScenarioContent = {
+  key: string;
+  title: string;
+  learnerBrief: LearnerBrief;
+  clinicalTruth: ClinicalTruth;
+  // Published with the version and compared like the rest of its content.
+  debrief?: DebriefContent;
+};
 
 const arrivalState = [
   "Drowsy, pale, shivering, and moaning.",
@@ -214,9 +222,9 @@ export const initialPacuAssessment = {
       ],
     },
   },
-} satisfies {
-  key: string;
-  title: string;
-  learnerBrief: LearnerBrief;
-  clinicalTruth: ClinicalTruth;
-};
+  // No `debrief` yet: the Communication Criteria, feedback guidance, and
+  // Reflection Prompts must come from the Scenario's Authors, and none have
+  // been approved. Until they are, feedback has no criteria section and the
+  // platform's default Reflection Prompts apply. Adding approved content here
+  // and rerunning provisioning publishes it as a new Scenario Version.
+} satisfies ScenarioContent;
