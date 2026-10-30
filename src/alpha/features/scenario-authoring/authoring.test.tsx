@@ -99,6 +99,8 @@ describe("Author debrief editor", () => {
       adoptTemplate: true,
     });
     expect((await screen.findByRole("status")).textContent).toContain("Published version 2");
+    // Published, so it is no longer shown as an unreviewed generated draft.
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("publishes an edited template as the Author's own wording without asking for adoption", async () => {
@@ -163,7 +165,7 @@ describe("Author debrief editor", () => {
     const guidance = () => screen.getByLabelText("Feedback guidance") as HTMLTextAreaElement;
     expect(guidance().value).toBe("Fixture: my unsaved guidance.");
     expect(screen.getByRole("alert").textContent).toContain(
-      "Another Author published version 2 while you were editing",
+      "Version 2 was published while you were editing, by another Author or in another tab",
     );
     expect((publishButton(3) as HTMLButtonElement).disabled).toBe(true);
     expect(testState.publish).not.toHaveBeenCalled();
@@ -196,7 +198,7 @@ describe("Author debrief editor", () => {
     });
     fireEvent.click(publishButton());
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "Another Author published a newer version, so nothing was published",
+      "A newer version was published, by another Author or in another tab, so nothing was published",
     );
     expect((screen.getByLabelText("Feedback guidance") as HTMLTextAreaElement).value).toBe(
       "Fixture: my guidance.",

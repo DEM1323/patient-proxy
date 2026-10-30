@@ -78,6 +78,8 @@ function DebriefForm({ scenario }: { scenario: ScenarioDebrief }) {
       });
       if (result.status === "published" || result.status === "unchanged") {
         setBaseVersion(result.version);
+        // What was published is no longer an unreviewed generated draft.
+        setGenerated(false);
       }
       setNotice(
         result.status === "published"
@@ -90,7 +92,7 @@ function DebriefForm({ scenario }: { scenario: ScenarioDebrief }) {
             : result.status === "stale_version"
               ? {
                   tone: "error",
-                  text: "Another Author published a newer version, so nothing was published. Your edits are still here; load the latest version to continue.",
+                  text: "A newer version was published, by another Author or in another tab, so nothing was published. Your edits are still here; load the latest version to continue.",
                 }
             : result.status === "template_not_adopted"
               ? { tone: "error", text: "Edit the generated draft, or confirm that you adopt it unchanged." }

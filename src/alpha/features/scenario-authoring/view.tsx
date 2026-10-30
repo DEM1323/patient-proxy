@@ -199,9 +199,9 @@ export function DebriefEditorView(props: EditorProps) {
         {props.newerVersion !== null && (
           <Notice tone="warning">
             <p>
-              Another Author published version {props.newerVersion} while you
-              were editing. Your edits are kept below, but publishing is paused
-              so they cannot overwrite it.
+              Version {props.newerVersion} was published while you were editing,
+              by another Author or in another tab. Your edits are kept below,
+              but publishing is paused so they cannot overwrite it.
             </p>
             <button
               type="button"
