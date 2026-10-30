@@ -81,20 +81,6 @@ export function ScenarioCards({
     </ul>
   );
 }
-export function ScenarioListView({
-  scenarios,
-}: {
-  scenarios: AvailableScenario[];
-}) {
-  return (
-    <Page
-      title="Available Scenarios"
-      description="Scenarios made available through your current Learning Groups."
-    >
-      <ScenarioCards scenarios={scenarios} />
-    </Page>
-  );
-}
 export type StartState =
   | { step: "idle" }
   | { step: "confirmEnding"; activeAttemptId: Id<"attempts"> }
@@ -917,6 +903,16 @@ export function AttemptNotFoundView() {
       <p>You can open only your own Attempts.</p>
       <Link to="/scenarios" className={backLink}>
         View Available Scenarios
+      </Link>
+    </Page>
+  );
+}
+export function ScenarioRoleRequiredView() {
+  return (
+    <Page title="Scenarios">
+      <p>Scenarios are for Members with the Learner or Author role.</p>
+      <Link to="/" className={backLink}>
+        Home
       </Link>
     </Page>
   );

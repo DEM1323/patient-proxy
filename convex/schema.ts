@@ -10,6 +10,7 @@ import {
 import {
   clinicalTruthValidator,
   debriefContentValidator,
+  debriefPublicationValidator,
   learnerBriefValidator,
 } from "./attemptStart/scenarioContent";
 import {
@@ -87,6 +88,7 @@ export default defineSchema({
     clinicalTruth: clinicalTruthValidator,
     // Instructor-authored Communication Criteria and Reflection Prompts.
     debrief: v.optional(debriefContentValidator),
+    debriefPublication: v.optional(debriefPublicationValidator),
     createdAt: v.number(),
   }).index("by_scenario_version", ["scenarioId", "version"]),
   learningGroups: defineTable({

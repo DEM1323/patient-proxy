@@ -81,8 +81,11 @@ describe("Sidebar groups", () => {
     ]);
   });
 
-  it("grants nothing by inheritance, and no dead Author link", () => {
-    expect(paths(["author"])).toEqual([[null, ["/"]]]);
+  it("grants nothing by inheritance, and gives Author only the Scenarios page", () => {
+    expect(paths(["author"])).toEqual([
+      [null, ["/"]],
+      ["Authoring", ["/scenarios"]],
+    ]);
     expect(paths(["learner"])).toEqual([
       [null, ["/"]],
       ["Practice", ["/scenarios", "/attempts"]],

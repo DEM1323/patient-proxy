@@ -1,13 +1,13 @@
 import type { DebriefContent } from "./scenarioContent";
 
 /**
- * GENERATED TEMPLATE, EDIT BEFORE USE.
+ * GENERATED DRAFT, EDIT BEFORE USE.
  *
  * AI-drafted starting points for a Scenario's debrief content, written at the
  * owner's request (2026-10-27) so Authors can edit them instead of starting
  * from a blank page. They are not Author-approved Communication Criteria,
- * feedback guidance, or Reflection Prompts. Provisioning refuses to publish a
- * template verbatim: an Author must edit or explicitly adopt it first.
+ * feedback guidance, or Reflection Prompts. Neither provisioning nor an Author
+ * publishes a template verbatim without an explicit, recorded adoption.
  */
 export type GeneratedDebriefTemplate = {
   origin: "generated_template";
@@ -16,7 +16,7 @@ export type GeneratedDebriefTemplate = {
 };
 
 const notice =
-  "Generated template, edit before use. AI-drafted from Scenario decision #5; not approved by the Scenario's Authors.";
+  "Generated draft, edit before use. AI-drafted from Scenario decision #5; not approved by the Scenario's Authors.";
 
 // Drafted from the approved learning objectives and evidence priorities in
 // Scenario decision #5, limited to observable communication.
@@ -73,6 +73,7 @@ export const pacuDebriefTemplate: GeneratedDebriefTemplate = {
   },
 };
 
-export const generatedDebriefTemplates: GeneratedDebriefTemplate[] = [
-  pacuDebriefTemplate,
-];
+// By Scenario key: the template an Author's Generate action fills in.
+export const generatedDebriefTemplates: Record<string, GeneratedDebriefTemplate> = {
+  "initial-pacu-assessment": pacuDebriefTemplate,
+};

@@ -119,8 +119,12 @@ describe("Members page", () => {
       row("admin@example.edu").getByText("Institutional Admin, Faculty"),
     ).toBeTruthy();
     expect(row("admin@example.edu").getByText("(you)")).toBeTruthy();
-    // No controls on your own Membership.
-    expect(row("admin@example.edu").queryByRole("button")).toBeNull();
+    // Your own roles are editable; your status is not.
+    expect(
+      row("admin@example.edu")
+        .getAllByRole("button")
+        .map((control) => control.textContent),
+    ).toEqual(["Edit my roles"]);
     expect(row("away@example.edu").getByText("Deactivated")).toBeTruthy();
     expect(
       row("away@example.edu").getByRole("button", { name: "Reactivate" }),
@@ -188,6 +192,39 @@ describe("Members page", () => {
     );
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /without an active Institutional Admin/,
+    );
+  });
+
+  it("lets you add roles to yourself and warns before you drop your own admin role", async () => {
+    testState.data = data;
+    testState.mutations.setRoles.mockResolvedValue({ status: "updated" });
+    render(<MembersPage />);
+    const own = () => row("admin@example.edu");
+
+    fireEvent.click(own().getByRole("button", { name: "Edit my roles" }));
+    fireEvent.click(own().getByRole("checkbox", { name: /^Author/ }));
+    expect(own().queryByRole("alert")).toBeNull();
+    fireEvent.click(own().getByRole("button", { name: "Save roles" }));
+    await waitFor(() =>
+      expect(testState.mutations.setRoles).toHaveBeenCalledWith({
+        membershipId: "member-admin",
+        roles: ["faculty", "institutionalAdmin", "author"],
+      }),
+    );
+
+    fireEvent.click(own().getByRole("button", { name: "Edit my roles" }));
+    fireEvent.click(own().getByRole("checkbox", { name: /^Institutional Admin/ }));
+    expect(own().getByRole("alert").textContent).toMatch(
+      /Only another Institutional Admin can grant it back/,
+    );
+    fireEvent.click(
+      own().getByRole("button", { name: "Remove my Institutional Admin role" }),
+    );
+    await waitFor(() =>
+      expect(testState.mutations.setRoles).toHaveBeenLastCalledWith({
+        membershipId: "member-admin",
+        roles: ["faculty"],
+      }),
     );
   });
 

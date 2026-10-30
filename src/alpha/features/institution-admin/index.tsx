@@ -38,7 +38,7 @@ const preapproveOutcomes = {
 
 // Shared wording for role and participation changes.
 const changeOutcomes = {
-  self_change: "You can't change your own roles or status. Ask another Institutional Admin.",
+  self_change: "You can't change your own status. Ask another Institutional Admin.",
   last_admin:
     "This would leave the institution without an active Institutional Admin.",
   invalid_roles: "Choose at least one role.",

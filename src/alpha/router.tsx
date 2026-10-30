@@ -15,6 +15,7 @@ import { AttemptHistoryPage } from "./features/learner-attempt-history";
 import { ReviewDetailPage, ReviewListPage } from "./features/attempt-review";
 import { MembersPage } from "./features/institution-admin";
 import { LearningGroupsPage } from "./features/learning-groups";
+import { DebriefEditorPage } from "./features/scenario-authoring";
 import { AppShell } from "./features/membership-access/navigation";
 import { isMembershipAccessConfigured } from "./env";
 import {
@@ -119,6 +120,15 @@ const learningGroupsRoute = createRoute({
   component: LearningGroupsPage,
 });
 
+const debriefEditorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/scenarios/$scenarioId/debrief",
+  component: function DebriefEditorRoute() {
+    const { scenarioId } = debriefEditorRoute.useParams();
+    return <DebriefEditorPage key={scenarioId} scenarioId={scenarioId} />;
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   deploymentCheckRoute,
@@ -132,6 +142,7 @@ const routeTree = rootRoute.addChildren([
   reviewDetailRoute,
   membersRoute,
   learningGroupsRoute,
+  debriefEditorRoute,
 ]);
 
 export const router = createRouter({ routeTree });

@@ -8,6 +8,8 @@ import { useSessionState } from "../../session-state";
 import { AttemptDebrief } from "../attempt-debrief";
 import { MembershipGate } from "../membership-access";
 import { AccessLoadingView } from "../membership-access/view";
+import { AuthoringScenarios } from "../scenario-authoring";
+import { Page } from "../../ui/primitives";
 import {
   AttemptNotFoundView,
   type ActionPanelProps,
@@ -17,7 +19,8 @@ import {
   type EndingProps,
   LearnerBriefView,
   LearnerRoleRequiredView,
-  ScenarioListView,
+  ScenarioCards,
+  ScenarioRoleRequiredView,
   ScenarioUnavailableView,
   type StartState,
 } from "./view";
@@ -35,11 +38,53 @@ type StartRequest = {
   endActiveAttemptId?: Id<"attempts">;
 };
 
+/**
+ * One Scenarios page with a section per held role, like Home: Learners see
+ * what they can practice, Authors see each Scenario's debrief content. Each
+ * section reads only its own role's authorized query.
+ */
 export function ScenarioListPage() {
   return (
-    <LearnerGate>
-      <ScenarioList />
-    </LearnerGate>
+    <MembershipGate>
+      {({ membership }) => {
+        const learner = membership.roles.includes("learner");
+        const author = membership.roles.includes("author");
+        if (!learner && !author) {
+          return <ScenarioRoleRequiredView />;
+        }
+        return (
+          <Page
+            title={learner && !author ? "Available Scenarios" : "Scenarios"}
+            description={
+              learner && author
+                ? undefined
+                : learner
+                  ? "Scenarios made available through your current Learning Groups."
+                  : "Communication Criteria, feedback guidance, and Reflection Prompts for each Scenario. Publishing creates a new Scenario Version; Attempts already started keep theirs."
+            }
+          >
+            <div className="space-y-9">
+              {learner && (
+                <section aria-label="Practice" className="space-y-4">
+                  {author && (
+                    <h2 className="text-heading font-bold">Available to practice</h2>
+                  )}
+                  <ScenarioList />
+                </section>
+              )}
+              {author && (
+                <section aria-label="Debrief content" className="space-y-4">
+                  {learner && (
+                    <h2 className="text-heading font-bold">Debrief content</h2>
+                  )}
+                  <AuthoringScenarios />
+                </section>
+              )}
+            </div>
+          </Page>
+        );
+      }}
+    </MembershipGate>
   );
 }
 
@@ -76,10 +121,7 @@ export function LearnerGate({ children }: { children: ReactNode }) {
 
 function ScenarioList() {
   const scenarios = useQuery(api.attemptStart.access.availableScenarios, {});
-  if (scenarios === undefined) {
-    return <AccessLoadingView message="Loading Available Scenarios" />;
-  }
-  return <ScenarioListView scenarios={scenarios} />;
+  return <ScenarioCards scenarios={scenarios} />;
 }
 
 function LearnerBrief({ scenarioId }: { scenarioId: string }) {

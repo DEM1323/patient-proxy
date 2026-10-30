@@ -65,7 +65,17 @@ export const debriefContentValidator = v.object({
   ),
 });
 
+// Who published a version's debrief content in Patient Proxy, and whether it
+// is the Author's own wording or a generated template they adopted unchanged.
+// Absent when the content came from provisioning.
+export const debriefPublicationValidator = v.object({
+  membershipId: v.id("memberships"),
+  publishedAt: v.number(),
+  source: v.union(v.literal("author"), v.literal("adopted_template")),
+});
+
 export type LearnerBrief = Infer<typeof learnerBriefValidator>;
+export type DebriefPublication = Infer<typeof debriefPublicationValidator>;
 export type DebriefContent = Infer<typeof debriefContentValidator>;
 export type ClinicalTruth = Infer<typeof clinicalTruthValidator>;
 export type ClinicalActions = Infer<typeof clinicalActionsValidator>;

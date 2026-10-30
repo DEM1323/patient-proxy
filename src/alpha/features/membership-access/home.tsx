@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Page, Table, Empty, textLink } from "../../ui/primitives";
+import { Page, Table, textLink } from "../../ui/primitives";
 import { button } from "../../ui/button";
 import { ScenarioCards } from "../attempt-start/view";
 import { AttemptHistoryTable } from "../learner-attempt-history/view";
 import { ReviewTable } from "../attempt-review/view";
 import { AuditLogView } from "../institution-admin/view";
+import { AuthoringScenarios } from "../scenario-authoring";
 import type { MembershipSummary } from "./view";
 
 // Each role section reads only that role's existing authorized queries.
@@ -23,7 +24,7 @@ export function RoleHome({ membership }: { membership: MembershipSummary }) {
             ? "Review"
             : learner
               ? "Practice"
-              : "Welcome"
+              : "Scenario debriefs"
       }
       description={
         admin
@@ -32,7 +33,7 @@ export function RoleHome({ membership }: { membership: MembershipSummary }) {
             ? "Ended Attempts within your current Learning Group and Scenario scope."
             : learner
               ? "Scenarios your Learning Groups make available to you."
-              : undefined
+              : "Communication Criteria, feedback guidance, and Reflection Prompts for each Scenario."
       }
     >
       <div className="space-y-8">
@@ -46,12 +47,7 @@ export function RoleHome({ membership }: { membership: MembershipSummary }) {
             <PracticeOverview />
           </section>
         )}
-        {!admin && !faculty && !learner && (
-          <Empty title="Scenario authoring isn’t available yet">
-            You hold the Author role. Ask your Institutional Admin to add
-            Learner or Faculty if you also need to practice or review.
-          </Empty>
-        )}
+        {!admin && !faculty && !learner && <AuthoringScenarios />}
       </div>
     </Page>
   );
